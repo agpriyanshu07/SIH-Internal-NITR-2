@@ -31,6 +31,7 @@ export interface CatalogueEntry {
  */
 const GROUP_OP: Record<string, string> = {
   stations: 'ISS / CSS PARTNERS',
+  'indian-assets': 'ISRO',
   'cosmos-1408-debris': 'CIS (ASAT DEBRIS)',
   'iridium-33-debris': 'US (DERELICT)',
   'cosmos-2251-debris': 'CIS (DERELICT)',

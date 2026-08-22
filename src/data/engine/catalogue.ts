@@ -2,6 +2,7 @@ import { parseCatalogue, type CatalogueEntry } from './parse';
 import type { ObjectType, SpaceObject } from '../types';
 
 import stationsTxt from '../snapshot/stations.txt?raw';
+import indianTxt from '../snapshot/indian-assets.txt?raw';
 import cosmos1408Txt from '../snapshot/cosmos-1408-debris.txt?raw';
 import iridium33Txt from '../snapshot/iridium-33-debris.txt?raw';
 import cosmos2251Txt from '../snapshot/cosmos-2251-debris.txt?raw';
@@ -23,6 +24,7 @@ export const SNAPSHOT_EPOCH = Date.parse(manifest.capturedAtUtc);
 
 export const SNAPSHOT_SOURCES = [
   { group: 'stations', text: stationsTxt },
+  { group: 'indian-assets', text: indianTxt },
   { group: 'cosmos-1408-debris', text: cosmos1408Txt },
   { group: 'iridium-33-debris', text: iridium33Txt },
   { group: 'cosmos-2251-debris', text: cosmos2251Txt },
@@ -42,6 +44,16 @@ export const entryById = (norad: number): CatalogueEntry | undefined =>
 
 export const objectById = (norad: number): SpaceObject =>
   BY_NORAD.get(norad)?.object ?? OBJECTS[0];
+
+/**
+ * Objects operated by ISRO.
+ *
+ * Group membership, not a name match on the rendered string — the group is a
+ * property of which file the element set was ingested from, so this cannot
+ * drift if an object is renamed in a later capture.
+ */
+export const isIndianAsset = (norad: number): boolean =>
+  BY_NORAD.get(norad)?.group === 'indian-assets';
 
 /** Which real destruction event an object descends from, if any. */
 export const groupOf = (norad: number): string | undefined =>

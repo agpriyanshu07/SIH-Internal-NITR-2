@@ -45,7 +45,7 @@ export const FEATURES: Feature[] = [
     label: 'Orbital data',
     status: 'live',
     group: 'Operations',
-    note: 'A committed CelesTrak GP snapshot — 840 real tracked objects across four groups, all captured at one instant so their epochs are mutually consistent. Bundled into the build, so the console makes no network request at any point. The console clock is anchored to the capture instant, because propagating these element sets from today would be arithmetic rather than prediction.',
+    note: 'A committed CelesTrak GP snapshot — 859 real tracked objects across five groups, all captured at one instant so their epochs are mutually consistent: the ISS and CSS stations, ISRO\u2019s LEO fleet, and the Cosmos 1408, Iridium 33 and Cosmos 2251 debris clouds. Bundled into the build, so the console makes no network request at any point. The console clock is anchored to the capture instant, because propagating these element sets from today would be arithmetic rather than prediction.',
   },
   {
     id: 'covariance',
@@ -113,9 +113,9 @@ export const FEATURES: Feature[] = [
   {
     id: 'assets',
     label: 'Asset register',
-    status: 'not-built',
+    status: 'partial',
     group: 'Configuration',
-    note: 'Would let an operator declare which objects are theirs. Not built — the prototype screens the whole catalogue instead.',
+    note: 'You cannot yet declare an arbitrary set of objects as yours. One fixed register does exist and is real: the ISRO-operated LEO fleet ingested as its own snapshot group, filterable on both the dashboard and the catalogue, and matched on ingest group rather than on a name string so it cannot drift if an object is renamed in a later capture. 77 of the screened events involve one of those assets.',
   },
   {
     id: 'alerts',

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { OBJECTS, groupOf } from '../data/objects';
+import { OBJECTS, groupOf, isIndianAsset } from '../data/objects';
 import { OriginBadge, ProvenanceFooter } from '../components/Provenance';
 import { TLE_FIELD_NOTES } from '../data/tle';
 import { fmtInt, fmtNorad } from '../data/format';
@@ -109,6 +109,7 @@ function TleDrawer({ object, onClose }: { object: SpaceObject; onClose: () => vo
 export function Catalogue() {
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(() => params.get('q') ?? '');
+  const [isroOnly, setIsroOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('norad');
   const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [page, setPage] = useState(0);
@@ -125,10 +126,11 @@ export function Catalogue() {
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
+    const pool = isroOnly ? OBJECTS.filter((o) => isIndianAsset(o.norad)) : OBJECTS;
     const matched = needle
-      ? OBJECTS.filter((o) =>
+      ? pool.filter((o) =>
           `${o.name} ${o.norad} ${o.type} ${o.op} ${o.intl}`.toLowerCase().includes(needle))
-      : OBJECTS;
+      : pool;
 
     const value = (o: SpaceObject) => (sortKey === 'name' ? o.name : o[sortKey]);
     return [...matched].sort((a, b) => {
@@ -137,7 +139,7 @@ export function Catalogue() {
       const cmp = typeof x === 'string' ? x.localeCompare(y as string) : (x as number) - (y as number);
       return cmp * sortDir;
     });
-  }, [q, sortKey, sortDir]);
+  }, [q, isroOnly, sortKey, sortDir]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, pageCount - 1);
@@ -163,6 +165,18 @@ export function Catalogue() {
           />
         </div>
         <div className="flex items-center gap-[18px]">
+          <button
+            type="button"
+            aria-pressed={isroOnly}
+            onClick={() => setIsroOnly((v) => !v)}
+            className={`flex-none rounded border px-[11px] py-[5px] font-mono text-2xs uppercase tracking-data transition-colors ${
+              isroOnly
+                ? 'border-accent-border bg-accent-wash text-primary'
+                : 'border-hairline text-tertiary hover:bg-panel-raised hover:text-primary'
+            }`}
+          >
+            ISRO assets
+          </button>
           <ProvenanceFooter className="hidden lg:flex" />
         </div>
       </div>

@@ -20,5 +20,6 @@ export {
   SNAPSHOT_EPOCH,
   entryById,
   groupOf,
+  isIndianAsset,
   objectById,
 } from './engine/catalogue';

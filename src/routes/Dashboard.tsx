@@ -1,6 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GROUP_COUNTS, GROUP_EVENT, OBJECTS, PROVENANCE, groupOf } from '../data/objects';
+import {
+  GROUP_COUNTS,
+  GROUP_EVENT,
+  OBJECTS,
+  PROVENANCE,
+  groupOf,
+  isIndianAsset,
+} from '../data/objects';
 import { conjunctionsToCsv, downloadCsv } from '../data/csv';
 import { reband } from '../data/conjunctions';
 import { SEVERITY_RANK } from '../data/riskScore';
@@ -75,6 +82,7 @@ export function Dashboard() {
   const [minRisk, setMinRisk] = useState<RiskFilter>('ALL');
   const [win, setWin] = useState<'12' | '24' | '72'>('72');
   const [cls, setCls] = useState<ClassFilter>('ALL');
+  const [isroOnly, setIsroOnly] = useState(false);
   const [selId, setSelId] = useState<string>('');
 
   /*
@@ -130,9 +138,10 @@ export function Dashboard() {
       .filter((r) =>
         (minRisk === 'ALL' || SEVERITY_RANK[r.sev] >= SEVERITY_RANK[minRisk]) &&
         r.tcaMin <= +win * 60 &&
-        (cls === 'ALL' || r.A.type === cls || r.B.type === cls))
+        (cls === 'ALL' || r.A.type === cls || r.B.type === cls) &&
+        (!isroOnly || isIndianAsset(r.a) || isIndianAsset(r.b)))
       .sort((a, b) => (value(a) - value(b)) * sortDir);
-  }, [screened, sortKey, sortDir, minRisk, win, cls]);
+  }, [screened, sortKey, sortDir, minRisk, win, cls, isroOnly]);
 
   const selected = useMemo(
     () => rows.find((r) => r.id === selId) ?? rows[0],
@@ -152,6 +161,13 @@ export function Dashboard() {
    * policy point the catalogue makes on its own once the data carries the
    * grouping — no editorialising required.
    */
+  /* Screened events involving an ISRO-operated asset — real objects from the
+     same capture, screened against the same real debris. */
+  const isroEvents = useMemo(
+    () => screened.filter((c) => isIndianAsset(c.a) || isIndianAsset(c.b)).length,
+    [screened],
+  );
+
   const fromDestruction = useMemo(
     () =>
       screened.filter(
@@ -267,6 +283,21 @@ export function Dashboard() {
               <Segmented label="Risk" segments={RISKS} value={minRisk} onChange={setMinRisk} />
               <Segmented label="Window" segments={WINDOWS} value={win} onChange={setWin} />
               <Segmented label="Class" segments={CLASSES} value={cls} onChange={setCls} />
+              {/* Matches on ingest group, not a name string, so it cannot drift
+                  if an object is renamed in a later capture. */}
+              <button
+                type="button"
+                aria-pressed={isroOnly}
+                onClick={() => setIsroOnly((v) => !v)}
+                title={`${isroEvents} of ${screened.length} screened events involve an ISRO-operated asset`}
+                className={`rounded border px-[11px] py-[5px] font-mono text-2xs uppercase tracking-data transition-colors ${
+                  isroOnly
+                    ? 'border-accent-border bg-accent-wash text-primary'
+                    : 'border-hairline text-tertiary hover:bg-panel-raised hover:text-primary'
+                }`}
+              >
+                ISRO assets · {isroEvents}
+              </button>
               <div className="num ml-auto whitespace-nowrap text-xs- text-tertiary">
                 {rows.length} / {screened.length} events
               </div>
@@ -304,7 +335,12 @@ export function Dashboard() {
                     ) : (
                       <Button
                         className="mt-2 px-[13px] py-[7px] text-sm"
-                        onClick={() => { setMinRisk('ALL'); setWin('72'); setCls('ALL'); }}
+                        onClick={() => {
+                        setMinRisk('ALL');
+                        setWin('72');
+                        setCls('ALL');
+                        setIsroOnly(false);
+                      }}
                       >
                         Reset filters
                       </Button>
