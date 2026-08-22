@@ -75,6 +75,7 @@ For a copy that opens with no server at all, see the single-file build below.
 | `/console/viewer` | 2D orbital viewer with a time scrubber and layer toggles |
 | `/console/thresholds` | Screening thresholds — the floor applied before anything reaches the console |
 | `/console/manoeuvres` | Manoeuvre log — burns against screened events |
+| `/console/analysis` | Consequence analysis workbench — every assumption is a control |
 | `/console/status` | Prototype status — what is wired up and what is not |
 
 ## What actually works
@@ -227,6 +228,57 @@ the real cloud holds orders of magnitude more debris than any catalogue tracks.
 And lifetimes are order-of-magnitude only, because atmospheric density swings by
 more than a factor of ten across the solar cycle and solar activity is not
 modelled — so they are reported in bands, never as dates.
+
+### Impact mechanics, and one error worth recording
+
+Energy is taken in the **centre-of-mass frame**, which is the only frame in
+which it means anything — in Earth-centred coordinates each object carries tens
+of gigajoules simply by being in orbit, and almost none of that can break
+anything. What is available is `E = ½·μ·|v_rel|²` with the reduced mass
+`μ = m₁m₂/(m₁+m₂)`.
+
+The obvious next step is wrong, and the model got it wrong first. Launching the
+whole fragment cloud from the pair's centre of mass looks right — that is where
+the combined momentum goes — but for two comparable masses meeting at a large
+angle `|v_cm|` is far *below* orbital speed. A 139° encounter between equal
+masses leaves the centre of mass at about 2.6 km/s, so every fragment lands on a
+sub-orbital trajectory and the model cheerfully reports that the entire cloud
+de-orbits within the hour. Iridium 33 and Cosmos 2251 met at 102° with
+comparable masses and produced thousands of fragments still in orbit fifteen
+years later.
+
+A hypervelocity breakup is not an inelastic merger: each body shatters and its
+pieces keep *its* momentum. So the two parents' clouds are modelled separately,
+each ejected about its own parent's state, with momentum conserved within each
+sub-cloud. The result is bimodal, which is what is actually observed.
+
+Differential **J2 nodal precession** then spreads the cloud: each fragment
+precesses at a slightly different rate, and the spread across the cloud sets how
+long a compact debris ellipsoid takes to smear into a shell around the Earth —
+months to a few years, and the analysis reports it per event.
+
+### Re-entry survival — which fragments reach the ground at all
+
+Most debris never lands. It is destroyed by aerodynamic heating in the upper
+atmosphere, and skipping that step overstates ground risk by one to two orders
+of magnitude.
+
+Each fragment is flown down an Allen-Eggers shallow ballistic entry, heated by
+Sutton-Graves stagnation-point flux bridged harmonically against free-molecular
+heating, averaged for a tumbling body, and demised on a lumped-mass melt
+criterion — roughly what NASA's DAS does at object-level fidelity.
+
+The bridging is not a detail. Suppressing free-molecular heating deletes exactly
+the heat that light, high-area fragments experience, because they decelerate too
+high to reach continuum flow at speed. That inverts the model's central result:
+it makes compact heavy fragments demise and light ones survive, when the
+standard scaling is that heat absorbed per unit mass goes as `√(A/m)`. A test
+now asserts that scaling.
+
+Demise altitudes come out higher than the 65–80 km that ORSAT and SCARAB report.
+The A/m dependence and the survive/demise boundary near 0.15 m²/kg are the
+meaningful outputs; the absolute altitude is not calibrated against flight data
+and the UI says so.
 
 ### Where the debris comes down
 

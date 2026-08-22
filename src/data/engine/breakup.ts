@@ -155,16 +155,22 @@ export interface BreakupResult {
 /** How many fragments to actually instantiate before sampling kicks in. */
 const MAX_MODELLED = 4000;
 
+export interface MassOverride {
+  massAKg?: number;
+  massBKg?: number;
+}
+
 export function modelBreakup(
   a: SpaceObject,
   b: SpaceObject,
   relVelKmS: number,
   groupA: string | undefined,
   groupB: string | undefined,
+  masses: MassOverride = {},
 ): BreakupResult {
   // The heavier object is the target; the lighter one is the projectile.
-  const mA = assumedMass(groupA);
-  const mB = assumedMass(groupB);
+  const mA = masses.massAKg ?? assumedMass(groupA);
+  const mB = masses.massBKg ?? assumedMass(groupB);
   const massTargetKg = Math.max(mA, mB);
   const massProjectileKg = Math.min(mA, mB);
 

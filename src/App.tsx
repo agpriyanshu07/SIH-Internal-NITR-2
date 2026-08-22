@@ -8,6 +8,7 @@ import { Catalogue } from './routes/Catalogue';
 import { Viewer } from './routes/Viewer';
 import { Thresholds } from './routes/Thresholds';
 import { ManoeuvreLog } from './routes/ManoeuvreLog';
+import { Analysis } from './routes/Analysis';
 import { SignIn } from './routes/SignIn';
 import { Status } from './routes/Status';
 
@@ -24,6 +25,7 @@ export function App() {
           <Route path="viewer" element={<Viewer />} />
           <Route path="thresholds" element={<Thresholds />} />
           <Route path="manoeuvres" element={<ManoeuvreLog />} />
+          <Route path="analysis" element={<Analysis />} />
           <Route path="status" element={<Status />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

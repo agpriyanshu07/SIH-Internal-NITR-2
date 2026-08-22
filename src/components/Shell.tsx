@@ -40,7 +40,7 @@ const MEDIAN_ELSET_MS = MEDIAN_ELSET_DAYS * 86400000;
 const STALE_AFTER_MS = 3 * 86400000;
 
 const NAV_GROUPS: { label: string; ids: string[] }[] = [
-  { label: 'Operations', ids: ['conjunctions', 'viewer', 'catalogue', 'manoeuvres'] },
+  { label: 'Operations', ids: ['conjunctions', 'viewer', 'catalogue', 'manoeuvres', 'consequence'] },
   { label: 'Configuration', ids: ['thresholds', 'assets', 'alerts', 'apikeys'] },
 ];
 

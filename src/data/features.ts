@@ -49,10 +49,11 @@ export const FEATURES: Feature[] = [
   },
   {
     id: 'consequence',
-    label: 'Collision consequence',
+    label: 'Consequence analysis',
+    to: '/console/analysis',
     status: 'partial',
     group: 'Operations',
-    note: 'On any event, models what a hit would produce: the NASA Standard Breakup Model for the fragment cloud, isotropic ejection onto the parent\u2019s real SGP4 state, and King-Hele drag decay for how long each fragment stays up. Partial for three honest reasons. Object MASSES are assumed from class, and fragment count scales as mass^0.75, so that assumption propagates into every figure. Only fragments at or above 10 cm are modelled — the real cloud holds orders of magnitude more debris than any catalogue tracks. And lifetimes are order-of-magnitude only, because atmospheric density varies by more than 10x over the solar cycle and solar activity is not modelled; they are reported in bands, never as dates. What is NOT approximate is the re-entry latitude bound: an orbit never crosses its own inclination, and the latitude distribution inside that band is a closed form. Re-entry LONGITUDE is not predicted at all, because it is not predictable.',
+    note: 'A research workbench, and a summary panel on every event. Impact mechanics are taken in the centre-of-mass frame (the only frame in which the energy means anything), the NASA Standard Breakup Model produces the cloud, each parent\u2019s fragments are ejected about that parent\u2019s own real SGP4 state with momentum conserved per sub-cloud, King-Hele drag gives orbital lifetime, differential J2 precession gives how long the cloud takes to become a shell, and Sutton-Graves heating with a lumped-mass demise criterion decides which fragments survive re-entry at all. Every assumption that moves the answer — both masses, the material mix, drag coefficient, solar activity, entry angle — is a control rather than a constant, and the fragment-level output exports to CSV. Partial for three honest reasons. Object MASSES are assumed from class, and fragment count scales as mass^0.75, so that assumption propagates into every figure. Only fragments at or above 10 cm are modelled — the real cloud holds orders of magnitude more debris than any catalogue tracks. And lifetimes are order-of-magnitude only, because atmospheric density varies by more than 10x over the solar cycle and solar activity is not modelled; they are reported in bands, never as dates. What is NOT approximate is the re-entry latitude bound: an orbit never crosses its own inclination, and the latitude distribution inside that band is a closed form. Re-entry LONGITUDE is not predicted at all, because it is not predictable.',
   },
   {
     id: 'covariance',

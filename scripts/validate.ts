@@ -13,6 +13,7 @@ import {
   reachableLatitude,
   reentryLatitudeDistribution,
 } from '../src/data/engine/decay';
+import { materialByKey, simulateEntry, casualtyArea } from '../src/data/engine/thermal';
 import {
   CATASTROPHIC_THRESHOLD_JG,
   fragmentCount,
@@ -554,6 +555,74 @@ section('12. Breakup model matches its published form');
     JSON.stringify(modelBreakup(A.object, B.object, 14, A.group, B.group).fragments) ===
       JSON.stringify(r.fragments),
     'seeded from the pair, so a reload cannot reshuffle the debris',
+  );
+}
+
+// ── 13. Re-entry heating ────────────────────────────────────────────────────
+// Absolute demise altitudes are not calibrated against flight data, so they are
+// not asserted. What IS asserted is the physics that must hold regardless of
+// calibration — and one of these caught a sign-of-effect error where suppressing
+// free-molecular heating made light fragments survive and heavy ones demise,
+// exactly inverting the real behaviour.
+section('13. Re-entry heating scales the way it must');
+{
+  const al = materialByKey('aluminium');
+  const aoms = [0.008, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0];
+  const melt = aoms.map((aom) => simulateEntry(1, aom, al, 7800, 0.1).meltFraction);
+
+  let monotone = true;
+  for (let i = 1; i < melt.length; i++) if (!(melt[i] > melt[i - 1])) monotone = false;
+  check(
+    'heat absorbed per unit mass rises with area-to-mass ratio',
+    monotone,
+    aoms.map((a, i) => `${a}:${(melt[i] * 100).toFixed(0)}%`).join(' '),
+  );
+
+  // Peak heating moves deeper for a higher ballistic coefficient, because a
+  // compact fragment carries its speed further down.
+  const peaks = [0.008, 0.05, 0.5].map(
+    (aom) => simulateEntry(1, aom, al, 7800, 0.1).peakAltKm,
+  );
+  check(
+    'peak heating occurs deeper for a more compact fragment',
+    peaks[0] < peaks[1] && peaks[1] < peaks[2],
+    `A/m 0.008 peaks at ${peaks[0].toFixed(0)} km, 0.5 at ${peaks[2].toFixed(0)} km`,
+  );
+
+  // Titanium melts at 1941 K against aluminium's 933 K, so for identical
+  // geometry it must always survive at least as well.
+  const alF = simulateEntry(1, 0.1, materialByKey('aluminium'), 7800, 0.1).meltFraction;
+  const tiF = simulateEntry(1, 0.1, materialByKey('titanium'), 7800, 0.1).meltFraction;
+  check(
+    'titanium survives better than aluminium for identical geometry',
+    tiF < alF,
+    `titanium ${(tiF * 100).toFixed(0)}% melted vs aluminium ${(alF * 100).toFixed(0)}%`,
+  );
+
+  // A shallower entry means longer in the heat pulse, hence more total heat.
+  const shallow = simulateEntry(1, 0.1, al, 7800, 0.05).meltFraction;
+  const steep = simulateEntry(1, 0.1, al, 7800, 1.0).meltFraction;
+  check(
+    'a shallower entry absorbs more total heat than a steep one',
+    shallow > steep,
+    `0.05 deg -> ${(shallow * 100).toFixed(0)}%, 1.0 deg -> ${(steep * 100).toFixed(0)}%`,
+  );
+
+  // Terminal velocity must rise with ballistic coefficient.
+  const vLight = simulateEntry(1, 0.5, al, 7800, 0.1).terminalMs;
+  const vDense = simulateEntry(100, 0.8, al, 7800, 0.1).terminalMs;
+  check(
+    'a denser fragment lands faster',
+    vDense > vLight,
+    `${vLight.toFixed(0)} m/s vs ${vDense.toFixed(0)} m/s`,
+  );
+
+  // The DAS casualty-area form: each survivor contributes (sqrt(A)+0.3)^2.
+  const ca = casualtyArea([0.04]);
+  check(
+    'casualty area matches the published DAS form',
+    Math.abs(ca - Math.pow(Math.sqrt(0.04) + 0.3, 2)) < 1e-12,
+    `${ca.toFixed(3)} m2 for a single 0.04 m2 survivor`,
   );
 }
 
