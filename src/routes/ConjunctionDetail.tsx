@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { conjunctionById, SCREENING_THRESHOLD_KM } from '../data/conjunctions';
 import { PROVENANCE, SNAPSHOT_EPOCH, groupOf } from '../data/objects';
 import { OriginBadge } from '../components/Provenance';
+import { ScoreModel } from '../components/ScoreModel';
 import { fmtDur, fmtNorad, fmtPc, fmtUTC } from '../data/format';
 import { useNow } from '../hooks/useNow';
 import { Button, Panel, SeverityChip } from '../components/primitives';
@@ -167,6 +168,8 @@ export function ConjunctionDetail() {
               ))}
             </div>
           </Panel>
+
+          <ScoreModel event={event} />
 
           {/* Deliberate, prominent disclosure — a feature of the product, not fine print. */}
           <div className="glass lift overflow-hidden rounded-md border border-risk-high bg-panel">

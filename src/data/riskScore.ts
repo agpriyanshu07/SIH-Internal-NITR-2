@@ -97,6 +97,54 @@ const W_PC = 0.7;
 const W_RELV = 0.2;
 const W_AGE = 0.1;
 
+/**
+ * The model, in a form the UI can print.
+ *
+ * A ranking an operator cannot explain is a ranking they cannot defend, so the
+ * detail view shows these weights and each term's contribution for the event on
+ * screen. Exported from here rather than restated in the component, so the
+ * displayed model cannot drift from the one that produced the number.
+ */
+export const SCORE_MODEL = {
+  bands: BAND_SCORE,
+  weights: [
+    {
+      key: 'pc',
+      label: 'Probability of collision',
+      weight: W_PC,
+      note: 'Position within the severity band\u2019s own decade of Pc.',
+    },
+    {
+      key: 'relv',
+      label: 'Relative velocity',
+      weight: W_RELV,
+      note: 'Scaled across 1.5\u201315 km/s. Faster means a larger debris field and less warning.',
+    },
+    {
+      key: 'age',
+      label: 'Element-set age',
+      weight: W_AGE,
+      note: 'Saturates at 7 days. A confidence penalty: stale ranks HIGHER, because a soft miss distance deserves a closer look.',
+    },
+  ],
+} as const;
+
+/** Each term's normalised value for one event, for the detail view's breakdown. */
+export function scoreTerms({ pc, relv, maxAge }: RiskInputs) {
+  const sev = severityFor(pc);
+  const [pcLo, pcHi] = BAND_PC[sev];
+  return {
+    sev,
+    band: BAND_SCORE[sev],
+    pc: clamp01(
+      (Math.log10(Math.max(pc, pcLo)) - Math.log10(pcLo)) /
+        (Math.log10(pcHi) - Math.log10(pcLo)),
+    ),
+    relv: clamp01((relv - 1.5) / (15 - 1.5)),
+    age: clamp01(maxAge / 7),
+  };
+}
+
 export function riskScore({ pc, relv, maxAge }: RiskInputs): number {
   const sev = severityFor(pc);
   const [scoreLo, scoreHi] = BAND_SCORE[sev];
