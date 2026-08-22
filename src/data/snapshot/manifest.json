@@ -1,0 +1,14 @@
+{
+  "source": "CelesTrak GP element sets (celestrak.org/NORAD/elements/gp.php)",
+  "obtainedVia": "https://github.com/kushasahu7/Space-Debris — tle_data/*_2024-11-17_23-05.txt, an hourly CelesTrak capture committed to that repository",
+  "capturedAtUtc": "2024-11-17T23:05:00Z",
+  "committedAtUtc": "2026-08-22T00:00:00Z",
+  "format": "3-line TLE (name line + line 1 + line 2), verbatim CelesTrak output",
+  "note": "All four files are drawn from the SAME capture instant, so element-set epochs are mutually consistent and a screening run anchored to capturedAtUtc is physically valid. Screening far from this epoch degrades: SGP4 accuracy falls off over weeks, not years. Refresh with scripts/fetch-snapshot.sh to screen against today.",
+  "groups": [
+    { "group": "stations", "file": "stations.txt", "objects": 14, "note": "Reconstructed from the capture's active-satellite set by the membership CelesTrak's `stations` group carried in Nov 2024: ISS and CSS modules plus visiting crew and cargo vehicles." },
+    { "group": "cosmos-1408-debris", "file": "cosmos-1408-debris.txt", "objects": 13, "note": "Tracked fragments of Cosmos 1408, destroyed by a Russian direct-ascent ASAT test on 2021-11-15. This cloud is why the ISS crew sheltered in their return vehicles." },
+    { "group": "iridium-33-debris", "file": "iridium-33-debris.txt", "objects": 132, "note": "Fragments of Iridium 33, destroyed in the 2009-02-10 collision with Cosmos 2251 — the first accidental hypervelocity collision between two intact satellites." },
+    { "group": "cosmos-2251-debris", "file": "cosmos-2251-debris.txt", "objects": 681, "note": "The other half of the 2009 Iridium 33 / Cosmos 2251 collision." }
+  ]
+}
