@@ -45,7 +45,7 @@ npm run validate      # known-answer tests for the engine
 npm run build:single  # one self-contained file — see below
 ```
 
-`npm run screen` is deterministic: re-running it reproduces all 2,955 events
+`npm run screen` is deterministic: re-running it reproduces all 3,032 events
 byte for byte. The one field that changes is `cascade.elapsedMs`, which is how
 long the run took on *your* machine — it is a measurement, not a constant, and
 the dashboard shows it as the screening latency. So a one-line diff on
@@ -87,13 +87,14 @@ dashboard (filters and sorts genuinely filter and sort), event detail, orbital
 viewer, object catalogue, screening thresholds, Export CSV, and Run screening.
 
 **Partial** — positional uncertainty (the 1-sigma feeding Pc is assumed, not
-measured — see below), acknowledgements (remembered in your browser, sent
-nowhere), and sign in. The sign-in form validates and sets a local display name
+measured — see below), the asset register (one fixed register — the ISRO fleet —
+is real and filterable; declaring an arbitrary set of objects as yours is not),
+acknowledgements (remembered in your browser, sent nowhere), and sign in. The sign-in form validates and sets a local display name
 for the console avatar. There is no backend, so nothing is authenticated: no
 password is requested, no credential is checked, transmitted or stored, and no
 link is sent.
 
-**Not built** — Asset register, Alert routing and API keys. These are marked
+**Not built** — Alert routing and API keys. These are marked
 `NOT BUILT` in the sidebar rather than left looking clickable.
 
 Screening thresholds are not a dead form: they write to shared state that the
@@ -105,12 +106,13 @@ fresh console shows the full set.
 
 ### The snapshot
 
-`src/data/snapshot/` holds four CelesTrak GP groups as verbatim three-line TLE
+`src/data/snapshot/` holds five CelesTrak GP groups as verbatim three-line TLE
 files, all captured at one instant so their epochs are mutually consistent:
 
 | Group | Objects | What it is |
 | --- | --- | --- |
 | `stations` | 14 | ISS and CSS modules plus visiting crew and cargo vehicles |
+| `indian-assets` | 19 | ISRO-operated spacecraft in LEO — Cartosat, Resourcesat, Oceansat, RISAT, Astrosat, SARAL |
 | `cosmos-1408-debris` | 13 | Fragments of the 2021 Russian ASAT test |
 | `iridium-33-debris` | 132 | Fragments of the 2009 Iridium 33 / Cosmos 2251 collision |
 | `cosmos-2251-debris` | 681 | The other half of that collision |
@@ -160,21 +162,48 @@ Progress sitting 0 km apart — physically attached, not about to collide.
 Over the committed snapshot, 72-hour horizon:
 
 ```
-352,380 pairs
-   -> 352,380 after the radial overlap filter
-   -> 239,972 coarse candidates   (34 dropped as co-orbiting)
-   ->   2,955 confirmed events    inside a 25 km gate
-3,628,800 SGP4 propagations, ~26 s
+368,511 pairs
+   -> 368,491 after the radial overlap filter   (20 removed)
+   -> 253,010 coarse candidates                 (34 dropped as co-orbiting)
+   ->   3,032 confirmed events                  inside a 25 km gate
+3,710,880 SGP4 propagations, ~25 s
 ```
 
-The radial filter removes nothing here, and the dashboard says so. All four
-groups occupy overlapping LEO shells, and the 450 km gate is wider than the gaps
-between them — the filter earns its keep on a catalogue spanning LEO to GEO, not
-on four debris clouds sharing an altitude band. Reporting the measured number
-rather than a flattering one is the point of that panel.
+The radial filter barely earns its keep here, and the dashboard says so rather
+than rounding it up: nearly every group occupies overlapping LEO shells, and the
+450 km gate is wider than the gaps between them. It removes 20 pairs, all of
+them an ISRO asset against debris at an altitude it never reaches. A filter like
+this pays for itself on a catalogue spanning LEO to GEO, not on debris clouds
+sharing a band — and reporting the measured number rather than a flattering one
+is the entire point of that panel.
+
+**77 of the events involve an ISRO-operated asset**, the most serious being
+`CARTOSAT-2C` against a Cosmos 2251 fragment at 1.911 km; both the dashboard and
+the catalogue filter to them. Every high-severity event in the run involves
+debris from one of the two real destruction events in the snapshot.
 
 The closest approach it finds is **81 m**, between an Iridium 33 fragment and a
 Cosmos 2251 fragment — two pieces of the same 2009 collision, still crossing.
+
+### Planning a burn
+
+The manoeuvre advisor applies a delta-v to the asset's real state vector and
+re-propagates. SGP4 propagates a TLE's *mean* elements and is not invertible, so
+a burned state cannot be turned back into a TLE; the way round it is
+differential. Both the burned and the unburned state are propagated with the
+same two-body integrator from the burn epoch, and their difference is the effect
+of the burn — the model error, drag and J2 are common to both arms and cancel,
+while the absolute trajectory stays SGP4's.
+
+That gives one post-burn miss distance instead of a range, and the new time of
+closest approach is searched for rather than assumed unchanged. It matters more
+than it sounds: on the event the panel opens with, the closed-form estimate
+`Δs ≈ 3·Δv·t` says 10.5 mm/s clears the LOW band, and re-propagating says
+21.7 mm/s. The approximation is optimistic by a factor of two because it assumes
+the displacement lands square across the miss vector. The console shows both.
+
+It is still not a re-screen: nothing checks whether the burn creates a new
+conjunction with a third object.
 
 ### Probability of collision
 
@@ -262,7 +291,7 @@ npm run build:single    # -> dist-single/index.html
 One file, about 1.6 MB, with everything inlined: the JavaScript, the stylesheet,
 the Latin font subsets, the committed orbital snapshot and the screening worker.
 No server, no network, no build step at the far end — open it and the console
-runs, with all 2,955 events already screened.
+runs, with all 3,032 events already screened.
 
 One caveat, and the app states it rather than failing silently: a browser will
 not start a Web Worker on a page opened straight from disk (`file://` is a null

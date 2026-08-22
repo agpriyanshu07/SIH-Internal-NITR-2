@@ -19,8 +19,9 @@ failure mode to avoid: it makes a falsifiable claim unfalsifiable.
 ## What is real, and what is not
 
 **Real.** Objects, element sets, epochs, SGP4 propagation, times of closest
-approach, miss distances, relative velocities, element-set ages, and every
-figure in the pair-reduction cascade. All measured, none authored.
+approach, miss distances, relative velocities, element-set ages, every figure in
+the pair-reduction cascade, and the burn advisor's re-propagated post-burn miss
+distance. All measured, none authored.
 
 **Assumed, and disclosed wherever used.** The 1-sigma positional covariance
 feeding Pc — a TLE carries no covariance. Radar cross-section class, inferred
@@ -62,6 +63,11 @@ the screens do not care where the numbers came from.
 - **Docked objects are not conjunctions.** ISS modules and a berthed Progress
   sit 0 km apart forever. A pair must also *separate* past `CO_ORBIT_KM`
   somewhere in the window to count.
+- **A burned state cannot become a TLE.** SGP4 propagates mean elements and is
+  not invertible, so the advisor works differentially: both the burned and the
+  unburned state go through the same two-body integrator and only their
+  DIFFERENCE is used. Never propagate one arm one way and the other another —
+  the cancellation is the whole reason the answer is trustworthy.
 - **satellite.js ships an optional WASM runtime** that pulls node built-ins and
   a top-level await. It is aliased away in `vite.config.ts` and excluded from
   dev pre-bundling. Do not remove either without checking `npm run build` and
