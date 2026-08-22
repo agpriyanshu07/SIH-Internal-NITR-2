@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;450;500;600&family=IBM+Plex+Mono:wght@400;450;500;600&display=swap">
+<style>
+  :root{
+    --bg:#0A0E14; --deep:#070B10; --panel:#131A24; --panel2:#18212D; --panel3:#1E2833;
+    --line:#232E3C; --soft:#1B2431;
+    --t1:#E4EAF0; --t2:#93A3B5; --t3:#5E7286;
+    --acc:#E8853A; --accw:rgba(232,133,58,0.12); --accb:rgba(232,133,58,0.34);
+    --crit:#C0453A; --high:#D97A2B; --med:#C4A234; --low:#4A8C6B; --nom:#4A5B6E;
+    --grid:#16202B;
+  }
+  [data-ktheme="light"]{
+    --bg:#F7F8FA; --deep:#EDEFF3; --panel:#FFFFFF; --panel2:#F2F4F7; --panel3:#E9ECF1;
+    --line:#D8DDE5; --soft:#E6EAF0;
+    --t1:#16202B; --t2:#516272; --t3:#7C8B9A;
+    --acc:#C56A22; --accw:rgba(197,106,34,0.10); --accb:rgba(197,106,34,0.30);
+    --crit:#A8362C; --high:#B3611C; --med:#9A7D18; --low:#37714F; --nom:#7A8896;
+    --grid:#E2E6EC;
+  }
+  html,body{background:#05080B;}
+  [data-ktheme="light"] body{background:#DFE3E9;}
+  body{margin:0; padding:56px 64px 160px; font-family:'IBM Plex Sans',system-ui,sans-serif; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;}
+  a{color:var(--acc); text-decoration:none;} a:hover{color:var(--t1);}
+  *,*::before,*::after{box-sizing:border-box;}
+  ::selection{background:var(--acc); color:#0A0E14;}
+  [data-sev="CRITICAL"]{--sev:var(--crit);} [data-sev="HIGH"]{--sev:var(--high);}
+  [data-sev="MEDIUM"]{--sev:var(--med);} [data-sev="LOW"]{--sev:var(--low);}
+  [data-sev="NOMINAL"]{--sev:var(--nom);}
+  [data-sel="1"]{background:var(--panel2); box-shadow:inset 2px 0 0 0 var(--acc);}
+  [data-on="1"]{color:var(--t1); background:var(--panel3);}
+  @keyframes kskel{0%{opacity:.30}50%{opacity:.62}100%{opacity:.30}}
+  @keyframes kblink{0%,100%{opacity:1}50%{opacity:.25}}
+  @keyframes kspin{to{transform:rotate(360deg)}}
+  [data-on="1"] [data-knob]{background:var(--acc) !important; left:auto !important; right:2px !important;}
+  input::placeholder{color:var(--t3);}
+  input{font-family:'IBM Plex Mono',monospace;}
+  button{font-family:inherit;}
+</style>
+</helmet>
+
+<div style="display:flex; align-items:flex-end; justify-content:space-between; width:1600px; margin:0 0 40px;">
+  <div style="display:flex; flex-direction:column; gap:12px;">
+    <div style="display:flex; align-items:baseline; gap:14px;">
+      <div style="font-size:26px; font-weight:600; letter-spacing:-0.02em; color:var(--t1);">KESSLER</div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Design system &amp; screen set — rev 04</div>
+    </div>
+    <div style="font-size:14px; line-height:1.65; color:var(--t2); max-width:660px; text-wrap:pretty;">Orbital conjunction screening, open to everyone. Eight artboards: landing page, conjunction dashboard, conjunction detail, object catalogue, 3D orbital viewer, component library and specimen sheet, and a mobile dashboard. Orbits are propagated from two-line element sets in the browser.</div>
+  </div>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Theme</div>
+    <div style="display:flex; border:1px solid var(--line); border-radius:3px; overflow:hidden;">
+      <button onClick="{{ setDark }}" data-on="{{ isDark }}" style="padding:7px 15px; background:var(--panel); border:0; color:var(--t3); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; cursor:pointer;">Dark</button>
+      <button onClick="{{ setLight }}" data-on="{{ isLight }}" style="padding:7px 15px; background:var(--panel); border:0; border-left:1px solid var(--line); color:var(--t3); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; cursor:pointer;">Light</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 01 LANDING ═══ -->
+<div data-screen-label="01 Landing" style="margin:0 0 96px;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc);">01</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3);">Landing — 1440 × scroll</div>
+  </div>
+  <div style="width:1440px; background:var(--bg); border:1px solid var(--line); border-radius:4px; overflow:hidden;">
+
+    <div style="height:60px; padding:0 40px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--soft);">
+      <div style="display:flex; align-items:center; gap:36px;">
+        <div style="font-size:15px; font-weight:600; letter-spacing:0.04em; color:var(--t1);">KESSLER</div>
+        <div style="display:flex; gap:26px; font-size:13px; color:var(--t2);">
+          <div>Platform</div><div>Methodology</div><div>Data sources</div><div>Docs</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button style="padding:7px 14px; background:transparent; border:1px solid var(--line); border-radius:3px; color:var(--t2); font-size:12px; cursor:pointer;" style-hover="border-color:var(--t3); color:var(--t1)">Sign in</button>
+        <button style="padding:7px 14px; background:var(--acc); border:1px solid var(--acc); border-radius:3px; color:#0A0E14; font-size:12px; font-weight:500; cursor:pointer;" style-hover="background:#F09A55">Open console</button>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 620px; gap:56px; padding:88px 40px 80px; align-items:center;">
+      <div style="display:flex; flex-direction:column; gap:26px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3);">Conjunction screening — Low Earth Orbit</div>
+        <div style="font-size:60px; line-height:1.02; font-weight:600; letter-spacing:-0.035em; color:var(--t1);">Know which<br>close approach<br>matters.</div>
+        <div style="font-size:17px; line-height:1.6; color:var(--t2); max-width:480px; text-wrap:pretty;">Orbital conjunction screening, open to everyone. KESSLER ingests public element sets, propagates every tracked object in Low Earth Orbit, and ranks the close approaches that warrant an operator's attention.</div>
+        <div style="display:flex; gap:12px; padding-top:6px;">
+          <button style="padding:11px 20px; background:var(--acc); border:1px solid var(--acc); border-radius:3px; color:#0A0E14; font-size:13px; font-weight:500; cursor:pointer;" style-hover="background:#F09A55">Screen your catalogue</button>
+          <button style="padding:11px 20px; background:transparent; border:1px solid var(--line); border-radius:3px; color:var(--t1); font-size:13px; cursor:pointer;" style-hover="border-color:var(--t3)">Read the method</button>
+        </div>
+        <div style="display:flex; gap:32px; padding-top:22px; border-top:1px solid var(--soft); margin-top:14px;">
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:21px; color:var(--t1); font-variant-numeric:tabular-nums;">34,182</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Objects tracked</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:21px; color:var(--t1); font-variant-numeric:tabular-nums;">1.2 M</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Pairs screened / 24 h</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:21px; color:var(--t1); font-variant-numeric:tabular-nums;">6 min</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">TLE fetch cadence</div>
+          </div>
+        </div>
+      </div>
+      <div style="position:relative; height:520px; border:1px solid var(--soft); border-radius:4px; background:var(--deep); overflow:hidden;">
+        <canvas ref="{{ heroCanvas }}" style="position:absolute; inset:0; width:100%; height:100%; display:block;"></canvas>
+        <div style="position:absolute; left:16px; top:14px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">LEO — 200 to 2000 km · propagated live</div>
+        <div style="position:absolute; left:16px; bottom:14px; display:flex; gap:18px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3);">
+          <div>PAYLOAD</div><div>ROCKET BODY</div><div>DEBRIS</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:76px 40px; border-top:1px solid var(--soft); display:flex; flex-direction:column; gap:44px;">
+      <div style="display:grid; grid-template-columns:400px 1fr; gap:56px; align-items:start;">
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc);">The problem</div>
+          <div style="font-size:30px; line-height:1.18; font-weight:600; letter-spacing:-0.02em; color:var(--t1);">Orbit is a shared resource with no traffic control.</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:22px; padding-top:4px;">
+          <div style="font-size:15px; line-height:1.72; color:var(--t2); max-width:620px; text-wrap:pretty;">In February 2009 the Iridium 33 communications satellite struck the derelict Cosmos 2251 at a closing speed near 11.7 km/s. The collision produced more than 1,800 catalogued fragments, most of which are still in orbit. Every one of them is now something else to screen against.</div>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:4px; overflow:hidden; max-width:620px;">
+            <div style="background:var(--panel); padding:20px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:26px; color:var(--t1); font-variant-numeric:tabular-nums;">30,000<span style="font-size:16px; color:var(--t3);">+</span></div>
+              <div style="font-size:12px; line-height:1.5; color:var(--t2); margin-top:8px;">Objects large enough to be tracked from the ground.</div>
+            </div>
+            <div style="background:var(--panel); padding:20px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:26px; color:var(--t1); font-variant-numeric:tabular-nums;">7.5<span style="font-size:14px; color:var(--t3); margin-left:4px;">km/s</span></div>
+              <div style="font-size:12px; line-height:1.5; color:var(--t2); margin-top:8px;">Typical orbital velocity in LEO. Closing speeds reach twice that.</div>
+            </div>
+            <div style="background:var(--panel); padding:20px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:26px; color:var(--t1); font-variant-numeric:tabular-nums;">1<span style="font-size:14px; color:var(--t3); margin-left:4px;">cm</span></div>
+              <div style="font-size:12px; line-height:1.5; color:var(--t2); margin-top:8px;">A fragment this size carries roughly the kinetic energy of a hand grenade.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:76px 40px; border-top:1px solid var(--soft);">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc); margin-bottom:34px;">How it works</div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:40px;">
+        <div style="display:flex; flex-direction:column; gap:14px; padding-top:20px; border-top:1px solid var(--line);">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--acc); letter-spacing:0.10em;">01</div>
+          <div style="font-size:19px; font-weight:500; letter-spacing:-0.01em; color:var(--t1);">Ingest public element sets</div>
+          <div style="font-size:14px; line-height:1.65; color:var(--t2); text-wrap:pretty;">Two-line element sets are pulled from public catalogues every six minutes, validated, and stored with their epoch so the age of every state vector is known and shown.</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:14px; padding-top:20px; border-top:1px solid var(--line);">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--acc); letter-spacing:0.10em;">02</div>
+          <div style="font-size:19px; font-weight:500; letter-spacing:-0.01em; color:var(--t1);">Propagate and screen</div>
+          <div style="font-size:14px; line-height:1.65; color:var(--t2); text-wrap:pretty;">Every object is propagated with SGP4 across a seven-day horizon. A coarse apogee–perigee filter removes impossible pairs before fine screening resolves each time of closest approach.</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:14px; padding-top:20px; border-top:1px solid var(--line);">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--acc); letter-spacing:0.10em;">03</div>
+          <div style="font-size:19px; font-weight:500; letter-spacing:-0.01em; color:var(--t1);">Rank and alert</div>
+          <div style="font-size:14px; line-height:1.65; color:var(--t2); text-wrap:pretty;">Miss distance, relative velocity and collision probability are combined into a single ranked list. Events crossing your thresholds reach you by email, webhook or API.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:76px 40px; border-top:1px solid var(--soft); display:grid; grid-template-columns:400px 1fr; gap:56px; align-items:start;">
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc);">Why this exists</div>
+        <div style="font-size:30px; line-height:1.18; font-weight:600; letter-spacing:-0.02em; color:var(--t1);">Screening should not be a procurement decision.</div>
+      </div>
+      <div style="display:flex; flex-direction:column;">
+        <div style="display:grid; grid-template-columns:190px 1fr; gap:28px; padding:22px 0; border-top:1px solid var(--line);">
+          <div style="font-size:14px; font-weight:500; color:var(--t1);">Open inputs</div>
+          <div style="font-size:14px; line-height:1.65; color:var(--t2); max-width:560px;">Built on public catalogue data. No licence negotiation, no minimum contract, no data you cannot inspect yourself.</div>
+        </div>
+        <div style="display:grid; grid-template-columns:190px 1fr; gap:28px; padding:22px 0; border-top:1px solid var(--line);">
+          <div style="font-size:14px; font-weight:500; color:var(--t1);">Stated uncertainty</div>
+          <div style="font-size:14px; line-height:1.65; color:var(--t2); max-width:560px;">Every result carries its element-set age and an accuracy band. We publish what the method cannot tell you alongside what it can.</div>
+        </div>
+        <div style="display:grid; grid-template-columns:190px 1fr; gap:28px; padding:22px 0; border-top:1px solid var(--line);">
+          <div style="font-size:14px; font-weight:500; color:var(--t1);">Reachable by a cubesat team</div>
+          <div style="font-size:14px; line-height:1.65; color:var(--t2); max-width:560px;">A university group flying one 3U spacecraft gets the same screening pipeline as an operator with four hundred satellites.</div>
+        </div>
+        <div style="display:grid; grid-template-columns:190px 1fr; gap:28px; padding:22px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+          <div style="font-size:14px; font-weight:500; color:var(--t1);">Reproducible</div>
+          <div style="font-size:14px; line-height:1.65; color:var(--t2); max-width:560px;">Each conjunction record includes the element sets and propagator settings used, so any result can be recomputed independently.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:34px 40px; border-top:1px solid var(--soft); display:flex; align-items:center; justify-content:space-between;">
+      <div style="display:flex; align-items:center; gap:20px;">
+        <div style="font-size:12px; font-weight:600; letter-spacing:0.04em; color:var(--t2);">KESSLER</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3);">Orbital conjunction screening</div>
+      </div>
+      <div style="display:flex; gap:22px; font-size:12px; color:var(--t3);">
+        <div>Method</div><div>API</div><div>Status</div><div>Contact</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 02 DASHBOARD ═══ -->
+<div data-screen-label="02 Conjunction dashboard" style="margin:0 0 96px;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc);">02</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3);">Conjunction dashboard — primary screen — 1600 × 1010 — filters and sorting are live</div>
+  </div>
+  <div style="width:1600px; height:1044px; background:var(--bg); border:1px solid var(--line); border-radius:4px; overflow:hidden; display:grid; grid-template-columns:196px 1fr; grid-template-rows:minmax(0,1fr);">
+
+    <div style="border-right:1px solid var(--soft); display:flex; flex-direction:column; background:var(--deep);">
+      <div style="height:52px; padding:0 18px; display:flex; align-items:center; border-bottom:1px solid var(--soft);">
+        <div style="font-size:13px; font-weight:600; letter-spacing:0.06em; color:var(--t1);">KESSLER</div>
+      </div>
+      <div style="padding:18px 10px; display:flex; flex-direction:column; gap:2px;">
+        <div style="padding:0 8px 8px; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3);">Operations</div>
+        <div style="padding:8px 8px; border-radius:3px; background:var(--panel2); box-shadow:inset 2px 0 0 0 var(--acc); font-size:13px; color:var(--t1);">Conjunctions</div>
+        <div style="padding:8px 8px; border-radius:3px; font-size:13px; color:var(--t2);" style-hover="background:var(--panel); color:var(--t1)">Orbital viewer</div>
+        <div style="padding:8px 8px; border-radius:3px; font-size:13px; color:var(--t2);" style-hover="background:var(--panel); color:var(--t1)">Object catalogue</div>
+        <div style="padding:8px 8px; border-radius:3px; font-size:13px; color:var(--t2);" style-hover="background:var(--panel); color:var(--t1)">Manoeuvre log</div>
+        <div style="padding:20px 8px 8px; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3);">Configuration</div>
+        <div style="padding:8px 8px; border-radius:3px; font-size:13px; color:var(--t2);" style-hover="background:var(--panel); color:var(--t1)">Screening thresholds</div>
+        <div style="padding:8px 8px; border-radius:3px; font-size:13px; color:var(--t2);" style-hover="background:var(--panel); color:var(--t1)">Asset register</div>
+        <div style="padding:8px 8px; border-radius:3px; font-size:13px; color:var(--t2);" style-hover="background:var(--panel); color:var(--t1)">Alert routing</div>
+        <div style="padding:8px 8px; border-radius:3px; font-size:13px; color:var(--t2);" style-hover="background:var(--panel); color:var(--t1)">API keys</div>
+      </div>
+      <div style="margin-top:auto; padding:16px 18px; border-top:1px solid var(--soft); display:flex; flex-direction:column; gap:7px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">Propagator</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t2);">SGP4 / AIAA-2006-6753</div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; min-width:0;">
+      <div style="height:52px; padding:0 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--soft);">
+        <div style="display:flex; align-items:center; gap:14px; flex:1;">
+          <div style="display:flex; align-items:center; gap:8px; width:340px; height:30px; padding:0 10px; border:1px solid var(--line); border-radius:3px; background:var(--panel);">
+            <div style="width:11px; height:11px; border:1.5px solid var(--t3); border-radius:50%;"></div>
+            <input placeholder="Search objects, NORAD ID, conjunction ID" style="flex:1; background:transparent; border:0; outline:none; color:var(--t1); font-size:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3); border:1px solid var(--line); border-radius:2px; padding:1px 5px;">/</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:20px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:6px; height:6px; border-radius:50%; background:var(--low); animation:kblink 2.6s ease-in-out infinite;"></div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--t2);">TLE FETCH {{ fetchAge }} AGO</div>
+          </div>
+          <div style="width:1px; height:18px; background:var(--line);"></div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t2); font-variant-numeric:tabular-nums;">{{ nowUTC }}</div>
+          <div style="width:26px; height:26px; border:1px solid var(--line); border-radius:3px; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t2);">SO</div>
+        </div>
+      </div>
+
+      <div style="padding:22px 20px 0; display:flex; align-items:flex-end; justify-content:space-between;">
+        <div style="display:flex; flex-direction:column; gap:5px;">
+          <div style="font-size:19px; font-weight:500; letter-spacing:-0.01em; color:var(--t1);">Conjunction screening</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3);">All registered assets · screening horizon 7 d</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button style="padding:7px 13px; background:transparent; border:1px solid var(--line); border-radius:3px; color:var(--t2); font-size:12px; cursor:pointer;" style-hover="border-color:var(--t3); color:var(--t1)">Export CSV</button>
+          <button style="padding:7px 13px; background:var(--acc); border:1px solid var(--acc); border-radius:3px; color:#0A0E14; font-size:12px; font-weight:500; cursor:pointer;" style-hover="background:#F09A55">Run screening</button>
+        </div>
+      </div>
+
+      <div style="padding:20px 20px 0; display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line);">
+        <div style="background:var(--panel); padding:15px 16px; display:flex; flex-direction:column; gap:9px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">Objects tracked</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:25px; color:var(--t1); font-variant-numeric:tabular-nums; letter-spacing:-0.01em;">34,182</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3);">+118 / 24 h</div>
+        </div>
+        <div style="background:var(--panel); padding:15px 16px; display:flex; flex-direction:column; gap:9px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">Pairs screened 24 h</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:25px; color:var(--t1); font-variant-numeric:tabular-nums; letter-spacing:-0.01em;">1,204,556</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3);">4 passes complete</div>
+        </div>
+        <div style="background:var(--panel); padding:15px 16px; display:flex; flex-direction:column; gap:9px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">High risk events</div>
+          <div style="display:flex; align-items:baseline; gap:9px;">
+            <div data-sev="HIGH" style="font-family:'IBM Plex Mono',monospace; font-size:25px; color:var(--sev); font-variant-numeric:tabular-nums; letter-spacing:-0.01em;">{{ nHighRisk }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3);">of {{ nTotal }}</div>
+          </div>
+          <div style="display:flex; gap:10px; font-family:'IBM Plex Mono',monospace; font-size:10px;">
+            <div data-sev="CRITICAL" style="color:var(--sev);">{{ nCrit }} CRIT</div>
+            <div data-sev="HIGH" style="color:var(--sev);">{{ nHigh }} HIGH</div>
+          </div>
+        </div>
+        <div style="background:var(--panel); padding:15px 16px; display:flex; flex-direction:column; gap:9px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">Next TCA</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:25px; color:var(--acc); font-variant-numeric:tabular-nums; letter-spacing:-0.01em;">{{ countdown }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3);">{{ countdownId }}</div>
+        </div>
+        <div style="background:var(--panel); padding:15px 16px; display:flex; flex-direction:column; gap:9px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">Screening latency</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:25px; color:var(--t1); font-variant-numeric:tabular-nums; letter-spacing:-0.01em;">42<span style="font-size:14px; color:var(--t3); margin-left:4px;">s</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3);">p95 over last 6 passes</div>
+        </div>
+      </div>
+
+      <div style="padding:20px 20px 0; display:grid; grid-template-columns:1fr 392px; gap:20px; min-height:0; flex:1;">
+
+        <div style="display:flex; flex-direction:column; min-width:0; border:1px solid var(--line); border-radius:4px; background:var(--panel); overflow:hidden;">
+          <div style="height:44px; padding:0 14px; display:flex; align-items:center; gap:18px; border-bottom:1px solid var(--line);">
+            <div style="display:flex; align-items:center; gap:7px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">Risk</div>
+              <div style="display:flex; border:1px solid var(--line); border-radius:3px; overflow:hidden;">
+                <sc-for list="{{ risks }}" as="r" hint-placeholder-count="5">
+                  <button onClick="{{ r.onPick }}" data-on="{{ r.on }}" style="padding:4px 9px; background:transparent; border:0; border-left:1px solid var(--soft); color:var(--t3); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; cursor:pointer;" style-hover="color:var(--t1)">{{ r.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:7px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">Window</div>
+              <div style="display:flex; border:1px solid var(--line); border-radius:3px; overflow:hidden;">
+                <sc-for list="{{ wins }}" as="w" hint-placeholder-count="3">
+                  <button onClick="{{ w.onPick }}" data-on="{{ w.on }}" style="padding:4px 9px; background:transparent; border:0; border-left:1px solid var(--soft); color:var(--t3); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; cursor:pointer;" style-hover="color:var(--t1)">{{ w.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:7px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">Class</div>
+              <div style="display:flex; border:1px solid var(--line); border-radius:3px; overflow:hidden;">
+                <sc-for list="{{ classes }}" as="c" hint-placeholder-count="4">
+                  <button onClick="{{ c.onPick }}" data-on="{{ c.on }}" style="padding:4px 9px; background:transparent; border:0; border-left:1px solid var(--soft); color:var(--t3); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; cursor:pointer;" style-hover="color:var(--t1)">{{ c.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3); font-variant-numeric:tabular-nums;">{{ nShown }} / {{ nTotal }} events</div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:100px 52px minmax(140px,1fr) minmax(140px,1fr) 168px 76px 86px 100px; align-items:center; height:34px; padding:0 14px; border-bottom:1px solid var(--line); background:var(--panel2);">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Severity</div>
+            <div onClick="{{ sortScore }}" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); text-align:right; cursor:pointer;" style-hover="color:var(--t1)">Score{{ arrScore }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); padding-left:14px;">Primary</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Secondary</div>
+            <div onClick="{{ sortTca }}" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); text-align:right; cursor:pointer;" style-hover="color:var(--t1)">TCA · T-minus{{ arrTca }}</div>
+            <div onClick="{{ sortMiss }}" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); text-align:right; cursor:pointer;" style-hover="color:var(--t1)">Miss km{{ arrMiss }}</div>
+            <div onClick="{{ sortRelv }}" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); text-align:right; cursor:pointer;" style-hover="color:var(--t1)">Rel V km/s{{ arrRelv }}</div>
+            <div onClick="{{ sortPc }}" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); text-align:right; cursor:pointer;" style-hover="color:var(--t1)">Pc{{ arrPc }}</div>
+          </div>
+
+          <div style="flex:1; overflow:auto;">
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="12">
+              <div onClick="{{ r.onSelect }}" data-sel="{{ r.selFlag }}" data-sev="{{ r.sev }}" style="display:grid; grid-template-columns:100px 52px minmax(140px,1fr) minmax(140px,1fr) 168px 76px 86px 100px; align-items:center; height:46px; padding:0 14px; border-bottom:1px solid var(--soft); cursor:pointer;" style-hover="background:var(--panel2)">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="width:8px; height:8px; border-radius:1px; background:var(--sev); flex:none;"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--sev);">{{ r.sev }}</div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ r.scoreFmt }}</div>
+                <div style="padding-left:14px; min-width:0;">
+                  <div style="font-size:12.5px; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.aName }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3);">{{ r.aNorad }}</div>
+                </div>
+                <div style="min-width:0;">
+                  <div style="font-size:12.5px; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.bName }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3);">{{ r.bNorad }}</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t2); font-variant-numeric:tabular-nums;">{{ r.tcaFmt }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3); font-variant-numeric:tabular-nums;">T− {{ r.tminus }}</div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ r.missFmt }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t2); text-align:right; font-variant-numeric:tabular-nums;">{{ r.relvFmt }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ r.pcFmt }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:20px; min-width:0;">
+          <div style="border:1px solid var(--line); border-radius:4px; background:var(--panel); overflow:hidden;">
+            <div style="height:36px; padding:0 14px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line);">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Regime plot — altitude × inclination</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--t3);">FLAGGED</div>
+            </div>
+            <div style="padding:12px;">
+              <svg viewBox="0 0 420 210" style="width:100%; height:auto; display:block;">
+                <g stroke="var(--grid)" stroke-width="1">
+                  <line x1="28" y1="184" x2="404" y2="184"></line>
+                  <line x1="28" y1="14" x2="28" y2="184"></line>
+                  <line x1="28" y1="140" x2="404" y2="140"></line>
+                  <line x1="28" y1="97" x2="404" y2="97"></line>
+                  <line x1="28" y1="54" x2="404" y2="54"></line>
+                  <line x1="120" y1="14" x2="120" y2="184"></line>
+                  <line x1="215" y1="14" x2="215" y2="184"></line>
+                  <line x1="310" y1="14" x2="310" y2="184"></line>
+                </g>
+                <g font-family="IBM Plex Mono, monospace" font-size="8" fill="var(--t3)">
+                  <text x="4" y="187">0</text><text x="2" y="143">325</text><text x="2" y="100">650</text><text x="2" y="57">975</text>
+                  <text x="112" y="199">30°</text><text x="207" y="199">55°</text><text x="302" y="199">80°</text><text x="392" y="199">105°</text>
+                </g>
+                <sc-for list="{{ plot }}" as="p" hint-placeholder-count="16">
+                  <circle cx="{{ p.cx }}" cy="{{ p.cy }}" r="{{ p.r }}" data-sev="{{ p.sevAttr }}" fill="var(--sev)"></circle>
+                </sc-for>
+              </svg>
+            </div>
+          </div>
+
+          <div style="border:1px solid var(--line); border-radius:4px; background:var(--panel); overflow:hidden; flex:1; display:flex; flex-direction:column;">
+            <div style="height:36px; padding:0 14px; display:flex; align-items:center; border-bottom:1px solid var(--line);">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Selected event — {{ sel.id }}</div>
+            </div>
+            <div style="padding:14px; display:flex; flex-direction:column; gap:14px;">
+              <div data-sev="{{ sel.sev }}" style="display:flex; align-items:center; gap:9px;">
+                <div style="width:9px; height:9px; border-radius:1px; background:var(--sev);"></div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.08em; color:var(--sev);">{{ sel.sev }}</div>
+                <div style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t2);">SCORE {{ sel.scoreFmt }}</div>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:9px;">
+                <div style="display:flex; justify-content:space-between; gap:12px;">
+                  <div style="font-size:12px; color:var(--t2);">{{ sel.aName }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3);">{{ sel.aNorad }}</div>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:12px;">
+                  <div style="font-size:12px; color:var(--t2);">{{ sel.bName }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3);">{{ sel.bNorad }}</div>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; padding-top:12px; border-top:1px solid var(--soft);">
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3); margin-bottom:4px;">Miss distance</div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ sel.missFmt }} <span style="font-size:10px; color:var(--t3);">km</span></div>
+                </div>
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3); margin-bottom:4px;">Relative velocity</div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ sel.relvFmt }} <span style="font-size:10px; color:var(--t3);">km/s</span></div>
+                </div>
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3); margin-bottom:4px;">Collision probability</div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ sel.pcFmt }}</div>
+                </div>
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3); margin-bottom:4px;">Oldest element set</div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ sel.maxAge }} <span style="font-size:10px; color:var(--t3);">d</span></div>
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; padding-top:4px;">
+                <button style="flex:1; padding:8px; background:var(--acc); border:1px solid var(--acc); border-radius:3px; color:#0A0E14; font-size:12px; font-weight:500; cursor:pointer;" style-hover="background:#F09A55">Open detail view</button>
+                <button style="padding:8px 13px; background:transparent; border:1px solid var(--line); border-radius:3px; color:var(--t2); font-size:12px; cursor:pointer;" style-hover="border-color:var(--t3); color:var(--t1)">Acknowledge</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="height:20px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 03 CONJUNCTION DETAIL ═══ -->
+<div data-screen-label="03 Conjunction detail" style="margin:0 0 96px;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc);">03</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3);">Conjunction detail — follows the row selected on artboard 02</div>
+  </div>
+  <div style="width:1600px; background:var(--bg); border:1px solid var(--line); border-radius:4px; overflow:hidden;">
+
+    <div style="height:52px; padding:0 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--soft);">
+      <div style="display:flex; align-items:center; gap:14px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3);">CONJUNCTIONS</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3);">/</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t1);">{{ sel.id }}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:20px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:6px; height:6px; border-radius:50%; background:var(--low);"></div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--t2);">TLE FETCH {{ fetchAge }} AGO</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t2); font-variant-numeric:tabular-nums;">{{ nowUTC }}</div>
+      </div>
+    </div>
+
+    <div style="padding:26px 24px 22px; display:flex; align-items:flex-start; justify-content:space-between; border-bottom:1px solid var(--soft);">
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div data-sev="{{ sel.sev }}" style="display:flex; align-items:center; gap:10px;">
+          <div style="width:9px; height:9px; border-radius:1px; background:var(--sev);"></div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.10em; color:var(--sev);">{{ sel.sev }}</div>
+          <div style="width:1px; height:12px; background:var(--line);"></div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.06em; color:var(--t3);">RISK SCORE {{ sel.scoreFmt }}</div>
+        </div>
+        <div style="font-size:29px; font-weight:500; letter-spacing:-0.02em; color:var(--t1);">{{ sel.aName }} <span style="color:var(--t3); font-weight:400;">×</span> {{ sel.bName }}</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t2);">{{ sel.aNorad }} · {{ sel.bNorad }} — screened against public element sets</div>
+      </div>
+      <div style="display:flex; gap:26px; align-items:flex-start;">
+        <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">Time to TCA</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:27px; color:var(--acc); font-variant-numeric:tabular-nums; letter-spacing:-0.01em;">{{ sel.tminus }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3); font-variant-numeric:tabular-nums;">{{ sel.tcaFmt }}</div>
+        </div>
+        <div style="display:flex; gap:8px; padding-top:16px;">
+          <button style="padding:8px 14px; background:transparent; border:1px solid var(--line); border-radius:3px; color:var(--t2); font-size:12px; cursor:pointer;" style-hover="border-color:var(--t3); color:var(--t1)">Export report</button>
+          <button style="padding:8px 14px; background:var(--acc); border:1px solid var(--acc); border-radius:3px; color:#0A0E14; font-size:12px; font-weight:500; cursor:pointer;" style-hover="background:#F09A55">Acknowledge event</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 452px; gap:24px; padding:24px;">
+
+      <div style="display:flex; flex-direction:column; gap:24px; min-width:0;">
+        <div style="border:1px solid var(--line); border-radius:4px; background:var(--panel); overflow:hidden;">
+          <div style="height:40px; padding:0 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line);">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Separation versus time — ±40 min about TCA</div>
+            <div style="display:flex; gap:16px; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.06em; color:var(--t3);">
+              <div style="display:flex; align-items:center; gap:6px;"><div style="width:14px; height:1px; background:var(--acc);"></div>SEPARATION</div>
+              <div style="display:flex; align-items:center; gap:6px;"><div style="width:14px; height:0; border-top:1px dashed var(--high);"></div>SCREENING THRESHOLD 1.0 km</div>
+            </div>
+          </div>
+          <div style="padding:16px 16px 10px;">
+            <svg viewBox="0 0 980 300" style="width:100%; height:auto; display:block;">
+              <g stroke="var(--grid)" stroke-width="1">
+                <sc-for list="{{ yTicks }}" as="t" hint-placeholder-count="5">
+                  <line x1="62" y1="{{ t.y }}" x2="960" y2="{{ t.y }}"></line>
+                </sc-for>
+                <line x1="62" y1="18" x2="62" y2="266"></line>
+              </g>
+              <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--t3)">
+                <sc-for list="{{ yTicks }}" as="t" hint-placeholder-count="5">
+                  <text x="52" y="{{ t.y }}" text-anchor="end" dy="3">{{ t.label }}</text>
+                </sc-for>
+                <sc-for list="{{ xTicks }}" as="t" hint-placeholder-count="5">
+                  <text x="{{ t.x }}" y="286" text-anchor="middle">{{ t.label }}</text>
+                </sc-for>
+                <text x="62" y="12" fill="var(--t3)" font-size="9" letter-spacing="1">KM</text>
+                <text x="960" y="286" text-anchor="end" font-size="9" letter-spacing="1">MINUTES FROM TCA</text>
+              </g>
+              <line x1="62" y1="{{ threshY }}" x2="960" y2="{{ threshY }}" stroke="var(--high)" stroke-width="1" stroke-dasharray="4 4"></line>
+              <path d="{{ sepPath }}" fill="none" stroke="var(--acc)" stroke-width="1.6"></path>
+              <line x1="{{ sepTcaX }}" y1="18" x2="{{ sepTcaX }}" y2="266" stroke="var(--t3)" stroke-width="1" stroke-dasharray="2 3"></line>
+              <circle cx="{{ sepTcaX }}" cy="{{ sepTcaY }}" r="3.5" fill="var(--acc)"></circle>
+              <text x="{{ sepTcaX }}" y="{{ sepTcaY }}" dx="10" dy="-8" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--t1)">TCA — {{ sel.missFmt }} km</text>
+            </svg>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:4px; overflow:hidden;">
+          <div style="background:var(--panel); padding:18px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--acc); margin-bottom:14px;">Primary object</div>
+            <div style="font-size:17px; font-weight:500; color:var(--t1); margin-bottom:3px;">{{ sel.aName }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3); margin-bottom:18px;">NORAD {{ sel.aNorad }} · {{ sel.A.intl }}</div>
+            <div style="display:flex; flex-direction:column;">
+              <div style="display:grid; grid-template-columns:130px 1fr; padding:8px 0; border-top:1px solid var(--soft);">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Type</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1);">{{ sel.A.type }}</div>
+              </div>
+              <div style="display:grid; grid-template-columns:130px 1fr; padding:8px 0; border-top:1px solid var(--soft);">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Operator</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1);">{{ sel.A.op }}</div>
+              </div>
+              <div style="display:grid; grid-template-columns:130px 1fr; padding:8px 0; border-top:1px solid var(--soft);">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Launch date</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1);">{{ sel.A.launch }}</div>
+              </div>
+              <div style="display:grid; grid-template-columns:130px 1fr; padding:8px 0; border-top:1px solid var(--soft);">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Mean altitude</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1);">{{ sel.A.alt }} km</div>
+              </div>
+              <div style="display:grid; grid-template-columns:130px 1fr; padding:8px 0; border-top:1px solid var(--soft);">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Radar cross-section</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1);">{{ sel.A.rcs }}</div>
+              </div>
+              <div style="display:grid; grid-template-columns:130px 1fr; padding:8px 0; border-top:1px solid var(--soft);">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">TLE epoch age</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1);">{{ sel.A.age }} d</div>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--panel); padding:18px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3); margin-bottom:14px;">Secondary object</div>
+            <div style="font-size:17px; font-weight:500; color:var(--t1); margin-bottom:3px;">{{ sel.bName }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3); margin-bottom:18px;">NORAD {{ sel.bNorad }} · {{ sel.B.intl }}</div>
+            <div style="display:flex; flex-direction:column;">
+              <div style="display:grid; grid-template-columns:130px 1fr; padding:8px 0; border-top:1px solid var(--soft);">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Type</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1);">{{ sel.B.type }}</div>
+              </div>
+              <div style="display:grid; grid-template-columns:130px 1fr; padding:8px 0; border-top:1px solid var(--soft);">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Operator</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1);">{{ sel.B.op }}</div>
+              </div>
+              <div style="display:grid; grid-template-columns:130px 1fr; padding:8px 0; border-top:1px solid var(--soft);">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Launch date</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1);">{{ sel.B.launch }}</div>
+              </div>
+              <div style="display:grid; grid-template-columns:130px 1fr; padding:8px 0; border-top:1px solid var(--soft);">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Mean altitude</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1);">{{ sel.B.alt }} km</div>
+              </div>
+              <div style="display:grid; grid-template-columns:130px 1fr; padding:8px 0; border-top:1px solid var(--soft);">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Radar cross-section</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1);">{{ sel.B.rcs }}</div>
+              </div>
+              <div style="display:grid; grid-template-columns:130px 1fr; padding:8px 0; border-top:1px solid var(--soft);">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">TLE epoch age</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1);">{{ sel.B.age }} d</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:24px; min-width:0;">
+        <div style="border:1px solid var(--line); border-radius:4px; background:var(--panel); overflow:hidden;">
+          <div style="height:36px; padding:0 14px; display:flex; align-items:center; border-bottom:1px solid var(--line);">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Encounter geometry</div>
+          </div>
+          <div style="padding:14px;">
+            <svg viewBox="0 0 400 230" style="width:100%; height:auto; display:block;">
+              <circle cx="200" cy="118" r="46" fill="none" stroke="var(--line)" stroke-width="1"></circle>
+              <ellipse cx="200" cy="118" rx="46" ry="14" fill="none" stroke="var(--soft)" stroke-width="1"></ellipse>
+              <ellipse cx="200" cy="118" rx="14" ry="46" fill="none" stroke="var(--soft)" stroke-width="1"></ellipse>
+              <ellipse cx="200" cy="118" rx="150" ry="52" fill="none" stroke="var(--acc)" stroke-width="1.3" transform="rotate(-18 200 118)"></ellipse>
+              <ellipse cx="200" cy="118" rx="146" ry="58" fill="none" stroke="var(--t3)" stroke-width="1.1" transform="rotate(64 200 118)"></ellipse>
+              <circle cx="303" cy="76" r="3.4" fill="var(--acc)"></circle>
+              <circle cx="296" cy="83" r="3" fill="var(--t2)"></circle>
+              <circle cx="299.5" cy="79.5" r="12" fill="none" stroke="var(--high)" stroke-width="1" stroke-dasharray="3 3"></circle>
+              <line x1="299.5" y1="91.5" x2="299.5" y2="126" stroke="var(--soft)" stroke-width="1"></line>
+              <text x="299.5" y="140" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--t2)">TCA</text>
+              <g font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--t3)">
+                <text x="14" y="24">ORBIT PLANES AT CLOSEST APPROACH</text>
+                <text x="14" y="216">PROJECTION — INERTIAL FRAME, NOT TO SCALE</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <div style="border:1px solid var(--line); border-radius:4px; background:var(--panel); overflow:hidden;">
+          <div style="height:36px; padding:0 14px; display:flex; align-items:center; border-bottom:1px solid var(--line);">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Screening result</div>
+          </div>
+          <div style="padding:4px 14px 14px;">
+            <div style="display:grid; grid-template-columns:1fr auto; padding:11px 0; border-bottom:1px solid var(--soft);">
+              <div style="font-size:12.5px; color:var(--t2);">Miss distance</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ sel.missFmt }} <span style="color:var(--t3); font-size:10px;">km</span></div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr auto; padding:11px 0; border-bottom:1px solid var(--soft);">
+              <div style="font-size:12.5px; color:var(--t2);">Relative velocity</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ sel.relvFmt }} <span style="color:var(--t3); font-size:10px;">km/s</span></div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr auto; padding:11px 0; border-bottom:1px solid var(--soft);">
+              <div style="font-size:12.5px; color:var(--t2);">Probability of collision</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ sel.pcFmt }}</div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr auto; padding:11px 0; border-bottom:1px solid var(--soft);">
+              <div style="font-size:12.5px; color:var(--t2);">Risk score</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ sel.scoreFmt }}</div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr auto; padding:11px 0;">
+              <div style="font-size:12.5px; color:var(--t2);">Oldest element set in pair</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ sel.maxAge }} <span style="color:var(--t3); font-size:10px;">d</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="border:1px solid var(--high); border-radius:4px; background:var(--panel); overflow:hidden;">
+          <div style="height:36px; padding:0 14px; display:flex; align-items:center; gap:9px; border-bottom:1px solid var(--high); background:rgba(217,122,43,0.07);">
+            <div style="width:8px; height:8px; border-radius:1px; background:var(--high);"></div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--high);">Data quality and intended use</div>
+          </div>
+          <div style="padding:16px 14px; display:flex; flex-direction:column; gap:13px;">
+            <div style="font-size:13px; line-height:1.65; color:var(--t2); text-wrap:pretty;">This result is derived from public two-line element sets propagated with SGP4. Positional accuracy is on the order of <span style="font-family:'IBM Plex Mono',monospace; color:var(--t1);">1–3 km</span> and degrades with element-set age. It is a screening product.</div>
+            <div style="font-size:13px; line-height:1.65; color:var(--t2); text-wrap:pretty;">It is <span style="color:var(--t1);">not</span> a basis for a manoeuvre decision. Before acting, request a Conjunction Data Message from the 18th Space Defense Squadron or your operator's own covariance-bearing analysis.</div>
+            <div style="display:flex; flex-direction:column; gap:7px; padding-top:11px; border-top:1px solid var(--soft);">
+              <div style="display:flex; justify-content:space-between;">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Covariance</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t2);">NOT AVAILABLE IN TLE</div>
+              </div>
+              <div style="display:flex; justify-content:space-between;">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Pc method</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t2);">FOSTER, ASSUMED 1 km σ</div>
+              </div>
+              <div style="display:flex; justify-content:space-between;">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Recomputed</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t2); font-variant-numeric:tabular-nums;">{{ fetchAge }} AGO</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 04 OBJECT CATALOGUE ═══ -->
+<div data-screen-label="04 Object catalogue" style="margin:0 0 96px;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc);">04</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3);">Object catalogue with annotated TLE drawer — search and row selection are live</div>
+  </div>
+  <div style="width:1600px; height:860px; background:var(--bg); border:1px solid var(--line); border-radius:4px; overflow:hidden; display:flex; flex-direction:column;">
+
+    <div style="height:52px; padding:0 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--soft);">
+      <div style="display:flex; align-items:center; gap:10px; width:400px; height:30px; padding:0 10px; border:1px solid var(--line); border-radius:3px; background:var(--panel);">
+        <div style="width:11px; height:11px; border:1.5px solid var(--t3); border-radius:50%;"></div>
+        <input value="{{ q }}" onChange="{{ onQ }}" placeholder="Filter by name, NORAD ID, operator or class" style="flex:1; background:transparent; border:0; outline:none; color:var(--t1); font-size:12px;">
+      </div>
+      <div style="display:flex; align-items:center; gap:18px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; color:var(--t3);">SOURCE — PUBLIC CATALOGUE · 34,182 OBJECTS · SHOWING REGISTERED SUBSET</div>
+        <button style="padding:6px 12px; background:transparent; border:1px solid var(--line); border-radius:3px; color:var(--t2); font-size:12px; cursor:pointer;" style-hover="border-color:var(--t3); color:var(--t1)">Add asset</button>
+      </div>
+    </div>
+
+    <div style="flex:1; display:grid; grid-template-columns:1fr 520px; min-height:0;">
+      <div style="display:flex; flex-direction:column; min-width:0; border-right:1px solid var(--soft);">
+        <div style="display:grid; grid-template-columns:minmax(180px,1fr) 74px 116px minmax(150px,1fr) 78px 78px 78px 86px 88px 62px; align-items:center; height:34px; padding:0 24px; border-bottom:1px solid var(--line); background:var(--panel2);">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Object</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); text-align:right;">NORAD</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); padding-left:14px;">Class</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Operator</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); text-align:right;">Apo km</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); text-align:right;">Peri km</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); text-align:right;">Incl °</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); text-align:right;">Ecc</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); text-align:right;">Period min</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); text-align:right;">Age d</div>
+        </div>
+        <div style="flex:1; overflow:auto;">
+          <sc-for list="{{ catRows }}" as="o" hint-placeholder-count="14">
+            <div onClick="{{ o.onPick }}" data-sel="{{ o.selFlag }}" style="display:grid; grid-template-columns:minmax(180px,1fr) 74px 116px minmax(150px,1fr) 78px 78px 78px 86px 88px 62px; align-items:center; height:42px; padding:0 24px; border-bottom:1px solid var(--soft); cursor:pointer;" style-hover="background:var(--panel2)">
+              <div style="font-size:12.5px; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ o.name }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t2); text-align:right; font-variant-numeric:tabular-nums;">{{ o.noradFmt }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--t3); padding-left:14px;">{{ o.type }}</div>
+              <div style="font-size:12px; color:var(--t2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ o.op }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ o.apo }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ o.peri }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ o.inclFmt }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t2); text-align:right; font-variant-numeric:tabular-nums;">{{ o.eccFmt }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ o.per }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3); text-align:right; font-variant-numeric:tabular-nums;">{{ o.ageFmt }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:var(--panel); display:flex; flex-direction:column; min-height:0;">
+        <div style="height:44px; padding:0 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line);">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Element set — {{ catNorad }}</div>
+          <div onClick="{{ closeDrawer }}" style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--t3); cursor:pointer; line-height:1;" style-hover="color:var(--t1)">×</div>
+        </div>
+        <div style="flex:1; overflow:auto; padding:20px;">
+          <div style="font-size:18px; font-weight:500; color:var(--t1); margin-bottom:3px;">{{ catObj.name }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3); margin-bottom:20px;">{{ catObj.type }} · {{ catObj.op }} · launched {{ catObj.launch }}</div>
+
+          <div style="border:1px solid var(--line); border-radius:3px; background:var(--deep); padding:12px 14px; overflow-x:auto; margin-bottom:8px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; line-height:1.9; color:var(--t2); white-space:pre;">{{ catTle1 }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; line-height:1.9; color:var(--t2); white-space:pre;">{{ catTle2 }}</div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); margin-bottom:22px;">Two-line element set, fixed-column format · generated {{ catAge }} d ago</div>
+
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--acc); margin-bottom:6px;">Field by field</div>
+          <div style="display:flex; flex-direction:column;">
+            <div style="display:grid; grid-template-columns:104px 1fr; gap:14px; padding:13px 0; border-top:1px solid var(--soft);">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ catNorad }}</div>
+              <div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); margin-bottom:3px;">Catalogue number</div><div style="font-size:12.5px; line-height:1.55; color:var(--t2);">The object's permanent identifier in the public satellite catalogue.</div></div>
+            </div>
+            <div style="display:grid; grid-template-columns:104px 1fr; gap:14px; padding:13px 0; border-top:1px solid var(--soft);">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ catIncl }}°</div>
+              <div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); margin-bottom:3px;">Inclination</div><div style="font-size:12.5px; line-height:1.55; color:var(--t2);">Tilt of the orbit plane against the equator. Above 90° the object travels retrograde.</div></div>
+            </div>
+            <div style="display:grid; grid-template-columns:104px 1fr; gap:14px; padding:13px 0; border-top:1px solid var(--soft);">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ catRaan }}°</div>
+              <div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); margin-bottom:3px;">Right ascension of ascending node</div><div style="font-size:12.5px; line-height:1.55; color:var(--t2);">Where the orbit crosses the equator going north, measured against the vernal equinox.</div></div>
+            </div>
+            <div style="display:grid; grid-template-columns:104px 1fr; gap:14px; padding:13px 0; border-top:1px solid var(--soft);">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ catEcc }}</div>
+              <div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); margin-bottom:3px;">Eccentricity</div><div style="font-size:12.5px; line-height:1.55; color:var(--t2);">How far the orbit departs from a circle. Zero is circular; this object ranges {{ catPeri }}–{{ catApo }} km.</div></div>
+            </div>
+            <div style="display:grid; grid-template-columns:104px 1fr; gap:14px; padding:13px 0; border-top:1px solid var(--soft);">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ catArgp }}°</div>
+              <div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); margin-bottom:3px;">Argument of perigee</div><div style="font-size:12.5px; line-height:1.55; color:var(--t2);">Angle from the ascending node to the lowest point of the orbit.</div></div>
+            </div>
+            <div style="display:grid; grid-template-columns:104px 1fr; gap:14px; padding:13px 0; border-top:1px solid var(--soft);">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ catMa }}°</div>
+              <div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); margin-bottom:3px;">Mean anomaly</div><div style="font-size:12.5px; line-height:1.55; color:var(--t2);">Position along the orbit at the epoch instant, expressed as an averaged angle.</div></div>
+            </div>
+            <div style="display:grid; grid-template-columns:104px 1fr; gap:14px; padding:13px 0; border-top:1px solid var(--soft);">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); text-align:right; font-variant-numeric:tabular-nums;">{{ catMm }}</div>
+              <div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); margin-bottom:3px;">Mean motion — revolutions / day</div><div style="font-size:12.5px; line-height:1.55; color:var(--t2);">Orbits completed per day, equivalent to a period of {{ catPer }} minutes.</div></div>
+            </div>
+            <div style="display:grid; grid-template-columns:104px 1fr; gap:14px; padding:13px 0; border-top:1px solid var(--soft); border-bottom:1px solid var(--soft);">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--high); text-align:right; font-variant-numeric:tabular-nums;">{{ catAge }} d</div>
+              <div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); margin-bottom:3px;">Epoch age</div><div style="font-size:12.5px; line-height:1.55; color:var(--t2);">Time since the state vector was fitted. Propagation error grows roughly linearly with this figure.</div></div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:14px 20px; border-top:1px solid var(--line); display:flex; gap:8px;">
+          <button style="flex:1; padding:8px; background:var(--acc); border:1px solid var(--acc); border-radius:3px; color:#0A0E14; font-size:12px; font-weight:500; cursor:pointer;" style-hover="background:#F09A55">Screen this object</button>
+          <button style="padding:8px 13px; background:transparent; border:1px solid var(--line); border-radius:3px; color:var(--t2); font-size:12px; cursor:pointer;" style-hover="border-color:var(--t3); color:var(--t1)">Copy TLE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 05 3D ORBITAL VIEWER ═══ -->
+<div data-screen-label="05 3D orbital viewer" style="margin:0 0 96px;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc);">05</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3);">3D orbital viewer — real element sets propagated with SGP4 · drag to rotate, scroll to zoom</div>
+  </div>
+  <div style="width:1600px; height:900px; background:var(--deep); border:1px solid var(--line); border-radius:4px; overflow:hidden; position:relative;">
+    <div ref="{{ globeRef }}" style="position:absolute; inset:0;"></div>
+
+    <div style="position:absolute; left:24px; top:24px; display:flex; flex-direction:column; gap:6px;">
+      <div style="font-size:13px; font-weight:600; letter-spacing:0.06em; color:var(--t1);">KESSLER</div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Orbital viewer — inertial frame</div>
+    </div>
+
+    <div style="position:absolute; right:24px; top:24px; width:296px; background:rgba(19,26,36,0.90); border:1px solid var(--line); border-radius:4px; backdrop-filter:blur(3px); overflow:hidden;">
+      <div style="height:34px; padding:0 13px; display:flex; align-items:center; border-bottom:1px solid var(--line);">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">Layers</div>
+      </div>
+      <div style="padding:11px 13px; display:flex; flex-direction:column; gap:3px;">
+        <sc-for list="{{ layerToggles }}" as="l" hint-placeholder-count="3">
+          <div onClick="{{ l.onToggle }}" style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; cursor:pointer;">
+            <div style="font-size:12.5px; color:var(--t2);">{{ l.label }}</div>
+            <div data-on="{{ l.on }}" style="width:26px; height:14px; border:1px solid var(--line); border-radius:2px; position:relative; background:var(--panel);">
+              <div data-knob="1" style="position:absolute; top:2px; left:2px; width:8px; height:8px; background:var(--t3);"></div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:34px; padding:0 13px; display:flex; align-items:center; border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">Tracked objects</div>
+      </div>
+      <div style="max-height:262px; overflow:auto;">
+        <sc-for list="{{ vObjs }}" as="o" hint-placeholder-count="8">
+          <div onClick="{{ o.onPick }}" data-sel="{{ o.on }}" style="padding:9px 13px; border-bottom:1px solid var(--soft); cursor:pointer; display:flex; align-items:center; justify-content:space-between;" style-hover="background:var(--panel2)">
+            <div style="min-width:0;">
+              <div style="font-size:12px; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ o.name }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.06em; color:var(--t3);">{{ o.type }}</div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t2); font-variant-numeric:tabular-nums;">{{ o.noradFmt }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="position:absolute; left:24px; bottom:24px; width:308px; background:rgba(19,26,36,0.90); border:1px solid var(--line); border-radius:4px; backdrop-filter:blur(3px); overflow:hidden;">
+      <div style="height:34px; padding:0 13px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line);">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--acc);">Selected</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3); font-variant-numeric:tabular-nums;">{{ vNorad }}</div>
+      </div>
+      <div style="padding:13px;">
+        <div style="font-size:15px; font-weight:500; color:var(--t1); margin-bottom:2px;">{{ vName }}</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.08em; color:var(--t3); margin-bottom:14px;">{{ vType }}</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); margin-bottom:3px;">Alt</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ vAlt }}<span style="font-size:9px; color:var(--t3);"> km</span></div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); margin-bottom:3px;">Incl</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ vIncl }}<span style="font-size:9px; color:var(--t3);">°</span></div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3); margin-bottom:3px;">Period</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ vPer }}<span style="font-size:9px; color:var(--t3);"> min</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:absolute; left:50%; transform:translateX(-50%); bottom:24px; width:640px; background:rgba(19,26,36,0.90); border:1px solid var(--line); border-radius:4px; backdrop-filter:blur(3px); padding:13px 16px; display:flex; align-items:center; gap:16px;">
+      <button onClick="{{ togglePlay }}" style="width:30px; height:30px; flex:none; background:transparent; border:1px solid var(--line); border-radius:3px; color:var(--acc); font-size:11px; cursor:pointer;" style-hover="border-color:var(--acc)">{{ playLabel }}</button>
+      <div style="flex:1; display:flex; flex-direction:column; gap:7px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ simUTC }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Propagated · {{ rateLabel }}</div>
+        </div>
+        <div style="height:3px; background:var(--panel3); border-radius:2px; position:relative;">
+          <div style="position:absolute; left:0; top:0; bottom:0; width:38%; background:var(--acc); border-radius:2px;"></div>
+          <div style="position:absolute; left:38%; top:-3px; width:2px; height:9px; background:var(--acc);"></div>
+        </div>
+      </div>
+      <div style="display:flex; border:1px solid var(--line); border-radius:3px; overflow:hidden; flex:none;">
+        <sc-for list="{{ rates }}" as="r" hint-placeholder-count="3">
+          <button onClick="{{ r.onPick }}" data-on="{{ r.on }}" style="padding:6px 11px; background:transparent; border:0; border-left:1px solid var(--soft); color:var(--t3); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; cursor:pointer;" style-hover="color:var(--t1)">{{ r.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex; gap:56px; align-items:flex-start;">
+
+<!-- ═══ 06 COMPONENT LIBRARY ═══ -->
+<div data-screen-label="06 Component library">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc);">06</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3);">Component library and specimen sheet</div>
+  </div>
+  <div style="width:1080px; background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:34px;">
+
+    <div style="display:flex; flex-direction:column; gap:15px; margin-bottom:44px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc);">Colour</div>
+      <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:3px; overflow:hidden;">
+        <div style="background:var(--panel);"><div style="height:56px; background:#0A0E14;"></div><div style="padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t1);">#0A0E14</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; color:var(--t3); margin-top:2px;">GROUND</div></div></div>
+        <div style="background:var(--panel);"><div style="height:56px; background:#131A24;"></div><div style="padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t1);">#131A24</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; color:var(--t3); margin-top:2px;">PANEL</div></div></div>
+        <div style="background:var(--panel);"><div style="height:56px; background:#18212D;"></div><div style="padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t1);">#18212D</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; color:var(--t3); margin-top:2px;">PANEL RAISED</div></div></div>
+        <div style="background:var(--panel);"><div style="height:56px; background:#232E3C;"></div><div style="padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t1);">#232E3C</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; color:var(--t3); margin-top:2px;">HAIRLINE</div></div></div>
+        <div style="background:var(--panel);"><div style="height:56px; background:#E4EAF0;"></div><div style="padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t1);">#E4EAF0</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; color:var(--t3); margin-top:2px;">TEXT PRIMARY</div></div></div>
+        <div style="background:var(--panel);"><div style="height:56px; background:#E8853A;"></div><div style="padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t1);">#E8853A</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; color:var(--acc); margin-top:2px;">ACCENT</div></div></div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:3px; overflow:hidden;">
+        <div style="background:var(--panel);"><div style="height:44px; background:#C0453A;"></div><div style="padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t1);">#C0453A</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; color:var(--t3); margin-top:2px;">CRITICAL — Pc ≥ 1e-3</div></div></div>
+        <div style="background:var(--panel);"><div style="height:44px; background:#D97A2B;"></div><div style="padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t1);">#D97A2B</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; color:var(--t3); margin-top:2px;">HIGH — Pc ≥ 1e-4</div></div></div>
+        <div style="background:var(--panel);"><div style="height:44px; background:#C4A234;"></div><div style="padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t1);">#C4A234</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; color:var(--t3); margin-top:2px;">MEDIUM — Pc ≥ 1e-5</div></div></div>
+        <div style="background:var(--panel);"><div style="height:44px; background:#4A8C6B;"></div><div style="padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t1);">#4A8C6B</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; color:var(--t3); margin-top:2px;">LOW — Pc ≥ 1e-7</div></div></div>
+        <div style="background:var(--panel);"><div style="height:44px; background:#4A5B6E;"></div><div style="padding:9px 10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t1);">#4A5B6E</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.08em; color:var(--t3); margin-top:2px;">NOMINAL</div></div></div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:15px; margin-bottom:44px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc);">Type — five sizes, two families</div>
+      <div style="display:grid; grid-template-columns:150px 1fr; gap:22px 26px; align-items:baseline;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Display 60/600</div>
+        <div style="font-size:44px; font-weight:600; letter-spacing:-0.035em; color:var(--t1); line-height:1;">Know which close approach matters</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Title 19/500</div>
+        <div style="font-size:19px; font-weight:500; letter-spacing:-0.01em; color:var(--t1);">Conjunction screening</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Body 13/1.65</div>
+        <div style="font-size:13px; line-height:1.65; color:var(--t2); max-width:620px;">Positional accuracy is on the order of one to three kilometres and degrades with element-set age.</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Data 13 mono</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--t1); font-variant-numeric:tabular-nums;">0.412 km · 13.842 km/s · 4.70×10⁻⁴ · 2026-08-21 14:32:07Z</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Label 10 mono</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Miss distance · relative velocity · probability of collision</div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:15px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc);">Components</div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:26px;">
+        <div style="display:flex; flex-direction:column; gap:11px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Buttons</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button style="padding:8px 15px; background:var(--acc); border:1px solid var(--acc); border-radius:3px; color:#0A0E14; font-size:12px; font-weight:500; cursor:pointer;" style-hover="background:#F09A55">Primary</button>
+            <button style="padding:8px 15px; background:transparent; border:1px solid var(--line); border-radius:3px; color:var(--t1); font-size:12px; cursor:pointer;" style-hover="border-color:var(--t3)">Secondary</button>
+            <button style="padding:8px 15px; background:transparent; border:1px solid transparent; border-radius:3px; color:var(--t2); font-size:12px; cursor:pointer;" style-hover="background:var(--panel2); color:var(--t1)">Ghost</button>
+            <button style="padding:8px 15px; background:transparent; border:1px solid var(--line); border-radius:3px; color:var(--t3); font-size:12px; opacity:0.45;">Disabled</button>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:11px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Severity chips</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <div data-sev="CRITICAL" style="display:flex; align-items:center; gap:7px; padding:5px 9px; border:1px solid var(--line); border-radius:3px; background:var(--panel);"><div style="width:8px; height:8px; border-radius:1px; background:var(--sev);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--sev);">CRITICAL</div></div>
+            <div data-sev="HIGH" style="display:flex; align-items:center; gap:7px; padding:5px 9px; border:1px solid var(--line); border-radius:3px; background:var(--panel);"><div style="width:8px; height:8px; border-radius:1px; background:var(--sev);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--sev);">HIGH</div></div>
+            <div data-sev="MEDIUM" style="display:flex; align-items:center; gap:7px; padding:5px 9px; border:1px solid var(--line); border-radius:3px; background:var(--panel);"><div style="width:8px; height:8px; border-radius:1px; background:var(--sev);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--sev);">MEDIUM</div></div>
+            <div data-sev="LOW" style="display:flex; align-items:center; gap:7px; padding:5px 9px; border:1px solid var(--line); border-radius:3px; background:var(--panel);"><div style="width:8px; height:8px; border-radius:1px; background:var(--sev);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--sev);">LOW</div></div>
+            <div data-sev="NOMINAL" style="display:flex; align-items:center; gap:7px; padding:5px 9px; border:1px solid var(--line); border-radius:3px; background:var(--panel);"><div style="width:8px; height:8px; border-radius:1px; background:var(--sev);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--sev);">NOMINAL</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:26px; margin-top:16px;">
+        <div style="display:flex; flex-direction:column; gap:11px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Search field · time-range selector</div>
+          <div style="display:flex; align-items:center; gap:8px; height:30px; padding:0 10px; border:1px solid var(--line); border-radius:3px; background:var(--panel);">
+            <div style="width:11px; height:11px; border:1.5px solid var(--t3); border-radius:50%;"></div>
+            <input placeholder="Search objects, NORAD ID" style="flex:1; background:transparent; border:0; outline:none; color:var(--t1); font-size:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3); border:1px solid var(--line); border-radius:2px; padding:1px 5px;">/</div>
+          </div>
+          <div style="display:flex; border:1px solid var(--line); border-radius:3px; overflow:hidden; width:max-content;">
+            <div style="padding:6px 12px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--t3);">24 H</div>
+            <div style="padding:6px 12px; border-left:1px solid var(--soft); background:var(--panel3); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--t1);">72 H</div>
+            <div style="padding:6px 12px; border-left:1px solid var(--soft); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--t3);">7 D</div>
+          </div>
+          <div style="display:flex; gap:22px; border-bottom:1px solid var(--line); margin-top:6px;">
+            <div style="padding:0 0 9px; font-size:12.5px; color:var(--t1); box-shadow:inset 0 -1px 0 0 var(--acc);">Geometry</div>
+            <div style="padding:0 0 9px; font-size:12.5px; color:var(--t3);">Ephemeris</div>
+            <div style="padding:0 0 9px; font-size:12.5px; color:var(--t3);">History</div>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:11px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Metric tile · data-freshness indicator</div>
+          <div style="border:1px solid var(--line); border-radius:3px; background:var(--panel); padding:14px 15px; display:flex; flex-direction:column; gap:8px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">High risk events</div>
+            <div style="display:flex; align-items:baseline; gap:9px;">
+              <div data-sev="HIGH" style="font-family:'IBM Plex Mono',monospace; font-size:25px; color:var(--sev); font-variant-numeric:tabular-nums;">{{ nHighRisk }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3);">of {{ nTotal }}</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:16px; align-items:center;">
+            <div style="display:flex; align-items:center; gap:8px; padding:5px 10px; border:1px solid var(--line); border-radius:3px; background:var(--panel);">
+              <div style="width:6px; height:6px; border-radius:50%; background:var(--low); animation:kblink 2.6s ease-in-out infinite;"></div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--t2);">TLE FETCH 2 MIN AGO</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; padding:5px 10px; border:1px solid var(--line); border-radius:3px; background:var(--panel);">
+              <div style="width:6px; height:6px; border-radius:50%; background:var(--high);"></div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--t2);">TLE FETCH 4 H AGO — STALE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:26px; margin-top:16px;">
+        <div style="display:flex; flex-direction:column; gap:11px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Loading skeleton</div>
+          <div style="border:1px solid var(--line); border-radius:3px; background:var(--panel); overflow:hidden;">
+            <div style="display:grid; grid-template-columns:100px 50px 1fr 90px; gap:12px; align-items:center; height:40px; padding:0 13px; border-bottom:1px solid var(--soft);">
+              <div style="height:9px; background:var(--panel3); animation:kskel 1.6s ease-in-out infinite;"></div>
+              <div style="height:9px; background:var(--panel3); animation:kskel 1.6s ease-in-out 0.1s infinite;"></div>
+              <div style="height:9px; background:var(--panel3); animation:kskel 1.6s ease-in-out 0.2s infinite;"></div>
+              <div style="height:9px; background:var(--panel3); animation:kskel 1.6s ease-in-out 0.3s infinite;"></div>
+            </div>
+            <div style="display:grid; grid-template-columns:100px 50px 1fr 90px; gap:12px; align-items:center; height:40px; padding:0 13px; border-bottom:1px solid var(--soft);">
+              <div style="height:9px; background:var(--panel3); animation:kskel 1.6s ease-in-out 0.15s infinite;"></div>
+              <div style="height:9px; background:var(--panel3); animation:kskel 1.6s ease-in-out 0.25s infinite;"></div>
+              <div style="height:9px; background:var(--panel3); animation:kskel 1.6s ease-in-out 0.35s infinite;"></div>
+              <div style="height:9px; background:var(--panel3); animation:kskel 1.6s ease-in-out 0.45s infinite;"></div>
+            </div>
+            <div style="display:grid; grid-template-columns:100px 50px 1fr 90px; gap:12px; align-items:center; height:40px; padding:0 13px;">
+              <div style="height:9px; background:var(--panel3); animation:kskel 1.6s ease-in-out 0.3s infinite;"></div>
+              <div style="height:9px; background:var(--panel3); animation:kskel 1.6s ease-in-out 0.4s infinite;"></div>
+              <div style="height:9px; background:var(--panel3); animation:kskel 1.6s ease-in-out 0.5s infinite;"></div>
+              <div style="height:9px; background:var(--panel3); animation:kskel 1.6s ease-in-out 0.6s infinite;"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:11px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3);">Empty state</div>
+          <div style="border:1px solid var(--line); border-radius:3px; background:var(--panel); padding:32px 24px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center;">
+            <div style="width:26px; height:26px; border:1px solid var(--line); border-radius:50%; margin-bottom:4px;"></div>
+            <div style="font-size:13px; color:var(--t1);">No conjunctions above threshold</div>
+            <div style="font-size:12.5px; line-height:1.6; color:var(--t2); max-width:300px; text-wrap:pretty;">Nothing in the next 72 hours crosses your screening thresholds. Widen the window or lower the risk floor to see more.</div>
+            <button style="margin-top:8px; padding:7px 13px; background:transparent; border:1px solid var(--line); border-radius:3px; color:var(--t2); font-size:12px; cursor:pointer;" style-hover="border-color:var(--t3); color:var(--t1)">Adjust thresholds</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 07 MOBILE DASHBOARD ═══ -->
+<div data-screen-label="07 Mobile dashboard">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:var(--acc);">07</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3);">Mobile — 390</div>
+  </div>
+  <div style="width:390px; height:844px; background:var(--bg); border:1px solid var(--line); border-radius:4px; overflow:hidden; display:flex; flex-direction:column;">
+    <div style="height:44px; padding:0 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--soft);">
+      <div style="font-size:13px; font-weight:600; letter-spacing:0.06em; color:var(--t1);">KESSLER</div>
+      <div style="display:flex; align-items:center; gap:7px;">
+        <div style="width:5px; height:5px; border-radius:50%; background:var(--low); animation:kblink 2.6s ease-in-out infinite;"></div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.06em; color:var(--t2);">2 MIN</div>
+      </div>
+    </div>
+
+    <div style="padding:18px 16px 0;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3); margin-bottom:7px;">Next TCA</div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:33px; color:var(--acc); font-variant-numeric:tabular-nums; letter-spacing:-0.02em; line-height:1;">{{ countdown }}</div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3); margin-top:7px;">{{ countdownId }} · {{ sel.missFmt }} km</div>
+    </div>
+
+    <div style="padding:18px 16px 0; display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line);">
+      <div style="background:var(--panel); padding:12px 13px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3); margin-bottom:6px;">High risk</div>
+        <div data-sev="HIGH" style="font-family:'IBM Plex Mono',monospace; font-size:21px; color:var(--sev); font-variant-numeric:tabular-nums;">{{ nHighRisk }}</div>
+      </div>
+      <div style="background:var(--panel); padding:12px 13px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.10em; text-transform:uppercase; color:var(--t3); margin-bottom:6px;">Tracked</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:21px; color:var(--t1); font-variant-numeric:tabular-nums;">34,182</div>
+      </div>
+    </div>
+
+    <div style="padding:20px 16px 10px; display:flex; align-items:center; justify-content:space-between;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--t3);">Ranked events</div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--t3);">{{ nShown }} SHOWN</div>
+    </div>
+
+    <div style="flex:1; overflow:auto; border-top:1px solid var(--soft);">
+      <sc-for list="{{ mrows }}" as="r" hint-placeholder-count="6">
+        <div onClick="{{ r.onSelect }}" data-sel="{{ r.selFlag }}" data-sev="{{ r.sev }}" style="padding:13px 16px; border-bottom:1px solid var(--soft);">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:7px;">
+              <div style="width:7px; height:7px; border-radius:1px; background:var(--sev);"></div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.06em; color:var(--sev);">{{ r.sev }}</div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t2); font-variant-numeric:tabular-nums;">{{ r.tminus }}</div>
+          </div>
+          <div style="font-size:13px; color:var(--t1); margin-bottom:2px;">{{ r.aName }}</div>
+          <div style="font-size:13px; color:var(--t2); margin-bottom:9px;">{{ r.bName }}</div>
+          <div style="display:flex; gap:18px;">
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Miss</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ r.missFmt }} km</div>
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Rel V</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t2); font-variant-numeric:tabular-nums;">{{ r.relvFmt }}</div>
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--t3);">Pc</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--t1); font-variant-numeric:tabular-nums;">{{ r.pcFmt }}</div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="height:56px; border-top:1px solid var(--line); display:grid; grid-template-columns:repeat(4,1fr);">
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; box-shadow:inset 0 1px 0 0 var(--acc);">
+        <div style="width:13px; height:13px; border:1px solid var(--acc); border-radius:1px;"></div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:0.06em; color:var(--acc);">EVENTS</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+        <div style="width:13px; height:13px; border:1px solid var(--t3); border-radius:50%;"></div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:0.06em; color:var(--t3);">VIEWER</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+        <div style="width:13px; height:13px; border:1px solid var(--t3); border-radius:1px;"></div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:0.06em; color:var(--t3);">CATALOG</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">
+        <div style="width:13px; height:13px; border:1px solid var(--t3); border-radius:1px;"></div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:0.06em; color:var(--t3);">SETTINGS</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#E8853A&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#E8853A&quot;,&quot;#4A8C6B&quot;,&quot;#7A9AC4&quot;,&quot;#C4A234&quot;],&quot;section&quot;:&quot;Theme&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;standard&quot;,&quot;options&quot;:[&quot;compact&quot;,&quot;standard&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tables&quot;},&quot;showDebrisSample&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;3D viewer&quot;}}">
+class Component extends DCLogic {
+  state = {
+    theme: 'dark', sortKey: 'score', sortDir: -1,
+    minRisk: 'ALL', win: '72', cls: 'ALL', selId: 'CJ-4417',
+    q: '', catSel: 25544, drawer: true,
+    playing: true, rate: 60, layers: { orbits: true, debris: true, labels: true },
+    vSel: 25544, tab: 'GEOMETRY', now: Date.now(), simT: Date.now(), ready: false
+  };
+
+  // ── static catalogue ─────────────────────────────────────────
+  OBJ = [
+    { norad: 25544, name: 'ISS (ZARYA)',            type: 'PAYLOAD',     op: 'NASA / ROSCOSMOS',   launch: '1998-11-20', intl: '98067A', alt: 421, ecc: 0.0006703, incl: 51.6416, raan: 247.4627, argp: 130.5360, ma: 325.0288, age: 1.8, rcs: 'LARGE' },
+    { norad: 45657, name: 'STARLINK-1436',          type: 'PAYLOAD',     op: 'SPACEX',             launch: '2020-04-22', intl: '20025BE', alt: 550, ecc: 0.0001432, incl: 53.0538, raan: 118.2274, argp: 88.4102, ma: 271.7318, age: 0.6, rcs: 'MEDIUM' },
+    { norad: 34454, name: 'COSMOS 2251 DEB',        type: 'DEBRIS',      op: 'CIS (DERELICT)',     launch: '1993-06-16', intl: '93036SX', alt: 781, ecc: 0.0043117, incl: 74.0382, raan: 12.9046, argp: 214.7729, ma: 145.1183, age: 4.3, rcs: 'SMALL' },
+    { norad: 30793, name: 'FENGYUN 1C DEB',         type: 'DEBRIS',      op: 'PRC (DERELICT)',     launch: '1999-05-10', intl: '99025DKX', alt: 862, ecc: 0.0169402, incl: 98.7143, raan: 301.5528, argp: 42.1907, ma: 318.6644, age: 6.1, rcs: 'SMALL' },
+    { norad: 42063, name: 'SENTINEL-2B',            type: 'PAYLOAD',     op: 'ESA / COPERNICUS',   launch: '2017-03-07', intl: '17013A', alt: 786, ecc: 0.0001098, incl: 98.5674, raan: 214.3391, argp: 91.2205, ma: 268.9042, age: 1.1, rcs: 'LARGE' },
+    { norad: 33772, name: 'IRIDIUM 33 DEB',         type: 'DEBRIS',      op: 'US (DERELICT)',      launch: '1997-09-14', intl: '97051EJ', alt: 779, ecc: 0.0055214, incl: 86.4021, raan: 158.8815, argp: 12.4470, ma: 348.0091, age: 5.7, rcs: 'SMALL' },
+    { norad: 38078, name: 'ATLAS 5 CENTAUR R/B',    type: 'ROCKET BODY', op: 'US (SPENT STAGE)',   launch: '2012-02-24', intl: '12009B', alt: 1002, ecc: 0.0201884, incl: 55.0113, raan: 74.6602, argp: 178.3325, ma: 182.7714, age: 3.4, rcs: 'LARGE' },
+    { norad: 25994, name: 'TERRA',                  type: 'PAYLOAD',     op: 'NASA',               launch: '1999-12-18', intl: '99068A', alt: 705, ecc: 0.0001307, incl: 98.2007, raan: 189.4412, argp: 105.6618, ma: 254.4805, age: 2.2, rcs: 'LARGE' },
+    { norad: 33591, name: 'NOAA 19',                type: 'PAYLOAD',     op: 'NOAA',               launch: '2009-02-06', intl: '09005A', alt: 871, ecc: 0.0013802, incl: 99.1875, raan: 262.0084, argp: 22.8113, ma: 337.3956, age: 1.4, rcs: 'LARGE' },
+    { norad: 23405, name: 'SL-16 R/B',              type: 'ROCKET BODY', op: 'CIS (SPENT STAGE)',  launch: '1994-11-24', intl: '94077B', alt: 846, ecc: 0.0014455, incl: 71.0069, raan: 44.3382, argp: 197.7724, ma: 162.2681, age: 4.9, rcs: 'LARGE' },
+    { norad: 52117, name: 'CZ-6A DEB',              type: 'DEBRIS',      op: 'PRC (DERELICT)',     launch: '2022-03-29', intl: '22033AK', alt: 812, ecc: 0.0106713, incl: 98.9142, raan: 331.0067, argp: 61.8802, ma: 298.3390, age: 3.0, rcs: 'SMALL' },
+    { norad: 48227, name: 'ONEWEB-0298',            type: 'PAYLOAD',     op: 'ONEWEB',             launch: '2021-04-25', intl: '21036N', alt: 1198, ecc: 0.0002205, incl: 87.8871, raan: 96.1140, argp: 79.5528, ma: 280.5602, age: 0.9, rcs: 'MEDIUM' },
+    { norad: 47953, name: 'UNISAT-7',               type: 'PAYLOAD',     op: 'GAUSS SRL',          launch: '2021-03-22', intl: '21022AS', alt: 537, ecc: 0.0011882, incl: 97.5104, raan: 148.7726, argp: 133.4418, ma: 226.8005, age: 2.7, rcs: 'SMALL' },
+    { norad: 43013, name: 'NOAA 20 (JPSS-1)',       type: 'PAYLOAD',     op: 'NOAA / NASA',        launch: '2017-11-18', intl: '17073A', alt: 824, ecc: 0.0001204, incl: 98.7302, raan: 205.9938, argp: 96.0027, ma: 264.1284, age: 1.2, rcs: 'LARGE' },
+    { norad: 39452, name: 'SWARM A',                type: 'PAYLOAD',     op: 'ESA',                launch: '2013-11-22', intl: '13067B', alt: 438, ecc: 0.0009017, incl: 87.3541, raan: 62.4418, argp: 118.7203, ma: 241.5510, age: 2.0, rcs: 'MEDIUM' },
+    { norad: 8063,  name: 'DELTA 1 R/B',            type: 'ROCKET BODY', op: 'US (SPENT STAGE)',   launch: '1975-06-12', intl: '75052B', alt: 903, ecc: 0.0093118, incl: 99.9016, raan: 27.7724, argp: 240.1108, ma: 119.4482, age: 7.8, rcs: 'LARGE' }
+  ];
+
+  CJ = [
+    { id: 'CJ-4417', a: 25544, b: 34454, tcaMin: 214,  miss: 0.412, relv: 13.842, pc: 4.7e-4 },
+    { id: 'CJ-4392', a: 45657, b: 30793, tcaMin: 96,   miss: 0.187, relv: 14.207, pc: 1.9e-3 },
+    { id: 'CJ-4388', a: 42063, b: 33772, tcaMin: 341,  miss: 0.664, relv: 12.115, pc: 8.2e-5 },
+    { id: 'CJ-4371', a: 25994, b: 52117, tcaMin: 512,  miss: 1.203, relv: 11.884, pc: 2.4e-5 },
+    { id: 'CJ-4366', a: 33591, b: 8063,  tcaMin: 688,  miss: 0.938, relv: 13.006, pc: 5.1e-5 },
+    { id: 'CJ-4359', a: 39452, b: 30793, tcaMin: 802,  miss: 2.417, relv: 14.771, pc: 9.6e-6 },
+    { id: 'CJ-4344', a: 48227, b: 23405, tcaMin: 1094, miss: 3.882, relv: 9.442,  pc: 3.1e-6 },
+    { id: 'CJ-4331', a: 47953, b: 33772, tcaMin: 1210, miss: 1.744, relv: 13.318, pc: 1.7e-5 },
+    { id: 'CJ-4327', a: 43013, b: 52117, tcaMin: 1466, miss: 0.571, relv: 12.664, pc: 1.1e-4 },
+    { id: 'CJ-4318', a: 38078, b: 34454, tcaMin: 1702, miss: 5.106, relv: 10.228, pc: 8.8e-7 },
+    { id: 'CJ-4302', a: 45657, b: 47953, tcaMin: 1990, miss: 4.337, relv: 8.914,  pc: 1.4e-6 },
+    { id: 'CJ-4295', a: 42063, b: 30793, tcaMin: 2288, miss: 0.294, relv: 14.502, pc: 6.3e-4 },
+    { id: 'CJ-4281', a: 25544, b: 33772, tcaMin: 2604, miss: 6.771, relv: 13.559, pc: 4.2e-7 },
+    { id: 'CJ-4270', a: 23405, b: 8063,  tcaMin: 2910, miss: 8.114, relv: 7.226,  pc: 9.1e-8 },
+    { id: 'CJ-4263', a: 25994, b: 33591, tcaMin: 3188, miss: 3.006, relv: 6.881,  pc: 2.2e-6 },
+    { id: 'CJ-4251', a: 39452, b: 34454, tcaMin: 3502, miss: 9.442, relv: 12.907, pc: 5.4e-8 }
+  ];
+
+  // ── helpers ──────────────────────────────────────────────────
+  mm(alt) { const a = 6378.137 + alt; return 86400 / (2 * Math.PI * Math.sqrt(a * a * a / 398600.4418)); }
+  sev(pc) { return pc >= 1e-3 ? 'CRITICAL' : pc >= 1e-4 ? 'HIGH' : pc >= 1e-5 ? 'MEDIUM' : pc >= 1e-7 ? 'LOW' : 'NOMINAL'; }
+  score(pc) { const v = (Math.log10(pc) + 9) / 6.5; return Math.max(0.02, Math.min(0.99, v)); }
+  cs(l) { let s = 0; for (const c of l) { if (c >= '0' && c <= '9') s += +c; else if (c === '-') s += 1; } return s % 10; }
+  byId(n) { return this.OBJ.find(o => o.norad === n) || this.OBJ[0]; }
+
+  tle(o) {
+    const now = new Date(Date.now() - o.age * 86400000);
+    const yr = String(now.getUTCFullYear() % 100).padStart(2, '0');
+    const doy = Math.floor((now - Date.UTC(now.getUTCFullYear(), 0, 0)) / 86400000);
+    const frac = (now.getUTCHours() * 3600 + now.getUTCMinutes() * 60 + now.getUTCSeconds()) / 86400;
+    const epoch = yr + (doy + frac).toFixed(8).padStart(12, '0');
+    const l1a = '1 ' + String(o.norad).padStart(5, '0') + 'U ' + o.intl.padEnd(8, ' ') + ' ' + epoch +
+      '  .00002182  00000-0  ' + '12345-4' .padStart(8, ' ') + ' 0  999';
+    const mmv = this.mm(o.alt);
+    const l2a = '2 ' + String(o.norad).padStart(5, '0') + ' ' + o.incl.toFixed(4).padStart(8, ' ') + ' ' +
+      o.raan.toFixed(4).padStart(8, ' ') + ' ' + Math.round(o.ecc * 1e7).toString().padStart(7, '0') + ' ' +
+      o.argp.toFixed(4).padStart(8, ' ') + ' ' + o.ma.toFixed(4).padStart(8, ' ') + ' ' +
+      mmv.toFixed(8).padStart(11, ' ') + String(20000 + (o.norad % 9000)).padStart(5, ' ');
+    return [l1a + this.cs(l1a), l2a + this.cs(l2a)];
+  }
+
+  fmtUTC(d) {
+    const p = n => String(n).padStart(2, '0');
+    return d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + ' ' +
+      p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds()) + 'Z';
+  }
+  fmtDur(ms) {
+    if (ms < 0) return 'PASSED';
+    const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600),
+      m = Math.floor(s % 3600 / 60), sec = s % 60, p = n => String(n).padStart(2, '0');
+    return (d > 0 ? d + 'd ' : '') + p(h) + ':' + p(m) + ':' + p(sec);
+  }
+  fmtPc(v) {
+    const e = Math.floor(Math.log10(v)), m = v / Math.pow(10, e);
+    return m.toFixed(2) + '\u00D7' + '10' + this.sup(e);
+  }
+  sup(n) {
+    const map = { '-': '\u207B', 0: '\u2070', 1: '\u00B9', 2: '\u00B2', 3: '\u00B3', 4: '\u2074', 5: '\u2075', 6: '\u2076', 7: '\u2077', 8: '\u2078', 9: '\u2079' };
+    return String(n).split('').map(c => map[c]).join('');
+  }
+
+  componentDidMount() {
+    this.t0 = Date.now();
+    this.tick = setInterval(() => this.setState({ now: Date.now() }), 1000);
+    this.drawHero();
+    const load = (src) => new Promise(res => {
+      const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = res;
+      document.head.appendChild(s);
+    });
+    load('https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js')
+      .then(() => load('https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js'))
+      .then(() => { this.setState({ ready: true }); this.initGlobe(); });
+  }
+  componentWillUnmount() { clearInterval(this.tick); cancelAnimationFrame(this.raf); cancelAnimationFrame(this.raf2); }
+
+  // ── hero canvas: thin wireframe earth + orbit arcs ───────────
+  drawHero() {
+    const c = this.heroC; if (!c) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const fit = () => { c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr; };
+    fit();
+    const cs = getComputedStyle(document.documentElement);
+    let t = 0;
+    const orbits = this.OBJ.map((o, i) => ({ inc: o.incl * Math.PI / 180, r: 1 + o.alt / 6378 * 1.6, ph: i * 0.7, node: o.raan * Math.PI / 180, sp: 0.004 + i * 0.0004, type: o.type }));
+    const draw = () => {
+      const w = c.width, h = c.height, R = Math.min(w, h) * 0.29, cx = w * 0.5, cy = h * 0.5;
+      const line = cs.getPropertyValue('--line').trim() || '#232E3C';
+      const soft = cs.getPropertyValue('--soft').trim() || '#1B2431';
+      const t2 = cs.getPropertyValue('--t2').trim() || '#93A3B5';
+      const t3 = cs.getPropertyValue('--t3').trim() || '#5E7286';
+      const acc = cs.getPropertyValue('--acc').trim() || '#E8853A';
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+      ctx.lineWidth = 1 * dpr;
+      const tilt = 0.38;
+      const proj = (lat, lon) => {
+        const x = Math.cos(lat) * Math.cos(lon + t * 0.12), y = Math.sin(lat), z = Math.cos(lat) * Math.sin(lon + t * 0.12);
+        const y2 = y * Math.cos(tilt) - z * Math.sin(tilt), z2 = y * Math.sin(tilt) + z * Math.cos(tilt);
+        return [cx + x * R, cy - y2 * R, z2];
+      };
+      // graticule
+      for (let k = -4; k <= 4; k++) {
+        const lat = k * Math.PI / 10;
+        ctx.beginPath(); ctx.strokeStyle = k === 0 ? line : soft;
+        for (let i = 0; i <= 90; i++) { const p = proj(lat, i / 90 * Math.PI * 2); if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); }
+        ctx.stroke();
+      }
+      for (let k = 0; k < 12; k++) {
+        ctx.beginPath(); ctx.strokeStyle = soft;
+        for (let i = 0; i <= 60; i++) { const p = proj(-Math.PI / 2 + i / 60 * Math.PI, k * Math.PI / 6); if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); }
+        ctx.stroke();
+      }
+      ctx.beginPath(); ctx.strokeStyle = line; ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+      // orbits
+      orbits.forEach((o, oi) => {
+        const pts = [];
+        for (let i = 0; i <= 160; i++) {
+          const th = i / 160 * Math.PI * 2;
+          let x = Math.cos(th) * o.r, y = Math.sin(th) * o.r * Math.cos(o.inc), z = Math.sin(th) * o.r * Math.sin(o.inc);
+          const xr = x * Math.cos(o.node) - z * Math.sin(o.node), zr = x * Math.sin(o.node) + z * Math.cos(o.node);
+          const y2 = y * Math.cos(tilt) - zr * Math.sin(tilt), z2 = y * Math.sin(tilt) + zr * Math.cos(tilt);
+          pts.push([cx + xr * R, cy - y2 * R, z2]);
+        }
+        ctx.beginPath(); ctx.strokeStyle = oi === 0 ? acc : soft;
+        pts.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
+        ctx.stroke();
+        const idx = Math.floor((t * o.sp * 60 + o.ph) * 160 / (Math.PI * 2)) % 160;
+        const p = pts[(idx + 160) % 160];
+        ctx.fillStyle = oi === 0 ? acc : (o.type === 'DEBRIS' ? t3 : t2);
+        ctx.fillRect(p[0] - 1.4 * dpr, p[1] - 1.4 * dpr, 2.8 * dpr, 2.8 * dpr);
+      });
+      // sparse debris field
+      for (let i = 0; i < 220; i++) {
+        const a = (i * 2.399 + t * 0.02), rr = R * (1.18 + (i % 17) / 17 * 0.62);
+        const inc = (i % 9) / 9 * Math.PI;
+        let x = Math.cos(a) * rr, y = Math.sin(a) * rr * Math.cos(inc), z = Math.sin(a) * rr * Math.sin(inc);
+        const y2 = y * Math.cos(tilt) - z * Math.sin(tilt);
+        ctx.fillStyle = t3; ctx.globalAlpha = 0.5;
+        ctx.fillRect(cx + x - 0.7 * dpr, cy - y2 - 0.7 * dpr, 1.4 * dpr, 1.4 * dpr);
+        ctx.globalAlpha = 1;
+      }
+      t += 0.016;
+      this.raf = requestAnimationFrame(draw);
+    };
+    draw();
+  }
+
+  // ── three.js globe ───────────────────────────────────────────
+  initGlobe() {
+    const el = this.globeEl; if (!el || !window.THREE || !window.satellite || this._globeUp) return;
+    this._globeUp = true;
+    const T = window.THREE, S = window.satellite;
+    const W = el.clientWidth, H = el.clientHeight;
+    const ren = new T.WebGLRenderer({ antialias: true, alpha: true });
+    ren.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    ren.setSize(W, H); el.appendChild(ren.domElement);
+    const scene = new T.Scene();
+    const cam = new T.PerspectiveCamera(38, W / H, 0.1, 200); cam.position.set(0, 3.4, 9.2);
+    const root = new T.Group(); scene.add(root);
+    const K = 2 / 6378.137;
+
+    const wire = new T.LineSegments(
+      new T.WireframeGeometry(new T.SphereGeometry(2, 36, 24)),
+      new T.LineBasicMaterial({ color: 0x1C2836, transparent: true, opacity: 0.85 })
+    );
+    root.add(wire);
+    root.add(new T.LineSegments(new T.EdgesGeometry(new T.SphereGeometry(2.001, 64, 2)), new T.LineBasicMaterial({ color: 0x2C3B4C })));
+
+    const recs = [], mats = [];
+    this.OBJ.forEach(o => {
+      try { recs.push({ o, r: S.twoline2satrec(...this.tle(o)) }); } catch (e) { }
+    });
+    // debris sample for density
+    const deb = [];
+    for (let i = 0; i < 240; i++) {
+      const alt = 300 + (i * 137 % 1500), inc = (i * 47 % 100), raan = (i * 71) % 360;
+      deb.push({ alt, inc, raan, ph: (i * 91) % 360 });
+    }
+
+    const orbitLines = new T.Group(); root.add(orbitLines);
+    const trace = (rec, color, w) => {
+      const pts = [], per = 2 * Math.PI / rec.no;
+      for (let i = 0; i <= 180; i++) {
+        const p = S.propagate(rec, new Date(Date.now() + (i / 180) * per * 60000));
+        if (p && p.position) pts.push(new T.Vector3(p.position.x * K, p.position.z * K, -p.position.y * K));
+      }
+      if (pts.length < 3) return null;
+      const l = new T.Line(new T.BufferGeometry().setFromPoints(pts), new T.LineBasicMaterial({ color, transparent: true, opacity: w }));
+      orbitLines.add(l); return l;
+    };
+    this.orbitFor = {};
+    recs.forEach(r => { this.orbitFor[r.o.norad] = trace(r.r, 0x2A3A4B, 0.9); });
+
+    const pg = new T.BufferGeometry();
+    pg.setAttribute('position', new T.BufferAttribute(new Float32Array(recs.length * 3), 3));
+    const pts = new T.Points(pg, new T.PointsMaterial({ color: 0x93A3B5, size: 3.4, sizeAttenuation: false }));
+    root.add(pts);
+
+    const dg = new T.BufferGeometry();
+    const dpos = new Float32Array(deb.length * 3);
+    dg.setAttribute('position', new T.BufferAttribute(dpos, 3));
+    const dpts = new T.Points(dg, new T.PointsMaterial({ color: 0x4A5B6E, size: 1.8, sizeAttenuation: false, transparent: true, opacity: 0.8 }));
+    root.add(dpts);
+
+    const selG = new T.BufferGeometry();
+    selG.setAttribute('position', new T.BufferAttribute(new Float32Array(3), 3));
+    const selP = new T.Points(selG, new T.PointsMaterial({ color: 0xE8853A, size: 8, sizeAttenuation: false }));
+    root.add(selP);
+
+    let rx = 0.3, ry = 0, down = false, lx = 0, ly = 0, dist = 9.2;
+    const dom = ren.domElement;
+    dom.style.cursor = 'grab';
+    dom.addEventListener('pointerdown', e => { down = true; lx = e.clientX; ly = e.clientY; dom.style.cursor = 'grabbing'; });
+    window.addEventListener('pointerup', () => { down = false; dom.style.cursor = 'grab'; });
+    window.addEventListener('pointermove', e => {
+      if (!down) return; ry += (e.clientX - lx) * 0.005; rx += (e.clientY - ly) * 0.004;
+      rx = Math.max(-1.3, Math.min(1.3, rx)); lx = e.clientX; ly = e.clientY;
+    });
+    dom.addEventListener('wheel', e => { e.preventDefault(); dist = Math.max(4.2, Math.min(20, dist + e.deltaY * 0.008)); }, { passive: false });
+
+    this.simT = Date.now();
+    const loop = () => {
+      const st = this.state;
+      if (st.playing) this.simT += 16 * st.rate;
+      const d = new Date(this.simT);
+      const pa = pg.attributes.position.array;
+      recs.forEach((r, i) => {
+        try {
+          const p = S.propagate(r.r, d);
+          if (p && p.position) { pa[i * 3] = p.position.x * K; pa[i * 3 + 1] = p.position.z * K; pa[i * 3 + 2] = -p.position.y * K; }
+        } catch (e) { }
+        if (r.o.norad === st.vSel) {
+          const s = selG.attributes.position.array;
+          s[0] = pa[i * 3]; s[1] = pa[i * 3 + 1]; s[2] = pa[i * 3 + 2];
+          selG.attributes.position.needsUpdate = true;
+        }
+      });
+      pg.attributes.position.needsUpdate = true;
+      const tt = (this.simT - this.t0) / 60000;
+      deb.forEach((o, i) => {
+        const rr = 2 + o.alt * 2 / 6378, inc = o.inc * Math.PI / 180, nd = o.raan * Math.PI / 180;
+        const th = (o.ph * Math.PI / 180) + tt * (0.06 * Math.pow(2 / rr, 1.5));
+        let x = Math.cos(th) * rr, y = Math.sin(th) * rr * Math.cos(inc), z = Math.sin(th) * rr * Math.sin(inc);
+        dpos[i * 3] = x * Math.cos(nd) - z * Math.sin(nd);
+        dpos[i * 3 + 1] = y;
+        dpos[i * 3 + 2] = x * Math.sin(nd) + z * Math.cos(nd);
+      });
+      dg.attributes.position.needsUpdate = true;
+      dpts.visible = st.layers.debris;
+      orbitLines.visible = st.layers.orbits;
+      Object.entries(this.orbitFor).forEach(([n, l]) => {
+        if (!l) return;
+        const on = +n === st.vSel;
+        l.material.color.setHex(on ? 0xE8853A : 0x2A3A4B);
+        l.material.opacity = on ? 1 : 0.85;
+      });
+      root.rotation.y = ry; root.rotation.x = rx;
+      cam.position.set(0, dist * 0.32, dist); cam.lookAt(0, 0, 0);
+      ren.render(scene, cam);
+      this.raf2 = requestAnimationFrame(loop);
+    };
+    loop();
+  }
+
+  // ── derived ──────────────────────────────────────────────────
+  renderVals() {
+    const st = this.state, base = this.t0 || Date.now();
+    const rows0 = this.CJ.map(c => {
+      const A = this.byId(c.a), B = this.byId(c.b), sev = this.sev(c.pc), sc = this.score(c.pc);
+      const tca = new Date(base + c.tcaMin * 60000);
+      return {
+        ...c, A, B, sev, sc, tca,
+        scoreFmt: sc.toFixed(2),
+        aName: A.name, aNorad: String(A.norad).padStart(5, '0'),
+        bName: B.name, bNorad: String(B.norad).padStart(5, '0'),
+        tcaFmt: this.fmtUTC(tca),
+        tminus: this.fmtDur(tca - st.now),
+        missFmt: c.miss.toFixed(3),
+        relvFmt: c.relv.toFixed(3),
+        pcFmt: this.fmtPc(c.pc),
+        maxAge: Math.max(A.age, B.age).toFixed(1)
+      };
+    });
+    const order = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1, NOMINAL: 0 };
+    let rows = rows0.filter(r =>
+      (st.minRisk === 'ALL' || order[r.sev] >= order[st.minRisk]) &&
+      (r.tcaMin <= +st.win * 60) &&
+      (st.cls === 'ALL' || r.A.type === st.cls || r.B.type === st.cls)
+    );
+    const k = st.sortKey;
+    rows.sort((a, b) => {
+      const g = r => k === 'score' ? r.sc : k === 'tca' ? r.tcaMin : k === 'miss' ? r.miss : k === 'relv' ? r.relv : r.pc;
+      return (g(a) - g(b)) * st.sortDir;
+    });
+    rows = rows.map(r => ({ ...r, selFlag: r.id === st.selId ? '1' : '0', onSelect: () => this.setState({ selId: r.id }) }));
+
+    const sel = rows0.find(r => r.id === st.selId) || rows0[0];
+    const nextTca = rows0.filter(r => r.tca - st.now > 0).sort((a, b) => a.tca - b.tca)[0] || rows0[0];
+
+    // separation curve: sep(t) = sqrt(miss^2 + (v t)^2)
+    const span = 40, W = 980, H = 300, pad = { l: 62, r: 20, t: 18, b: 34 };
+    const maxSep = Math.sqrt(sel.miss * sel.miss + Math.pow(sel.relv * span * 60, 2)) * 0.42;
+    const sx = t => pad.l + (t + span) / (span * 2) * (W - pad.l - pad.r);
+    const sy = v => H - pad.b - Math.min(1, v / maxSep) * (H - pad.t - pad.b);
+    let d = '';
+    for (let i = 0; i <= 180; i++) {
+      const t = -span + (i / 180) * span * 2;
+      const v = Math.sqrt(sel.miss * sel.miss + Math.pow(sel.relv * t * 60, 2)) * 0.42;
+      d += (i ? 'L' : 'M') + sx(t).toFixed(1) + ' ' + sy(v).toFixed(1) + ' ';
+    }
+    const yTicks = [0, 0.25, 0.5, 0.75, 1].map(f => ({
+      y: (H - pad.b - f * (H - pad.t - pad.b)).toFixed(1),
+      label: (maxSep * f).toFixed(1)
+    }));
+    const xTicks = [-40, -20, 0, 20, 40].map(t => ({ x: sx(t).toFixed(1), label: (t > 0 ? '+' : '') + t }));
+
+    const catRows = this.OBJ
+      .filter(o => !st.q || (o.name + ' ' + o.norad + ' ' + o.type + ' ' + o.op).toLowerCase().includes(st.q.toLowerCase()))
+      .map(o => ({
+        ...o,
+        noradFmt: String(o.norad).padStart(5, '0'),
+        apo: Math.round(o.alt + o.ecc * (6378 + o.alt)),
+        peri: Math.round(o.alt - o.ecc * (6378 + o.alt)),
+        inclFmt: o.incl.toFixed(2),
+        per: (1440 / this.mm(o.alt)).toFixed(1),
+        eccFmt: o.ecc.toFixed(7),
+        ageFmt: o.age.toFixed(1),
+        selFlag: o.norad === st.catSel ? '1' : '0',
+        onPick: () => this.setState({ catSel: o.norad, drawer: true })
+      }));
+
+    const co = this.byId(st.catSel), ctle = this.tle(co);
+    const vo = this.byId(st.vSel);
+
+    const risks = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(r => ({
+      label: r, on: st.minRisk === r ? '1' : '0', onPick: () => this.setState({ minRisk: r })
+    }));
+    const wins = [{ l: '24 h', v: '24' }, { l: '72 h', v: '72' }, { l: '7 d', v: '168' }].map(w => ({
+      label: w.l, on: st.win === w.v ? '1' : '0', onPick: () => this.setState({ win: w.v })
+    }));
+    const classes = ['ALL', 'PAYLOAD', 'ROCKET BODY', 'DEBRIS'].map(c => ({
+      label: c, on: st.cls === c ? '1' : '0', onPick: () => this.setState({ cls: c })
+    }));
+    const rates = [1, 60, 600].map(r => ({
+      label: r === 1 ? '1×' : r === 60 ? '60×' : '600×', on: st.rate === r ? '1' : '0',
+      onPick: () => this.setState({ rate: r })
+    }));
+    const layerToggles = [
+      { label: 'Orbit paths', k: 'orbits' }, { label: 'Debris sample', k: 'debris' }, { label: 'Object labels', k: 'labels' }
+    ].map(l => ({
+      label: l.label, on: st.layers[l.k] ? '1' : '0',
+      onToggle: () => this.setState(s => ({ layers: { ...s.layers, [l.k]: !s.layers[l.k] } }))
+    }));
+    const vObjs = this.OBJ.slice(0, 8).map(o => ({
+      name: o.name, noradFmt: String(o.norad).padStart(5, '0'), type: o.type,
+      on: o.norad === st.vSel ? '1' : '0', onPick: () => this.setState({ vSel: o.norad })
+    }));
+
+    const counts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, NOMINAL: 0 };
+    rows0.forEach(r => counts[r.sev]++);
+
+    // orbital plot points (altitude vs inclination)
+    const plotW = 420, plotH = 210;
+    const plot = this.OBJ.map(o => ({
+      cx: (28 + (o.incl / 110) * (plotW - 48)).toFixed(1),
+      cy: (plotH - 26 - (o.alt / 1300) * (plotH - 44)).toFixed(1),
+      flagged: rows0.some(r => (r.a === o.norad || r.b === o.norad) && (r.sev === 'CRITICAL' || r.sev === 'HIGH')),
+      sev: rows0.filter(r => r.a === o.norad || r.b === o.norad).map(r => r.sev)[0] || 'NOMINAL',
+      name: o.name
+    })).map(p => ({ ...p, r: p.flagged ? '4' : '2.4', sevAttr: p.flagged ? p.sev : 'NOMINAL' }));
+
+    const mrows = rows.slice(0, 6);
+
+    return {
+      isDark: st.theme === 'dark' ? '1' : '0', isLight: st.theme === 'light' ? '1' : '0',
+      setDark: () => this.setTheme('dark'), setLight: () => this.setTheme('light'),
+      heroCanvas: el => { if (el) { this.heroC = el; } },
+      globeRef: el => { if (el && !this.globeEl) { this.globeEl = el; if (window.THREE) this.initGlobe(); } },
+      rows, mrows, sel, risks, wins, classes, rates, layerToggles, vObjs, catRows, plot,
+      sortScore: () => this.sortBy('score'), sortTca: () => this.sortBy('tca'),
+      sortMiss: () => this.sortBy('miss'), sortRelv: () => this.sortBy('relv'), sortPc: () => this.sortBy('pc'),
+      arrScore: this.arrow('score'), arrTca: this.arrow('tca'), arrMiss: this.arrow('miss'),
+      arrRelv: this.arrow('relv'), arrPc: this.arrow('pc'),
+      nowUTC: this.fmtUTC(new Date(st.now)),
+      simUTC: this.fmtUTC(new Date(this.simT || st.now)),
+      countdown: this.fmtDur(nextTca.tca - st.now),
+      countdownId: nextTca.id,
+      nCrit: counts.CRITICAL, nHigh: counts.HIGH, nMed: counts.MEDIUM,
+      nHighRisk: counts.CRITICAL + counts.HIGH,
+      nShown: rows.length, nTotal: rows0.length,
+      fetchAge: '2 min 14 s',
+      sepPath: d, yTicks, xTicks, sepTcaX: sx(0).toFixed(1), sepTcaY: sy(sel.miss * 0.42).toFixed(1),
+      threshY: sy(1.0).toFixed(1),
+      q: st.q, onQ: e => this.setState({ q: e.target.value }),
+      playLabel: st.playing ? '\u25A0' : '\u25B6',
+      togglePlay: () => this.setState(s => ({ playing: !s.playing })),
+      catObj: co, catTle1: ctle[0], catTle2: ctle[1],
+      catNorad: String(co.norad).padStart(5, '0'),
+      catIncl: co.incl.toFixed(4), catRaan: co.raan.toFixed(4), catEcc: co.ecc.toFixed(7),
+      catArgp: co.argp.toFixed(4), catMa: co.ma.toFixed(4), catMm: this.mm(co.alt).toFixed(8),
+      catPer: (1440 / this.mm(co.alt)).toFixed(2), catApo: Math.round(co.alt + co.ecc * (6378 + co.alt)),
+      catPeri: Math.round(co.alt - co.ecc * (6378 + co.alt)), catAge: co.age.toFixed(1),
+      closeDrawer: () => this.setState({ drawer: false }),
+      drawerOpen: st.drawer ? '1' : '0',
+      vName: vo.name, vNorad: String(vo.norad).padStart(5, '0'), vType: vo.type,
+      vAlt: vo.alt, vIncl: vo.incl.toFixed(2), vPer: (1440 / this.mm(vo.alt)).toFixed(1),
+      rateLabel: st.rate === 1 ? 'real time' : st.rate + '\u00D7'
+    };
+  }
+  setTheme(t) { document.documentElement.dataset.ktheme = t; this.setState({ theme: t }); }
+  sortBy(k) { this.setState(s => ({ sortKey: k, sortDir: s.sortKey === k ? -s.sortDir : -1 })); }
+  arrow(k) { return this.state.sortKey === k ? (this.state.sortDir === -1 ? '\u25BE' : '\u25B4') : ''; }
+}
+</script>
+</body>
+</html>

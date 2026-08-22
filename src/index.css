@@ -1,0 +1,277 @@
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /*
+   * Glass palette (design rev 05).
+   *
+   * Surfaces are no longer opaque hexes — they are white at low alpha, layered
+   * over a dark base and blurred. Two things have to be true for the treatment
+   * to work at all: something opaque must sit behind the stack (`html`), and
+   * every panel must actually carry `backdrop-filter`, or it reads as flat grey
+   * rather than glass.
+   */
+  :root {
+    --ground: rgba(255, 255, 255, 0.026);
+    --deep: rgba(6, 10, 18, 0.42);
+    --panel: rgba(255, 255, 255, 0.05);
+    --panel-raised: rgba(255, 255, 255, 0.078);
+    --panel-high: rgba(255, 255, 255, 0.125);
+    --hairline: rgba(255, 255, 255, 0.105);
+    --hairline-soft: rgba(255, 255, 255, 0.055);
+    --grid: rgba(255, 255, 255, 0.055);
+
+    --t1: #eef3f9;
+    --t2: #9daec1;
+    --t3: #6b7f94;
+
+    --accent: #f2913f;
+    --accent-hover: #f6a45c;
+    --accent-wash: rgba(242, 145, 63, 0.14);
+    --accent-border: rgba(242, 145, 63, 0.42);
+    --accent-ink: #0a0e14;
+
+    --risk-critical: #e0655a;
+    --risk-high: #ee9445;
+    --risk-medium: #dfbb4a;
+    --risk-low: #5fb187;
+    --risk-nominal: #5d7086;
+
+    --glass: blur(22px) saturate(150%);
+    --lift: 0 1px 0 0 rgba(255, 255, 255, 0.075) inset,
+      0 18px 44px -18px rgba(0, 0, 0, 0.62);
+
+    /* The opaque base the whole glass stack is composited over. */
+    --base: #04070d;
+    /*
+     * Canvas visuals need an opaque fill to occlude with — a translucent
+     * --deep would let orbit arcs show straight through the Earth.
+     */
+    --globe: #080d16;
+  }
+
+  [data-ktheme='light'] {
+    --ground: rgba(255, 255, 255, 0.42);
+    --deep: rgba(255, 255, 255, 0.3);
+    --panel: rgba(255, 255, 255, 0.6);
+    --panel-raised: rgba(255, 255, 255, 0.78);
+    --panel-high: rgba(20, 40, 70, 0.075);
+    --hairline: rgba(20, 40, 70, 0.11);
+    --hairline-soft: rgba(20, 40, 70, 0.062);
+    --grid: rgba(20, 40, 70, 0.075);
+
+    --t1: #141f2c;
+    --t2: #4c5f72;
+    --t3: #788a9c;
+
+    --accent: #c96a1e;
+    --accent-hover: #b25a15;
+    --accent-wash: rgba(201, 106, 30, 0.12);
+    --accent-border: rgba(201, 106, 30, 0.34);
+    --accent-ink: #ffffff;
+
+    --risk-critical: #b03a2e;
+    --risk-high: #b9651b;
+    --risk-medium: #9c7e17;
+    --risk-low: #357450;
+    --risk-nominal: #78879a;
+
+    --glass: blur(22px) saturate(130%);
+    --lift: 0 1px 0 0 rgba(255, 255, 255, 0.85) inset,
+      0 18px 44px -20px rgba(20, 40, 70, 0.28);
+
+    --base: #dde4ec;
+    --globe: #eef1f6;
+  }
+
+  html {
+    height: 100%;
+    background: var(--base);
+  }
+
+  body {
+    height: 100%;
+    margin: 0;
+    position: relative;
+    background: transparent;
+    color: var(--t1);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /*
+   * Field lighting: two very large, very soft colour masses drifting behind
+   * everything. They are what the glass panels actually refract — without them
+   * the blur has nothing to work with and the treatment falls flat.
+   */
+  body::before,
+  body::after {
+    content: '';
+    position: fixed;
+    z-index: -2;
+    border-radius: 50%;
+    filter: blur(90px);
+    pointer-events: none;
+  }
+
+  body::before {
+    width: 1100px;
+    height: 1100px;
+    left: -14%;
+    top: -24%;
+    background: radial-gradient(circle at 50% 50%, rgba(232, 133, 58, 0.3), rgba(232, 133, 58, 0) 68%);
+    animation: kdrift1 34s ease-in-out infinite;
+  }
+
+  body::after {
+    width: 1400px;
+    height: 1400px;
+    right: -20%;
+    top: 22%;
+    background: radial-gradient(circle at 50% 50%, rgba(58, 124, 196, 0.3), rgba(58, 124, 196, 0) 68%);
+    animation: kdrift2 46s ease-in-out infinite;
+  }
+
+  [data-ktheme='light'] body::before {
+    background: radial-gradient(circle at 50% 50%, rgba(232, 133, 58, 0.34), rgba(232, 133, 58, 0) 68%);
+  }
+
+  [data-ktheme='light'] body::after {
+    background: radial-gradient(circle at 50% 50%, rgba(58, 124, 196, 0.28), rgba(58, 124, 196, 0) 68%);
+  }
+
+  #root {
+    min-height: 100%;
+  }
+
+  @keyframes kdrift1 {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    33% { transform: translate3d(14vw, 10vh, 0) scale(1.16); }
+    66% { transform: translate3d(5vw, 26vh, 0) scale(0.92); }
+  }
+  @keyframes kdrift2 {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1.04); }
+    40% { transform: translate3d(-16vw, 16vh, 0) scale(0.9); }
+    72% { transform: translate3d(-6vw, -8vh, 0) scale(1.2); }
+  }
+  @keyframes kpulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--sev); opacity: 1; }
+    70% { box-shadow: 0 0 0 5px rgba(0, 0, 0, 0); opacity: 0.55; }
+  }
+  @keyframes ksweep {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(320%); }
+  }
+  @keyframes krise {
+    from { opacity: 0; transform: translateY(7px); }
+    to { opacity: 1; transform: none; }
+  }
+  /*
+   * The design transitions surfaces globally rather than per-component, so
+   * hover lifts and the selected-row rise share one easing everywhere.
+   */
+  div, button, input, a, svg circle {
+    transition:
+      background-color 0.26s ease,
+      border-color 0.26s ease,
+      color 0.18s ease,
+      box-shadow 0.34s ease,
+      transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.26s ease;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  /* Severity travels down the tree as a data attribute setting --sev. */
+  [data-sev='CRITICAL'] { --sev: var(--risk-critical); }
+  [data-sev='HIGH']     { --sev: var(--risk-high); }
+  [data-sev='MEDIUM']   { --sev: var(--risk-medium); }
+  [data-sev='LOW']      { --sev: var(--risk-low); }
+  [data-sev='NOMINAL']  { --sev: var(--risk-nominal); }
+
+  /* The critical swatch breathes; nothing else in the table moves. */
+  [data-sev='CRITICAL'] .sev-swatch {
+    animation: kpulse 2.1s ease-out infinite;
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  input::placeholder { color: var(--t3); }
+  input { font-family: 'IBM Plex Mono', monospace; }
+  button { font-family: inherit; }
+
+  * { scrollbar-width: thin; scrollbar-color: var(--panel-high) transparent; }
+  *::-webkit-scrollbar { width: 9px; height: 9px; }
+  *::-webkit-scrollbar-thumb {
+    background: var(--panel-high);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-track { background: transparent; }
+
+  /* Ambient motion is decorative; honour the OS setting. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+}
+
+@layer components {
+  /* The two halves of the glass treatment, almost always applied together. */
+  .glass {
+    backdrop-filter: var(--glass);
+    -webkit-backdrop-filter: var(--glass);
+  }
+  .lift {
+    box-shadow: var(--lift);
+  }
+  .glass-panel {
+    @apply glass lift border border-hairline bg-panel;
+  }
+
+  /* Slow specular sweep across a surface, used on the console top bar. */
+  .sweep {
+    position: relative;
+    overflow: hidden;
+  }
+  .sweep::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 22%;
+    background: linear-gradient(90deg, transparent, var(--accent-wash), transparent);
+    animation: ksweep 9s linear infinite;
+    pointer-events: none;
+  }
+
+  .label {
+    @apply font-mono text-2xs uppercase tracking-label text-tertiary;
+  }
+  .num {
+    @apply font-mono tabular-nums;
+  }
+}
+
+@layer utilities {
+  .rise {
+    animation: krise 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}

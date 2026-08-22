@@ -1,0 +1,330 @@
+import { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { RESOLVED } from '../data/conjunctions';
+import { CATALOGUE_TOTAL, OBJECTS } from '../data/objects';
+import { SEVERITY_RANK } from '../data/riskScore';
+import { fmtDur, fmtInt, fmtNorad, fmtPc, fmtUTC } from '../data/format';
+import { useNow } from '../hooks/useNow';
+import { Button, MetricTile, Panel, Segmented, SeverityChip, EmptyState } from '../components/primitives';
+import { RegimePlot } from '../components/RegimePlot';
+import { ArrowDown, ArrowUp } from '../components/Icon';
+import type { ObjectType, ResolvedConjunction, Severity } from '../data/types';
+import { passesThresholds, useThresholds } from '../state/thresholds';
+
+type SortKey = 'score' | 'tca' | 'miss' | 'relv' | 'pc';
+type RiskFilter = 'ALL' | Severity;
+type ClassFilter = 'ALL' | ObjectType;
+
+const RISKS = [
+  { label: 'ALL', value: 'ALL' as const },
+  { label: 'CRIT', value: 'CRITICAL' as const },
+  { label: 'HIGH', value: 'HIGH' as const },
+  { label: 'MED', value: 'MEDIUM' as const },
+  { label: 'LOW', value: 'LOW' as const },
+];
+
+const WINDOWS = [
+  { label: '12 H', value: '12' as const },
+  { label: '24 H', value: '24' as const },
+  { label: '72 H', value: '72' as const },
+];
+
+const CLASSES = [
+  { label: 'ALL', value: 'ALL' as const },
+  { label: 'PAYLOAD', value: 'PAYLOAD' as const },
+  { label: 'R/B', value: 'ROCKET BODY' as const },
+  { label: 'DEBRIS', value: 'DEBRIS' as const },
+];
+
+/** Grid template shared by the table header and every row, so they stay locked. */
+const COLS =
+  'grid-cols-[100px_52px_minmax(130px,1fr)_minmax(130px,1fr)_168px_76px_86px_100px]';
+
+function SortHeader({
+  label, active, dir, onClick, className = '',
+}: {
+  label: string; active: boolean; dir: 1 | -1; onClick: () => void; className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-sort={active ? (dir === -1 ? 'descending' : 'ascending') : 'none'}
+      className={`flex items-center gap-1 font-mono text-xs- uppercase tracking-[0.08em] transition-colors ${
+        active ? 'text-primary' : 'text-tertiary hover:text-primary'
+      } ${className}`}
+    >
+      <span className="truncate">{label}</span>
+      {active && (dir === -1 ? <ArrowDown className="flex-none" /> : <ArrowUp className="flex-none" />)}
+    </button>
+  );
+}
+
+export function Dashboard() {
+  const now = useNow();
+  const navigate = useNavigate();
+  const { thresholds, modified } = useThresholds();
+
+  const [sortKey, setSortKey] = useState<SortKey>('score');
+  const [sortDir, setSortDir] = useState<1 | -1>(-1);
+  const [minRisk, setMinRisk] = useState<RiskFilter>('ALL');
+  const [win, setWin] = useState<'12' | '24' | '72'>('72');
+  const [cls, setCls] = useState<ClassFilter>('ALL');
+  const [selId, setSelId] = useState<string>('CJ-4429');
+
+  const sortBy = (k: SortKey) => {
+    if (k === sortKey) setSortDir((d) => (d === -1 ? 1 : -1));
+    else { setSortKey(k); setSortDir(-1); }
+  };
+
+  /*
+   * The operator's screening floor is applied before anything else, so the
+   * dashboard can only ever show events that cleared it. The panel filters
+   * below then work within that set.
+   */
+  const screened = useMemo(
+    () => RESOLVED.filter((e) => passesThresholds(e, thresholds)),
+    [thresholds],
+  );
+
+  const counts = useMemo(
+    () =>
+      screened.reduce(
+        (acc, c) => ({ ...acc, [c.sev]: acc[c.sev] + 1 }),
+        { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, NOMINAL: 0 },
+      ),
+    [screened],
+  );
+
+  const rows = useMemo(() => {
+    const value = (r: ResolvedConjunction) =>
+      sortKey === 'score' ? r.score
+        : sortKey === 'tca' ? r.tcaMin
+        : sortKey === 'miss' ? r.miss
+        : sortKey === 'relv' ? r.relv
+        : r.pc;
+
+    return screened
+      .filter((r) =>
+        (minRisk === 'ALL' || SEVERITY_RANK[r.sev] >= SEVERITY_RANK[minRisk]) &&
+        r.tcaMin <= +win * 60 &&
+        (cls === 'ALL' || r.A.type === cls || r.B.type === cls))
+      .sort((a, b) => (value(a) - value(b)) * sortDir);
+  }, [screened, sortKey, sortDir, minRisk, win, cls]);
+
+  const selected = useMemo(
+    () => rows.find((r) => r.id === selId) ?? rows[0],
+    [rows, selId],
+  );
+
+  const nextTca = useMemo(
+    () => screened.filter((r) => r.tca > now).sort((a, b) => a.tca - b.tca)[0],
+    [screened, now],
+  );
+
+  const highRisk = counts.CRITICAL + counts.HIGH;
+
+  return (
+    <div className="flex min-h-full flex-col">
+      <div className="flex flex-wrap items-end justify-between gap-4 px-5 pt-[22px]">
+        <div className="flex flex-col gap-[5px]">
+          <h1 className="text-2xl font-medium tracking-tight text-primary">Conjunction screening</h1>
+          <p className="font-mono text-xs text-tertiary">
+            All registered assets · horizon {thresholds.horizonHours} h ·{' '}
+            {fmtInt(OBJECTS.length)} objects in scope ·{' '}
+            <Link
+              to="/console/thresholds"
+              className={modified ? 'text-accent' : 'text-tertiary hover:text-primary'}
+            >
+              thresholds {modified ? 'modified' : 'default'}
+            </Link>
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button className="px-[13px] py-[7px] text-sm text-secondary">Export CSV</Button>
+          <Button variant="primary" className="px-[13px] py-[7px] text-sm">Run screening</Button>
+        </div>
+      </div>
+
+      {/* Metric row */}
+      <div className="grid grid-cols-2 gap-px bg-hairline px-5 pt-5 sm:grid-cols-3 xl:grid-cols-5">
+        <MetricTile label="Objects tracked" value={fmtInt(CATALOGUE_TOTAL)} foot="+118 / 24 h" />
+        <MetricTile label="Pairs screened 24 h" value="1,204,556" foot="4 passes complete" />
+        <MetricTile
+          label="High risk events"
+          value={
+            <span className="flex items-baseline gap-[9px]">
+              <span data-sev="HIGH" className="text-sev">{highRisk}</span>
+              <span className="text-xs text-tertiary">of {screened.length}</span>
+            </span>
+          }
+          foot={
+            <span className="flex gap-[10px]">
+              <span data-sev="CRITICAL" className="text-sev">{counts.CRITICAL} CRIT</span>
+              <span data-sev="HIGH" className="text-sev">{counts.HIGH} HIGH</span>
+            </span>
+          }
+        />
+        <MetricTile
+          label="Next TCA"
+          valueClass="text-accent"
+          value={nextTca ? fmtDur(nextTca.tca - now) : '—'}
+          foot={nextTca?.id ?? ''}
+        />
+        <MetricTile label="Screening latency" value="42" unit="s" foot="p95 over last 6 passes" />
+      </div>
+
+      {/* Table + side panels */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_392px]">
+        <Panel className="min-h-[520px]" title={undefined}>
+          <div className="flex h-full flex-col">
+            <div className="flex flex-wrap items-center gap-x-[18px] gap-y-2 border-b border-hairline px-[14px] py-[9px]">
+              <Segmented label="Risk" segments={RISKS} value={minRisk} onChange={setMinRisk} />
+              <Segmented label="Window" segments={WINDOWS} value={win} onChange={setWin} />
+              <Segmented label="Class" segments={CLASSES} value={cls} onChange={setCls} />
+              <div className="num ml-auto whitespace-nowrap text-xs- text-tertiary">
+                {rows.length} / {screened.length} events
+              </div>
+            </div>
+
+            {/* One scroll container for both axes: the header stays pinned while
+                rows scroll, and below ~1280px the whole table scrolls sideways
+                rather than clipping its numeric columns. */}
+            <div className="min-h-0 flex-1 overflow-auto">
+              <div className="min-w-[912px]">
+            <div className={`sticky top-0 z-10 grid ${COLS} h-[34px] flex-none items-center gap-x-2 border-b border-hairline bg-panel-raised px-[14px]`}>
+              <div className="font-mono text-xs- uppercase tracking-[0.08em] text-tertiary">Severity</div>
+              <SortHeader label="Score" active={sortKey === 'score'} dir={sortDir} onClick={() => sortBy('score')} className="justify-end" />
+              <div className="pl-[14px] font-mono text-xs- uppercase tracking-[0.08em] text-tertiary">Primary</div>
+              <div className="font-mono text-xs- uppercase tracking-[0.08em] text-tertiary">Secondary</div>
+              <SortHeader label="TCA · T-minus" active={sortKey === 'tca'} dir={sortDir} onClick={() => sortBy('tca')} className="justify-end" />
+              <SortHeader label="Miss km" active={sortKey === 'miss'} dir={sortDir} onClick={() => sortBy('miss')} className="justify-end" />
+              <SortHeader label="Rel V km/s" active={sortKey === 'relv'} dir={sortDir} onClick={() => sortBy('relv')} className="justify-end" />
+              <SortHeader label="Pc" active={sortKey === 'pc'} dir={sortDir} onClick={() => sortBy('pc')} className="justify-end" />
+            </div>
+
+            {rows.length === 0 ? (
+                <EmptyState
+                  title="No conjunctions above threshold"
+                  body={
+                    screened.length === 0
+                      ? 'Nothing clears your screening floor. Relax the thresholds to admit more events.'
+                      : 'Nothing in this window matches these panel filters. Widen the window or lower the risk floor to see more.'
+                  }
+                  action={
+                    screened.length === 0 ? (
+                      <Link to="/console/thresholds">
+                        <Button className="mt-2 px-[13px] py-[7px] text-sm">Edit thresholds</Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        className="mt-2 px-[13px] py-[7px] text-sm"
+                        onClick={() => { setMinRisk('ALL'); setWin('72'); setCls('ALL'); }}
+                      >
+                        Reset filters
+                      </Button>
+                    )
+                  }
+                />
+              ) : (
+                rows.map((r) => {
+                  const sel = r.id === selId;
+                  return (
+                    <div
+                      key={r.id}
+                      role="button"
+                      tabIndex={0}
+                      data-sev={r.sev}
+                      onClick={() => setSelId(r.id)}
+                      onDoubleClick={() => navigate(`/console/conjunction/${r.id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') navigate(`/console/conjunction/${r.id}`);
+                        if (e.key === ' ') { e.preventDefault(); setSelId(r.id); }
+                      }}
+                      className={`grid ${COLS} h-[46px] cursor-pointer items-center gap-x-2 border-b border-hairline-soft px-[14px] ${
+                        sel
+                          ? 'rise glass bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
+                          : 'hover:-translate-y-px hover:bg-panel-raised'
+                      }`}
+                    >
+                      <SeverityChip sev={r.sev} />
+                      <div className="num text-right text-base text-primary">{r.score}</div>
+                      <div className="min-w-0 pl-[14px]">
+                        <div className="truncate text-sm+ text-primary">{r.A.name}</div>
+                        <div className="num text-xs- text-tertiary">{fmtNorad(r.A.norad)}</div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm+ text-primary">{r.B.name}</div>
+                        <div className="num text-xs- text-tertiary">{fmtNorad(r.B.norad)}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="num text-sm text-secondary">{fmtUTC(new Date(r.tca))}</div>
+                        <div className="num text-xs- text-tertiary">T− {fmtDur(r.tca - now)}</div>
+                      </div>
+                      <div className="num text-right text-sm text-primary">{r.miss.toFixed(3)}</div>
+                      <div className="num text-right text-sm text-secondary">{r.relv.toFixed(3)}</div>
+                      <div className="num text-right text-sm text-primary">{fmtPc(r.pc)}</div>
+                    </div>
+                  );
+                })
+              )}
+              </div>
+            </div>
+          </div>
+        </Panel>
+
+        <div className="flex min-w-0 flex-col gap-5">
+          <Panel
+            title="Regime plot — altitude × inclination"
+            aside={<span className="font-mono text-2xs text-tertiary">KM × DEG</span>}
+          >
+            <RegimePlot events={rows} />
+          </Panel>
+
+          {selected && (
+            <Panel title={`Selected event — ${selected.id}`} className="flex-1">
+              <div className="flex flex-col gap-[14px] p-[14px]">
+                <div data-sev={selected.sev} className="flex items-center gap-[9px]">
+                  <SeverityChip sev={selected.sev} size={9} />
+                  <span className="num ml-auto text-xs text-secondary">SCORE {selected.score}</span>
+                </div>
+
+                <div className="flex flex-col gap-[9px]">
+                  {[selected.A, selected.B].map((o) => (
+                    <div key={o.norad} className="flex items-baseline justify-between gap-3">
+                      <span className="truncate text-sm text-secondary">{o.name}</span>
+                      <span className="num flex-none text-xs text-tertiary">{fmtNorad(o.norad)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-[14px] gap-y-3 border-t border-hairline-soft pt-3">
+                  {[
+                    ['Miss distance', selected.miss.toFixed(3), 'km'],
+                    ['Relative velocity', selected.relv.toFixed(3), 'km/s'],
+                    ['Collision probability', fmtPc(selected.pc), ''],
+                    ['Oldest element set', selected.maxAge.toFixed(1), 'd'],
+                  ].map(([label, value, unit]) => (
+                    <div key={label}>
+                      <div className="label mb-1">{label}</div>
+                      <div className="num text-md text-primary">
+                        {value} {unit && <span className="text-xs- text-tertiary">{unit}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <Link to={`/console/conjunction/${selected.id}`} className="flex-1">
+                    <Button variant="primary" className="w-full py-2 text-sm">Open detail view</Button>
+                  </Link>
+                  <Button className="px-[13px] py-2 text-sm text-secondary">Acknowledge</Button>
+                </div>
+              </div>
+            </Panel>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
