@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadCatalogue, MANIFEST, SNAPSHOT_DIR, SNAPSHOT_EPOCH } from './snapshot-node';
-import { runScreening } from '../src/data/engine/run';
+import { DEFAULT_HORIZON_HOURS, runScreening } from '../src/data/engine/run';
 
 /**
  * Build-time screening run.
@@ -16,7 +16,7 @@ import { runScreening } from '../src/data/engine/run';
  * Run: npm run screen
  */
 
-const HOURS = Number(process.env.KESSLER_HOURS ?? 24);
+const HOURS = Number(process.env.KESSLER_HOURS ?? DEFAULT_HORIZON_HOURS);
 
 const catalogue = loadCatalogue();
 const start = new Date(SNAPSHOT_EPOCH);

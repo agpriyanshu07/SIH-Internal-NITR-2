@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 import type { ResolvedConjunction, Severity } from '../data/types';
 import { SEVERITY_RANK } from '../data/riskScore';
+import { DEFAULT_HORIZON_HOURS } from '../data/engine/run';
 
 /**
  * Screening thresholds.
@@ -44,7 +45,7 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
   minSeverity: 'ALL',
   maxMissKm: 25,
   minPc: 0,
-  horizonHours: 72,
+  horizonHours: DEFAULT_HORIZON_HOURS,
   maxElementAgeDays: 10,
   sigmaScale: 1,
 };

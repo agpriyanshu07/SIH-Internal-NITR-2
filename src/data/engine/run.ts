@@ -16,6 +16,18 @@ import type { Conjunction } from '../types';
 /** Miss distance above which a refined pass is not reported as an event, km. */
 export const EVENT_GATE_KM = 25;
 
+/**
+ * Default screening horizon, hours.
+ *
+ * Declared here rather than in each caller because it has to agree in three
+ * places at once: the committed precompute, the console's default screening
+ * window, and the horizon a live worker run uses. When they disagreed, running
+ * `npm run screen` quietly rebuilt the dashboard at 24 h while the window
+ * filter still said 72 h — two thirds of the events vanished and nothing in
+ * the UI indicated why.
+ */
+export const DEFAULT_HORIZON_HOURS = 72;
+
 /** Window of the separation curve on the detail chart, minutes either side. */
 export const SEPARATION_SPAN_MIN = 40;
 export const SEPARATION_POINTS = 121;

@@ -1,8 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import * as satellite from 'satellite.js';
-import { loadCatalogue, MANIFEST, SNAPSHOT_EPOCH } from './snapshot-node';
+import { loadCatalogue, MANIFEST, SNAPSHOT_DIR, SNAPSHOT_EPOCH } from './snapshot-node';
 import { periApo, screen, SCREEN_KM, STEP_S, CO_ORBIT_KM } from '../src/data/engine/screen';
 import { refine } from '../src/data/engine/refine';
-import { runScreening } from '../src/data/engine/run';
+import { DEFAULT_HORIZON_HOURS, runScreening } from '../src/data/engine/run';
 import { SEVERITY_RANK } from '../src/data/riskScore';
 
 /**
@@ -313,6 +315,36 @@ section('7. Sorting by score never contradicts the severity chips');
     'score ranges of adjacent severity bands do not overlap',
     overlaps === 0,
     ordered.map(([sev, [lo, hi]]) => `${sev} ${lo}-${hi}`).join(', '),
+  );
+}
+
+// ── 8. The committed run matches the console's default horizon ──────────────
+// This one exists because it already went wrong. `npm run screen` defaulted to
+// 24 h while the console's default window was 72 h, so regenerating the
+// committed result silently dropped two thirds of the events with nothing in
+// the UI to say why. Both now read DEFAULT_HORIZON_HOURS; this checks that the
+// committed artefact was actually built with it.
+section('8. The committed screening result matches the default horizon');
+{
+  const committed = JSON.parse(
+    readFileSync(join(SNAPSHOT_DIR, '..', 'precomputed.json'), 'utf8'),
+  ) as { cascade: { horizonHours: number; objects: number }; conjunctions: unknown[] };
+
+  check(
+    'committed run horizon equals DEFAULT_HORIZON_HOURS',
+    committed.cascade.horizonHours === DEFAULT_HORIZON_HOURS,
+    `committed ${committed.cascade.horizonHours} h vs default ${DEFAULT_HORIZON_HOURS} h`,
+  );
+  check(
+    'committed run covers the whole catalogue',
+    committed.cascade.objects === catalogue.length,
+    `${committed.cascade.objects} screened vs ${catalogue.length} in the snapshot`,
+  );
+  check(
+    'committed event count is non-empty and self-consistent',
+    committed.conjunctions.length > 0 &&
+      committed.conjunctions.length === (committed.cascade as { events?: number }).events,
+    `${committed.conjunctions.length} events stored`,
   );
 }
 
