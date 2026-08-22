@@ -58,8 +58,40 @@ export function conjunctionsToCsv(rows: ResolvedConjunction[]): string {
   return lines.join('\r\n');
 }
 
+/**
+ * A host that mediates downloads on the page's behalf.
+ *
+ * Some embedding contexts sandbox the frame so that a page cannot start a
+ * download itself — an `<a download>` with a blob URL is simply inert. Where
+ * such a host exposes a save mechanism, use it; everywhere else the blob link
+ * below is the normal path and needs nothing.
+ */
+interface SaveHost {
+  use?: (name: string) => Promise<{
+    save?: (req: { filename: string; data: string }) => Promise<unknown>;
+  } | null>;
+}
+
+async function saveThroughHost(filename: string, csv: string): Promise<boolean> {
+  const host = (globalThis as { claude?: SaveHost }).claude;
+  if (!host?.use) return false;
+  try {
+    const downloads = await host.use('downloads');
+    if (!downloads?.save) return false;
+    await downloads.save({ filename, data: csv });
+    return true;
+  } catch (err) {
+    // The viewer declining is a decision, not a failure — do not then try to
+    // force the file on them by another route. Anything else means the host
+    // could not do it, so fall back.
+    return (err as { code?: string })?.code === 'declined';
+  }
+}
+
 /** Hand the file to the browser. No network involved. */
-export function downloadCsv(filename: string, csv: string): void {
+export async function downloadCsv(filename: string, csv: string): Promise<void> {
+  if (await saveThroughHost(filename, csv)) return;
+
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

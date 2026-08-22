@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { CASCADE, RESOLVED, resolve } from '../data/conjunctions';
 import type { RunCascade } from '../data/engine/run';
 import type { ResolvedConjunction } from '../data/types';
+import ScreeningWorker from '../workers/screening.worker?worker&inline';
 import type { ScreenRequest, ScreenResponse } from '../workers/screening.worker';
 
 /**
@@ -48,10 +49,35 @@ export function useScreening() {
     // Ignore a second click while a run is in flight rather than racing two.
     if (workerRef.current) return;
 
-    const worker = new Worker(
-      new URL('../workers/screening.worker.ts', import.meta.url),
-      { type: 'module' },
-    );
+    /*
+     * Inlined rather than emitted as a separate chunk, so the whole console can
+     * be built as one self-contained file that runs from `file://` with no
+     * server and no network. Costs a copy of the engine in the bundle; buys a
+     * demo that cannot fail to load.
+     */
+    let worker: Worker;
+    try {
+      worker = new ScreeningWorker();
+    } catch {
+      /*
+       * Opening the single-file build straight off the disk puts the page on a
+       * null origin, where Chrome refuses to start a worker from a blob URL.
+       * Everything else still works — the dashboard is showing a real screening
+       * run either way — so say precisely what is unavailable and why rather
+       * than leaving a button that does nothing.
+       */
+      setState((s) => ({
+        ...s,
+        progress: null,
+        stage: null,
+        error:
+          'A live re-run needs a Web Worker, which the browser blocks for a page ' +
+          'opened directly from disk (file://). The events on screen are still a ' +
+          'real screening run — they were computed at build time by the same ' +
+          'engine. Serve this file over http to re-run it live.',
+      }));
+      return;
+    }
     workerRef.current = worker;
     setState((s) => ({ ...s, progress: 0, stage: 'screen', error: null }));
 

@@ -73,7 +73,8 @@ the screens do not care where the numbers came from.
 npm run dev        # dev server
 npm run build      # tsc -b && vite build — the only CI this repo has
 npm run screen     # re-run screening, rewrite src/data/precomputed.json
-npm run validate   # known-answer tests for the engine (must stay 10/10)
+npm run validate   # known-answer tests for the engine (must stay 15/15)
+npm run build:single  # one self-contained file in dist-single/
 scripts/fetch-snapshot.sh   # refresh the snapshot from CelesTrak, by hand
 ```
 

@@ -136,14 +136,14 @@ export const FEATURES: Feature[] = [
     label: 'Export CSV',
     status: 'live',
     group: 'Actions',
-    note: 'Downloads the conjunction table exactly as filtered and sorted on screen: event id, TCA in UTC, miss distance, relative velocity, Pc, score, severity, sigma, element-set age and both objects. Full precision, not display precision.',
+    note: 'Downloads the conjunction table exactly as filtered and sorted on screen: event id, TCA in UTC, miss distance, relative velocity, Pc, score, severity, sigma, element-set age and both objects. Full precision, not display precision. Where the page is embedded somewhere that sandboxes downloads, it asks the host to save the file instead.',
   },
   {
     id: 'run',
     label: 'Run screening',
     status: 'live',
     group: 'Actions',
-    note: 'Runs the real screening engine in a Web Worker with live progress: SGP4 propagation of every catalogued object over the configured horizon, a coarse distance screen, then bisection on range rate for each candidate. A 72 h run is about 3.6 million propagations and takes roughly twenty seconds. It reproduces the committed result exactly, because it is the same code.',
+    note: 'Runs the real screening engine in a Web Worker with live progress: SGP4 propagation of every catalogued object over the configured horizon, a coarse distance screen, then bisection on range rate for each candidate. A 72 h run is about 3.6 million propagations and takes roughly twenty seconds. It reproduces the committed result exactly, because it is the same code. One exception, which the button reports rather than swallowing: a page opened straight from disk (file://) is a null origin, where the browser refuses to start a worker at all.',
   },
   {
     id: 'ack',

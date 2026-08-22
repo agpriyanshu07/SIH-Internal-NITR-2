@@ -188,7 +188,7 @@ export function Dashboard() {
           <Button
             className="px-[13px] py-[7px] text-sm text-secondary"
             onClick={() =>
-              downloadCsv(
+              void downloadCsv(
                 `kessler-conjunctions-${new Date(cascade.startUtc).toISOString().slice(0, 10)}.csv`,
                 conjunctionsToCsv(rows),
               )

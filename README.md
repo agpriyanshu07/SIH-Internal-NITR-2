@@ -37,11 +37,12 @@ To produce static files:
 npm run build
 ```
 
-Two more, both offline:
+Three more, all offline:
 
 ```bash
-npm run screen      # re-run the screening engine and commit the result
-npm run validate    # known-answer tests for the engine
+npm run screen        # re-run the screening engine and commit the result
+npm run validate      # known-answer tests for the engine
+npm run build:single  # one self-contained file — see below
 ```
 
 `npm run screen` is deterministic: re-running it reproduces all 2,955 events
@@ -57,10 +58,10 @@ run at a shorter horizon leaves the dashboard's window filter offering more
 than the data covers — `npm run validate` checks for exactly that.
 
 The output in `dist/` uses relative asset paths and hash-based routing, so it can
-be served from any static host or subdirectory without server-side rewrites. It
-is not yet a single self-contained file — Chrome blocks ES modules loaded over
-`file://`, so opening `dist/index.html` directly still needs a local static
-server (`npm run preview`).
+be served from any static host or subdirectory without server-side rewrites.
+Opening `dist/index.html` straight off the disk still needs a local static server
+(`npm run preview`), because it loads its JavaScript as a separate module file.
+For a copy that opens with no server at all, see the single-file build below.
 
 ## Screens
 
@@ -252,10 +253,28 @@ makes the engine faster and quieter while dropping real close approaches.
 5. The screening radius covers the step size at the maximum closing speed.
 6. Derived perigee/apogee agree with the filter's own geometry.
 
+## The single-file build
+
+```bash
+npm run build:single    # -> dist-single/index.html
+```
+
+One file, about 1.6 MB, with everything inlined: the JavaScript, the stylesheet,
+the Latin font subsets, the committed orbital snapshot and the screening worker.
+No server, no network, no build step at the far end — open it and the console
+runs, with all 2,955 events already screened.
+
+One caveat, and the app states it rather than failing silently: a browser will
+not start a Web Worker on a page opened straight from disk (`file://` is a null
+origin), so the **Run screening** button cannot re-run live there. Everything
+else works, and the events on screen are a real screening run either way — they
+were computed at build time by the same engine. Serve the file over http and the
+live re-run works too.
+
 ## Not built
 
-Demo mode (a scripted CRITICAL-event replay) and a single-file static build are
-not implemented. Nor is re-propagation after a manoeuvre. See "What actually
+Demo mode (a scripted CRITICAL-event replay) is not implemented. Nor is
+re-propagation after a manoeuvre. See "What actually
 works" above, or `/console/status` in the app, for the full picture.
 
 ## Structure

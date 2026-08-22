@@ -1,8 +1,21 @@
-@import '@fontsource/ibm-plex-sans/400.css';
-@import '@fontsource/ibm-plex-sans/500.css';
-@import '@fontsource/ibm-plex-sans/600.css';
-@import '@fontsource/ibm-plex-mono/400.css';
-@import '@fontsource/ibm-plex-mono/500.css';
+/*
+ * Latin subsets only.
+ *
+ * @fontsource's default entry points ship every subset the family has —
+ * Cyrillic, Greek, Vietnamese — which is 168 font files for a console whose
+ * every string, object name and operator is ASCII. latin + latin-ext covers
+ * the typographic characters the UI actually uses (degree, multiplication
+ * sign, superscript minus, em dash) and cuts the build by roughly half a
+ * megabyte, which is what makes a single self-contained file practical.
+ */
+@import '@fontsource/ibm-plex-sans/latin-400.css';
+@import '@fontsource/ibm-plex-sans/latin-500.css';
+@import '@fontsource/ibm-plex-sans/latin-600.css';
+@import '@fontsource/ibm-plex-sans/latin-ext-400.css';
+@import '@fontsource/ibm-plex-sans/latin-ext-500.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';
+@import '@fontsource/ibm-plex-mono/latin-ext-400.css';
 
 @tailwind base;
 @tailwind components;
