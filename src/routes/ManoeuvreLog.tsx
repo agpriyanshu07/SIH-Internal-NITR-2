@@ -4,6 +4,8 @@ import { BURN_STATUS_SEV, MANOEUVRES, type BurnStatus } from '../data/manoeuvres
 import { fmtDur, fmtNorad, fmtUTC } from '../data/format';
 import { useNow } from '../hooks/useNow';
 import { EmptyState, Panel, SeverityChip, Segmented, Button } from '../components/primitives';
+import { BurnAdvisor } from '../components/BurnAdvisor';
+import { RESOLVED, reband } from '../data/conjunctions';
 import { passesThresholds, useThresholds } from '../state/thresholds';
 
 /**
@@ -40,6 +42,12 @@ export function ManoeuvreLog() {
     [status, linkedOnly],
   );
 
+  /* Real screened events the advisor can plan against, under the operator's
+     own floor and covariance assumption. */
+  const advisorEvents = RESOLVED.map((e) => reband(e, thresholds.sigmaScale)).filter(
+    (e) => passesThresholds(e, thresholds),
+  );
+
   const planned = MANOEUVRES.filter((m) => m.status === 'PLANNED').length;
   const totalDv = MANOEUVRES.filter((m) => m.status === 'EXECUTED').reduce(
     (s, m) => s + m.deltaV,
@@ -52,7 +60,8 @@ export function ManoeuvreLog() {
         <div className="flex flex-col gap-[5px]">
           <h1 className="text-2xl font-medium tracking-tight text-primary">Manoeuvre log</h1>
           <p className="font-mono text-xs text-tertiary">
-            Collision-avoidance and station-keeping burns · read-only in this prototype
+            Historic burns are synthetic and read-only · the advisor below plans
+            against real screened events
           </p>
         </div>
         <div className="flex gap-6">
@@ -69,8 +78,9 @@ export function ManoeuvreLog() {
         </div>
       </div>
 
-      <Panel className="min-h-[520px]">
-        <div className="flex h-full flex-col">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+        <Panel className="min-h-[520px]">
+          <div className="flex h-full flex-col">
           <div className="flex flex-wrap items-center gap-x-[18px] gap-y-2 border-b border-hairline px-[14px] py-[9px]">
             <Segmented label="Status" segments={STATUSES} value={status} onChange={setStatus} />
             <button
@@ -176,7 +186,10 @@ export function ManoeuvreLog() {
             </div>
           </div>
         </div>
-      </Panel>
+        </Panel>
+
+        <BurnAdvisor events={advisorEvents} />
+      </div>
 
       <p className="font-mono text-2xs uppercase tracking-[0.08em] text-tertiary">
         Records are synthetic · planning and commanding a burn are not implemented

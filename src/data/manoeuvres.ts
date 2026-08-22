@@ -1,6 +1,6 @@
 import { makeRng, int, pick, uniform, weighted } from './rng';
 import { RESOLVED, SESSION_START } from './conjunctions';
-import { OBJECTS, objectById } from './objects';
+import { OBJECTS, groupOf, objectById } from './objects';
 import type { ResolvedConjunction, SpaceObject } from './types';
 
 /**
@@ -65,7 +65,18 @@ function build(): Manoeuvre[] {
   const rng = makeRng(MANOEUVRE_SEED);
 
   // Only active payloads get manoeuvred — debris and spent stages cannot.
-  const manoeuvrable = OBJECTS.filter((o) => o.type === 'PAYLOAD');
+  /*
+   * Only objects that can actually manoeuvre.
+   *
+   * Filtering on type === 'PAYLOAD' was not enough once the catalogue became
+   * real: COSMOS 2251 is a payload by class and has been a derelict since 2009,
+   * so the log cheerfully showed burns being flown by a dead satellite. An
+   * object needs an active operator, and in this snapshot that means the
+   * stations group — crewed modules and their visiting vehicles.
+   */
+  const manoeuvrable = OBJECTS.filter(
+    (o) => o.type === 'PAYLOAD' && groupOf(o.norad) === 'stations',
+  );
   const out: Manoeuvre[] = [];
 
   // Upcoming events worth a burn, most severe first.

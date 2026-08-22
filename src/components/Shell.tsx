@@ -21,13 +21,20 @@ import { OBJECTS, SNAPSHOT_EPOCH } from '../data/objects';
  * Element-set freshness, read from the snapshot rather than asserted.
  *
  * This used to be `Date.now() - 134s` — a hard-coded "fetched 2 m 14 s ago"
- * that was true no matter what the data was. It is now the age of the OLDEST
- * element set the console is screening with, measured from each object's own
- * TLE epoch. The oldest, not the average: a prediction is only as fresh as the
- * stalest orbit that went into it.
+ * that was true no matter what the data was.
+ *
+ * It is now the MEDIAN age across the screened catalogue, measured from each
+ * object's own TLE epoch. Median, not maximum: this snapshot's oldest element
+ * set is 30 days old, but that is 26 barely-tracked fragments out of 840, and
+ * they are excluded by the default screening floor before they can reach an
+ * event. A permanently red "30 d — STALE" would describe objects the operator
+ * is not looking at. The tail is in the tooltip, where it belongs.
  */
-const OLDEST_ELSET_DAYS = OBJECTS.reduce((m, o) => Math.max(m, o.age), 0);
-const OLDEST_ELSET_MS = OLDEST_ELSET_DAYS * 86400000;
+const ELSET_AGES = OBJECTS.map((o) => o.age).sort((a, b) => a - b);
+const MEDIAN_ELSET_DAYS = ELSET_AGES[Math.floor(ELSET_AGES.length / 2)] ?? 0;
+const OLDEST_ELSET_DAYS = ELSET_AGES[ELSET_AGES.length - 1] ?? 0;
+const STALE_COUNT = ELSET_AGES.filter((a) => a > 3).length;
+const MEDIAN_ELSET_MS = MEDIAN_ELSET_DAYS * 86400000;
 
 /** Beyond three days a TLE has drifted far enough to warrant flagging. */
 const STALE_AFTER_MS = 3 * 86400000;
@@ -90,7 +97,7 @@ export function Shell() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const fetchAgeMs = OLDEST_ELSET_MS;
+  const fetchAgeMs = MEDIAN_ELSET_MS;
   const stale = fetchAgeMs > STALE_AFTER_MS;
   const who = operator?.name ?? 'Signed out';
 
@@ -163,7 +170,11 @@ export function Shell() {
           <div className="relative z-10 flex items-center gap-5">
             <div
               className="flex items-center gap-2"
-              title={`Snapshot captured ${fmtUTC(new Date(SNAPSHOT_EPOCH))} · oldest element set ${OLDEST_ELSET_DAYS.toFixed(2)} d before that`}
+              title={
+                `Snapshot captured ${fmtUTC(new Date(SNAPSHOT_EPOCH))}. ` +
+                `Median element set ${MEDIAN_ELSET_DAYS.toFixed(2)} d old, oldest ${OLDEST_ELSET_DAYS.toFixed(2)} d; ` +
+                `${STALE_COUNT} of ${ELSET_AGES.length} objects over 3 d.`
+              }
             >
               <span
                 className={`h-[6px] w-[6px] flex-none rounded-full ${
@@ -171,7 +182,7 @@ export function Shell() {
                 }`}
               />
               <span className="whitespace-nowrap font-mono text-xs- tracking-data text-secondary">
-                OLDEST ELSET · {fmtAge(fetchAgeMs)}{stale && ' — STALE'}
+                MEDIAN ELSET · {fmtAge(fetchAgeMs)}{stale && ' — STALE'}
               </span>
             </div>
 

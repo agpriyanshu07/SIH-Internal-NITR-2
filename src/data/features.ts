@@ -92,7 +92,7 @@ export const FEATURES: Feature[] = [
     to: '/console/manoeuvres',
     status: 'live',
     group: 'Operations',
-    note: 'Burn history against screened events, with status and delta-v filters. The events are real; the burn RECORDS are still synthetic and read-only. No manoeuvre in this log was ever planned or flown.',
+    note: 'Two halves, and they are not equally real. The burn HISTORY is synthetic and read-only — no manoeuvre in that table was ever planned or flown. The burn ADVISOR beside it is live: pick a real screened event, propose a delta-v, and it applies the first-order along-track result (dS = 3 x dV x t) against the propagated miss distance, re-deriving Pc and severity. It reports a range, not a number, because an along-track displacement is not necessarily across the miss vector. It does NOT re-propagate: there is no post-burn state vector and so no check that the burn merely creates a different conjunction with a third object.',
   },
   {
     id: 'thresholds',
