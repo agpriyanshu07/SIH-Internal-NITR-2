@@ -1,7 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { evaluateBurn, leadTimeSeconds, minimumDeltaV } from '../data/advisor';
-import { fmtDur, fmtPc } from '../data/format';
+import {
+  evaluateBurn,
+  evaluateBurnPropagated,
+  leadTimeSeconds,
+  minimumDeltaV,
+  minimumDeltaVPropagated,
+} from '../data/advisor';
+import { entryById } from '../data/objects';
+import { fmtPc } from '../data/format';
+import { fmtDur } from '../data/format';
 import { useNow } from '../hooks/useNow';
 import { useThresholds } from '../state/thresholds';
 import type { ResolvedConjunction } from '../data/types';
@@ -45,10 +53,35 @@ export function BurnAdvisor({ events }: { events: ResolvedConjunction[] }) {
         : null,
     [event, deltaV, lead, thresholds.sigmaScale],
   );
-  const toClear = useMemo(
-    () => (event ? minimumDeltaV(event, lead, 'LOW', thresholds.sigmaScale) : null),
-    [event, lead, thresholds.sigmaScale],
-  );
+  /*
+   * The real answer: the delta-v applied to the asset's state vector and
+   * re-propagated, giving one post-burn miss distance rather than a range.
+   * evaluateBurn's closed form is kept alongside it as a cross-check — showing
+   * both is more honest than showing whichever is more flattering.
+   */
+  const propagated = useMemo(() => {
+    if (!event || lead <= 0) return null;
+    const A = entryById(event.a);
+    const B = entryById(event.b);
+    if (!A || !B) return null;
+    return evaluateBurnPropagated(
+      event,
+      A,
+      B,
+      { deltaVmmS: deltaV, leadSeconds: lead },
+      thresholds.sigmaScale,
+    );
+  }, [event, deltaV, lead, thresholds.sigmaScale]);
+
+  const toClear = useMemo(() => {
+    if (!event) return null;
+    const A = entryById(event.a);
+    const B = entryById(event.b);
+    if (A && B) {
+      return minimumDeltaVPropagated(event, A, B, lead, 'LOW', thresholds.sigmaScale);
+    }
+    return minimumDeltaV(event, lead, 'LOW', thresholds.sigmaScale);
+  }, [event, lead, thresholds.sigmaScale]);
 
   if (!event || !outcome) {
     return (
@@ -64,7 +97,9 @@ export function BurnAdvisor({ events }: { events: ResolvedConjunction[] }) {
   return (
     <Panel
       title="Burn advisor"
-      aside={<span className="num text-2xs text-tertiary">PLANNING AID — NOT A COMMAND</span>}
+      aside={
+        <span className="num text-2xs text-tertiary">PLANNING AID — NOT A COMMAND</span>
+      }
     >
       <div className="flex flex-col gap-5 p-5">
         <div className="flex flex-col gap-2">
@@ -123,42 +158,86 @@ export function BurnAdvisor({ events }: { events: ResolvedConjunction[] }) {
           </div>
         </div>
 
-        {/* The range, not a single number. */}
-        <div className="flex flex-col gap-3 border-t border-hairline-soft pt-4">
-          <div className="label">Resulting miss distance</div>
+        {propagated ? (
+          <div className="flex flex-col gap-3 border-t border-hairline-soft pt-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="label">Post-burn miss distance</span>
+              <span className="num text-2xs text-tertiary">RE-PROPAGATED</span>
+            </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-[9px]">
-              <SeverityChip sev={outcome.bestSev} />
-              <span className="text-sm text-secondary">
-                displacement across the miss vector
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-[9px]">
+                <SeverityChip sev={propagated.sev} />
+                <span className="text-sm text-secondary">
+                  from {event.miss.toFixed(3)} km
+                </span>
+              </div>
+              <div className="num flex-none text-xl text-primary">
+                {propagated.missKm.toFixed(3)}
+                <span className="ml-1 text-xs- text-tertiary">km</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-[14px] gap-y-3">
+              <div>
+                <div className="label mb-1">Collision probability</div>
+                <div className="num text-md text-primary">
+                  {fmtPc(propagated.pc)}
+                </div>
+              </div>
+              <div>
+                <div className="label mb-1">TCA moves by</div>
+                <div className="num text-md text-primary">
+                  {propagated.tcaShiftSeconds >= 0 ? '+' : ''}
+                  {propagated.tcaShiftSeconds.toFixed(1)}
+                  <span className="ml-1 text-xs- text-tertiary">s</span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+              The delta-v is applied to the asset&rsquo;s state vector and both the
+              burned and unburned states are propagated, so this is a real
+              displacement in three dimensions rather than a scalar — there is one
+              answer, not a range. The burn also moves the time of closest approach,
+              so it is searched for again rather than assumed unchanged.
+            </p>
+
+            {/* Keeping the approximation visible is the point: it shows what the
+                cheaper model costs, in the direction it errs. */}
+            <div className="flex items-baseline justify-between gap-3 border-t border-hairline-soft pt-3">
+              <span className="text-xs- text-tertiary">
+                Closed form Δs ≈ 3·Δv·t predicted
+              </span>
+              <span className="num flex-none text-xs- text-tertiary">
+                {propagated.closedFormDisplacementKm.toFixed(3)} km vs{' '}
+                <span className="text-secondary">
+                  {propagated.displacementKm.toFixed(3)} km
+                </span>
               </span>
             </div>
-            <div className="num flex-none text-md text-primary">
-              {outcome.bestMissKm.toFixed(3)}
-              <span className="ml-1 text-xs- text-tertiary">km</span>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 border-t border-hairline-soft pt-4">
+            <div className="label">Resulting miss distance</div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-[9px]">
+                <SeverityChip sev={outcome.bestSev} />
+                <span className="text-sm text-secondary">
+                  displacement across the miss vector
+                </span>
+              </div>
+              <div className="num flex-none text-md text-primary">
+                {outcome.bestMissKm.toFixed(3)}
+                <span className="ml-1 text-xs- text-tertiary">km</span>
+              </div>
             </div>
+            <p className="text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+              Closed-form estimate only — the element sets for this pair are not
+              available to re-propagate, so this is a bound rather than an answer.
+            </p>
           </div>
-          <div className="num pl-[17px] text-xs- text-tertiary">
-            Pc {fmtPc(outcome.bestPc)}
-          </div>
-
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-[9px]">
-              <SeverityChip sev={outcome.worstSev} />
-              <span className="text-sm text-secondary">
-                displacement along the relative velocity
-              </span>
-            </div>
-            <div className="num flex-none text-md text-primary">
-              {outcome.worstMissKm.toFixed(3)}
-              <span className="ml-1 text-xs- text-tertiary">km</span>
-            </div>
-          </div>
-          <div className="num pl-[17px] text-xs- text-tertiary">
-            Pc {fmtPc(outcome.worstPc)} — unchanged; the pass moves in time, not distance
-          </div>
-        </div>
+        )}
 
         <div className="flex flex-col gap-2 border-t border-hairline-soft pt-4">
           <div className="label">To clear the LOW band</div>
@@ -167,27 +246,29 @@ export function BurnAdvisor({ events }: { events: ResolvedConjunction[] }) {
               <>
                 No burn under 200 mm/s gets there with{' '}
                 <span className="num text-primary">{fmtDur(lead * 1000)}</span> of lead
-                time. Earlier is the only lever left — Δs is linear in both Δv and
-                warning time, and warning time is free.
+                time. Earlier is the only lever left — displacement grows with both Δv
+                and warning time, and warning time is free.
               </>
             ) : (
               <>
-                At least <span className="num text-primary">{toClear.toFixed(1)} mm/s</span>,
-                and only if the displacement falls across the miss vector. Treat it as a
-                floor on what a burn would need, never as a sufficient figure.
+                <span className="num text-primary">{toClear.toFixed(1)} mm/s</span>{' '}
+                along-track, applied now. Found by re-propagating the burned state, so
+                it accounts for the actual encounter geometry rather than assuming the
+                displacement lands where it helps most.
               </>
             )}
           </div>
         </div>
 
         <p className="border-t border-hairline-soft pt-4 text-sm leading-[1.6] text-tertiary [text-wrap:pretty]">
-          First-order secular estimate. Nothing here is re-propagated: there is no
-          post-burn state vector, and so no check that this manoeuvre does not simply
-          create a new conjunction with a third object. Re-run{' '}
+          The post-burn state is propagated against this pair only. It is not a
+          re-screen: nothing here checks whether the manoeuvre puts the asset into a
+          new conjunction with a third object, which is the failure mode that makes
+          collision avoidance hard. Run{' '}
           <Link to="/console" className="text-secondary underline underline-offset-2 hover:text-primary">
             screening
           </Link>{' '}
-          against a modified orbit before acting on any of it.
+          against the modified orbit before acting on any of it.
         </p>
       </div>
     </Panel>

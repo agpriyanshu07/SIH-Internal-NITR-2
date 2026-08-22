@@ -92,7 +92,7 @@ export const FEATURES: Feature[] = [
     to: '/console/manoeuvres',
     status: 'live',
     group: 'Operations',
-    note: 'Two halves, and they are not equally real. The burn HISTORY is synthetic and read-only — no manoeuvre in that table was ever planned or flown. The burn ADVISOR beside it is live: pick a real screened event, propose a delta-v, and it applies the first-order along-track result (dS = 3 x dV x t) against the propagated miss distance, re-deriving Pc and severity. It reports a range, not a number, because an along-track displacement is not necessarily across the miss vector. It does NOT re-propagate: there is no post-burn state vector and so no check that the burn merely creates a different conjunction with a third object.',
+    note: 'Two halves, and they are not equally real. The burn HISTORY is synthetic and read-only — no manoeuvre in that table was ever planned or flown. The burn ADVISOR beside it is live and now genuinely re-propagates: the delta-v is applied to the asset\u2019s real state vector, the burned and unburned states are both propagated, and their difference is a true three-dimensional displacement — so it gives one post-burn miss distance rather than a range, re-derives Pc and severity from it, and searches for the new time of closest approach rather than assuming the burn leaves it unchanged. The closed-form estimate is shown beside it for comparison. Two limits remain: the displacement arms are two-body (their model error cancels between them, the absolute trajectory is still SGP4), and this is not a re-screen — nothing checks whether the burn creates a new conjunction with a third object.',
   },
   {
     id: 'thresholds',

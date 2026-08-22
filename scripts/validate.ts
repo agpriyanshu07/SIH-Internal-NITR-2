@@ -6,6 +6,7 @@ import { periApo, screen, SCREEN_KM, STEP_S, CO_ORBIT_KM } from '../src/data/eng
 import { refine } from '../src/data/engine/refine';
 import { DEFAULT_HORIZON_HOURS, runScreening } from '../src/data/engine/run';
 import { SEVERITY_RANK } from '../src/data/riskScore';
+import { applyAlongTrackDeltaV, propagateState } from '../src/data/engine/twobody';
 
 /**
  * Known-answer tests for the screening engine.
@@ -346,6 +347,79 @@ section('8. The committed screening result matches the default horizon');
       committed.conjunctions.length === (committed.cascade as { events?: number }).events,
     `${committed.conjunctions.length} events stored`,
   );
+}
+
+// ── 9. The two-body propagator behind the burn advisor ──────────────────────
+// The advisor's re-propagated answer is only worth more than the closed-form
+// one if this integrator is right. Three properties pin it down.
+section('9. Two-body propagator is self-consistent');
+{
+  const iss = byName('ISS (ZARYA)');
+  if (!iss) {
+    check('ISS present', false, 'not found');
+  } else {
+    const pv = satellite.propagate(iss.rec, new Date(SNAPSHOT_EPOCH));
+    const st = { r: pv!.position!, v: pv!.velocity! };
+
+    // (a) Propagating forward then back must return the original state.
+    const there = propagateState(st, 3600);
+    const back = there ? propagateState(there, -3600) : null;
+    const rt = back
+      ? Math.hypot(back.r.x - st.r.x, back.r.y - st.r.y, back.r.z - st.r.z)
+      : Infinity;
+    check(
+      'forward then back returns the original state',
+      rt < 1e-6,
+      `round-trip error ${rt.toExponential(2)} km over +/-1 h`,
+    );
+
+    // (b) Specific orbital energy is conserved: the integrator must not add or
+    //     remove energy over a long arc.
+    const long = propagateState(st, 6 * 3600);
+    const MU = 398600.4418;
+    const energy = (s: { r: typeof st.r; v: typeof st.v }) =>
+      (s.v.x ** 2 + s.v.y ** 2 + s.v.z ** 2) / 2 -
+      MU / Math.hypot(s.r.x, s.r.y, s.r.z);
+    const de = long ? Math.abs(energy(long) - energy(st)) / Math.abs(energy(st)) : 1;
+    check(
+      'specific orbital energy is conserved over 6 h',
+      de < 1e-10,
+      `relative drift ${de.toExponential(2)}`,
+    );
+
+    // (c) A zero delta-v must produce exactly zero displacement — otherwise the
+    //     advisor would report a burn benefit for not burning.
+    const zero = propagateState(applyAlongTrackDeltaV(st, 0), 7200);
+    const plain = propagateState(st, 7200);
+    const d0 =
+      zero && plain
+        ? Math.hypot(zero.r.x - plain.r.x, zero.r.y - plain.r.y, zero.r.z - plain.r.z)
+        : Infinity;
+    check(
+      'a zero burn displaces the asset by exactly zero',
+      d0 === 0,
+      `displacement ${d0} km`,
+    );
+
+    // (d) The along-track closed form is what the differential arms should
+    //     reproduce to first order; agreeing within a few percent over a short
+    //     arc is the cross-check that neither is badly wrong.
+    const dv = 10e-6; // 10 mm/s in km/s
+    const t = 3 * 3600;
+    const burned = propagateState(applyAlongTrackDeltaV(st, dv), t);
+    const base = propagateState(st, t);
+    const actual =
+      burned && base
+        ? Math.hypot(burned.r.x - base.r.x, burned.r.y - base.r.y, burned.r.z - base.r.z)
+        : 0;
+    const closed = 3 * dv * t;
+    const rel = Math.abs(actual - closed) / closed;
+    check(
+      'displacement agrees with 3*dV*t to within 10% over 3 h',
+      rel < 0.1,
+      `re-propagated ${actual.toFixed(4)} km vs closed form ${closed.toFixed(4)} km (${(rel * 100).toFixed(1)}%)`,
+    );
+  }
 }
 
 section('Result');
