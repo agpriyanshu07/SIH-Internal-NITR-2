@@ -3,11 +3,21 @@
 A clickable prototype for an orbital conjunction screening console: it tracks
 satellites and debris in Low Earth Orbit and ranks predicted close approaches.
 
-> **All data in this application is synthetic.**
-> There is no backend, no network access, and no orbital propagation. Object
-> names, NORAD IDs, element sets, miss distances and collision probabilities are
-> fabricated by a seeded generator. Nothing here should be used for any
-> operational purpose.
+> **The orbital data and the screening are real. The operational trappings are
+> not.**
+>
+> Objects, element sets, propagation, times of closest approach, miss distances
+> and relative velocities all come from a committed CelesTrak snapshot screened
+> with SGP4 — none of them are invented. Probability of collision is derived
+> from those measurements through a Foster-style model whose one assumed input,
+> the positional covariance, is stated wherever it is used, because a TLE does
+> not carry one.
+>
+> There is still no backend and no network access: the snapshot is bundled into
+> the build. The manoeuvre log's burn records remain synthetic, sign-in
+> authenticates nothing, and acknowledgements live in your own browser. See
+> `/console/status` for the per-feature breakdown. Nothing here should be used
+> for any operational purpose.
 
 ## Running it
 
@@ -25,6 +35,13 @@ To produce static files:
 
 ```bash
 npm run build
+```
+
+Two more, both offline:
+
+```bash
+npm run screen      # re-run the screening engine and commit the result
+npm run validate    # known-answer tests for the engine
 ```
 
 The output in `dist/` uses relative asset paths and hash-based routing, so it can
@@ -52,17 +69,19 @@ server (`npm run preview`).
 `/console/status` is the authoritative, in-app answer, generated from
 `src/data/features.ts`. The short version:
 
-**Live** — the conjunction dashboard (filters and sorts genuinely filter and
-sort), event detail, orbital viewer, object catalogue, manoeuvre log, and
-screening thresholds.
+**Live** — the screening engine and the orbital data behind it, the conjunction
+dashboard (filters and sorts genuinely filter and sort), event detail, orbital
+viewer, object catalogue, screening thresholds, Export CSV, and Run screening.
 
-**Partial** — sign in. The form validates and sets a local display name for the
-console avatar. There is no backend, so nothing is authenticated: no password is
-requested, no credential is checked, transmitted or stored, and no link is sent.
+**Partial** — positional uncertainty (the 1-sigma feeding Pc is assumed, not
+measured — see below), acknowledgements (remembered in your browser, sent
+nowhere), and sign in. The sign-in form validates and sets a local display name
+for the console avatar. There is no backend, so nothing is authenticated: no
+password is requested, no credential is checked, transmitted or stored, and no
+link is sent.
 
-**Not built** — Asset register, Alert routing, API keys, and the Export CSV, Run
-screening and Acknowledge event buttons. These are marked `NOT BUILT` in the
-sidebar rather than left looking clickable.
+**Not built** — Asset register, Alert routing and API keys. These are marked
+`NOT BUILT` in the sidebar rather than left looking clickable.
 
 Screening thresholds are not a dead form: they write to shared state that the
 dashboard and manoeuvre log both read, they persist across reloads, and changing
@@ -71,31 +90,92 @@ fresh console shows the full set.
 
 ## How the data works
 
-Everything lives in `src/data/` and is generated at module load from two fixed
-seeds, so the catalogue is byte-identical on every reload and on every machine.
-`Math.random()` is never called.
+### The snapshot
 
-- **`objects.ts`** — ~400 objects. The sixteen named in the design mockups are
-  included verbatim as anchors; the rest are generated from family templates
-  (Starlink shells, OneWeb planes, the Fengyun 1C and Cosmos 2251 debris clouds,
-  spent upper stages) so altitudes, inclinations and naming stay plausible.
-- **`conjunctions.ts`** — 60 events over a 72-hour horizon. Pairs must pass a
-  coarse apogee–perigee overlap filter before they are considered, which is the
-  same first-pass screen the landing page describes.
-- **Probability of collision is derived, not authored.** Miss distance, relative
-  velocity and element-set age are drawn from the generator; Pc then follows from
-  a Foster-style circular model. Two consequences worth knowing when demoing:
-  - Relative velocity comes from the actual angle between the two orbit planes,
-    so co-planar conjunctions are genuinely slow and crossing ones are fast.
-  - Positional uncertainty (σ) grows with element-set age *and* with how poorly
-    each object is tracked. A close approach between two large, well-tracked
-    objects therefore outranks an equally close approach involving an elderly
-    debris fragment — because in the second case we mostly do not know where
-    anything is. This is why `ISS × COSMOS 2251 DEB` at 0.412 km sits *below*
-    `ISS × ATLAS 5 CENTAUR R/B` at 0.190 km.
+`src/data/snapshot/` holds four CelesTrak GP groups as verbatim three-line TLE
+files, all captured at one instant so their epochs are mutually consistent:
 
-The generator guarantees at least two CRITICAL events and one TCA under 90
-minutes away, so the dashboard always opens with something urgent on it.
+| Group | Objects | What it is |
+| --- | --- | --- |
+| `stations` | 14 | ISS and CSS modules plus visiting crew and cargo vehicles |
+| `cosmos-1408-debris` | 13 | Fragments of the 2021 Russian ASAT test |
+| `iridium-33-debris` | 132 | Fragments of the 2009 Iridium 33 / Cosmos 2251 collision |
+| `cosmos-2251-debris` | 681 | The other half of that collision |
+
+`manifest.json` records where they came from and when. The files are bundled
+into the build, so the app makes no network request at any point — a demo must
+not depend on conference wifi. `scripts/fetch-snapshot.sh` refreshes them from
+CelesTrak by hand; it is the only thing in the repo that touches the network.
+
+Because every element set was captured at one moment, **the console clock is
+anchored to that moment** and advances in real time from it. Screening from
+today's wall clock would mean propagating these elements far past their epoch,
+where SGP4 stops telling the truth. Countdowns tick live and absolute
+timestamps stay honest about when the data is from.
+
+### The engine
+
+`src/data/engine/` — about 400 lines, no backend, runs in the browser.
+
+- **`parse.ts`** reads the TLEs. Every element, the epoch, and therefore the
+  element-set age come off the file. Two fields the UI wants are *not* in a TLE
+  and are marked as assumptions in the code and in the UI: radar cross-section
+  class (real RCS lives in the SATCAT) and launch day (a designator gives only
+  the year).
+- **`screen.ts`** is the coarse cascade: a radial apogee–perigee overlap filter,
+  then a 60-second SGP4 sweep of every surviving pair with a 450 km distance
+  gate. **That radius is derived, not tuned.** Objects close at up to ~15 km/s,
+  so between two samples 60 s apart their separation can change by 900 km — a
+  pass can dip to zero and recover entirely between samples unless the gate is
+  at least half of that. Shrinking it does not make the screen faster in any
+  honest sense; it makes it silently miss real close approaches while reporting
+  a tidier number of events.
+- **`refine.ts`** finds the exact time of closest approach by bisecting on the
+  sign change of range rate, which is negative while two objects close and
+  positive once they recede. Miss distance and relative velocity are then read
+  off a single propagation at that instant rather than approximated.
+- **`run.ts`** is the pipeline, shared verbatim by the build-time precompute and
+  the in-browser worker, so a live re-run cannot disagree with the committed
+  result.
+
+A pair also has to *separate* somewhere in the window to count. Without that,
+the most urgent "conjunctions" on the board are ISS modules and a docked
+Progress sitting 0 km apart — physically attached, not about to collide.
+
+### What the run measures
+
+Over the committed snapshot, 72-hour horizon:
+
+```
+352,380 pairs
+   -> 352,380 after the radial overlap filter
+   -> 239,972 coarse candidates   (34 dropped as co-orbiting)
+   ->   2,955 confirmed events    inside a 25 km gate
+3,628,800 SGP4 propagations, ~26 s
+```
+
+The radial filter removes nothing here, and the dashboard says so. All four
+groups occupy overlapping LEO shells, and the 450 km gate is wider than the gaps
+between them — the filter earns its keep on a catalogue spanning LEO to GEO, not
+on four debris clouds sharing an altitude band. Reporting the measured number
+rather than a flattering one is the point of that panel.
+
+The closest approach it finds is **81 m**, between an Iridium 33 fragment and a
+Cosmos 2251 fragment — two pieces of the same 2009 collision, still crossing.
+
+### Probability of collision
+
+Derived, not authored. Miss distance and relative velocity are measured; Pc then
+follows from a Foster-style circular model. The one input that is *assumed* is
+the positional covariance, because a TLE does not carry one — σ grows with real
+element-set age and with how well each object's size class is tracked. A close
+approach between two large, well-tracked objects therefore outranks an equally
+close approach involving an elderly fragment, because in the second case we
+mostly do not know where anything is. The detail view discloses this, and the
+Thresholds screen lets you scale σ and watch the severity banding move.
+
+Nothing is scripted. There is no guaranteed CRITICAL event: what is on the
+dashboard is what the propagator found.
 
 ## Design tokens
 
@@ -143,17 +223,37 @@ top-bar sweep — is disabled under `prefers-reduced-motion`.
   catalogue artboard is full-bleed, while this one sits inside the 196px console
   shell.
 
+## Validating the engine
+
+`npm run validate` runs known-answer tests, because the two ways this engine can
+be wrong are both silent — a coordinate-frame mistake makes every number wrong
+while every number still looks plausible, and an over-aggressive coarse filter
+makes the engine faster and quieter while dropping real close approaches.
+
+1. The ISS TLE propagates to a 380–440 km altitude band at ~7.66 km/s.
+2. An object screened against itself is exactly 0 km apart at every timestep.
+3. Every TCA `refine()` returns is a true local minimum of separation, checked
+   by sampling either side — a range-rate sign change alone could in principle
+   bracket a maximum.
+4. Brute-force all-pairs, with no filtering at all, finds exactly the same
+   candidates and the same distances as the filtered cascade.
+5. The screening radius covers the step size at the maximum closing speed.
+6. Derived perigee/apogee agree with the filter's own geometry.
+
 ## Not built
 
-Demo mode (the scripted CRITICAL-event replay) and a single-file static build are
-not implemented. See "What actually works" above, or `/console/status` in the
-app, for the full picture.
+Demo mode (a scripted CRITICAL-event replay) and a single-file static build are
+not implemented. Nor is re-propagation after a manoeuvre. See "What actually
+works" above, or `/console/status` in the app, for the full picture.
 
 ## Structure
 
 ```
 src/
-  data/         seeded generator, orbital arithmetic, formatting, risk scoring
+  data/         snapshot, screening engine, orbital arithmetic, risk scoring
+    snapshot/   committed CelesTrak TLE files + provenance manifest
+    engine/     TLE ingest, coarse screen, TCA refinement, the run pipeline
+  workers/      the screening engine, off the main thread
   components/   shell, primitives, charts, canvas visuals
   routes/       one file per screen
   lib/          shared orbit projection used by the hero and the viewer

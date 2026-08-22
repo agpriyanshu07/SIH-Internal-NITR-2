@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { RESOLVED } from '../data/conjunctions';
-import { CATALOGUE_TOTAL, OBJECTS } from '../data/objects';
+import { GROUP_COUNTS, OBJECTS, PROVENANCE } from '../data/objects';
+import { conjunctionsToCsv, downloadCsv } from '../data/csv';
 import { SEVERITY_RANK } from '../data/riskScore';
 import { fmtDur, fmtInt, fmtNorad, fmtPc, fmtUTC } from '../data/format';
 import { useNow } from '../hooks/useNow';
+import { useAcknowledged } from '../hooks/useAcknowledged';
+import { useScreening } from '../hooks/useScreening';
+import { CascadePanel } from '../components/CascadePanel';
 import { Button, MetricTile, Panel, Segmented, SeverityChip, EmptyState } from '../components/primitives';
 import { RegimePlot } from '../components/RegimePlot';
 import { ArrowDown, ArrowUp } from '../components/Icon';
@@ -70,7 +73,15 @@ export function Dashboard() {
   const [minRisk, setMinRisk] = useState<RiskFilter>('ALL');
   const [win, setWin] = useState<'12' | '24' | '72'>('72');
   const [cls, setCls] = useState<ClassFilter>('ALL');
-  const [selId, setSelId] = useState<string>('CJ-4429');
+  const [selId, setSelId] = useState<string>('');
+
+  /*
+   * The screening run. Starts as the committed build-time result so the table
+   * paints on first frame; "Run screening" replaces it with a live worker run
+   * of the same engine over the horizon the operator picked.
+   */
+  const { events, cascade, progress, stage, live, running, error, run } = useScreening();
+  const { toggle: toggleAck, isAcknowledged } = useAcknowledged();
 
   const sortBy = (k: SortKey) => {
     if (k === sortKey) setSortDir((d) => (d === -1 ? 1 : -1));
@@ -83,8 +94,8 @@ export function Dashboard() {
    * below then work within that set.
    */
   const screened = useMemo(
-    () => RESOLVED.filter((e) => passesThresholds(e, thresholds)),
-    [thresholds],
+    () => events.filter((e) => passesThresholds(e, thresholds)),
+    [events, thresholds],
   );
 
   const counts = useMemo(
@@ -130,8 +141,8 @@ export function Dashboard() {
         <div className="flex flex-col gap-[5px]">
           <h1 className="text-2xl font-medium tracking-tight text-primary">Conjunction screening</h1>
           <p className="font-mono text-xs text-tertiary">
-            All registered assets · horizon {thresholds.horizonHours} h ·{' '}
-            {fmtInt(OBJECTS.length)} objects in scope ·{' '}
+            {PROVENANCE.source.split(' (')[0]} · screened over{' '}
+            {cascade.horizonHours} h · {fmtInt(OBJECTS.length)} objects in scope ·{' '}
             <Link
               to="/console/thresholds"
               className={modified ? 'text-accent' : 'text-tertiary hover:text-primary'}
@@ -140,16 +151,48 @@ export function Dashboard() {
             </Link>
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button className="px-[13px] py-[7px] text-sm text-secondary">Export CSV</Button>
-          <Button variant="primary" className="px-[13px] py-[7px] text-sm">Run screening</Button>
+        <div className="flex items-center gap-2">
+          {running && (
+            <span className="num text-xs- text-tertiary" role="status" aria-live="polite">
+              {stage === 'refine' ? 'refining' : 'propagating'}{' '}
+              {Math.round((progress ?? 0) * 100)}%
+            </span>
+          )}
+          <Button
+            className="px-[13px] py-[7px] text-sm text-secondary"
+            onClick={() =>
+              downloadCsv(
+                `kessler-conjunctions-${new Date(cascade.startUtc).toISOString().slice(0, 10)}.csv`,
+                conjunctionsToCsv(rows),
+              )
+            }
+            disabled={rows.length === 0}
+          >
+            Export CSV
+          </Button>
+          <Button
+            variant="primary"
+            className="px-[13px] py-[7px] text-sm"
+            onClick={() => run(thresholds.horizonHours)}
+            disabled={running}
+          >
+            {running ? 'Screening…' : 'Run screening'}
+          </Button>
         </div>
       </div>
 
       {/* Metric row */}
       <div className="grid grid-cols-2 gap-px bg-hairline px-5 pt-5 sm:grid-cols-3 xl:grid-cols-5">
-        <MetricTile label="Objects tracked" value={fmtInt(CATALOGUE_TOTAL)} foot="+118 / 24 h" />
-        <MetricTile label="Pairs screened 24 h" value="1,204,556" foot="4 passes complete" />
+        <MetricTile
+          label="Objects tracked"
+          value={fmtInt(OBJECTS.length)}
+          foot={`${Object.keys(GROUP_COUNTS).length} CelesTrak groups`}
+        />
+        <MetricTile
+          label={`Pairs screened ${cascade.horizonHours} h`}
+          value={fmtInt(cascade.totalPairs)}
+          foot={`→ ${fmtInt(cascade.candidates)} candidates → ${fmtInt(cascade.events)} events`}
+        />
         <MetricTile
           label="High risk events"
           value={
@@ -171,7 +214,12 @@ export function Dashboard() {
           value={nextTca ? fmtDur(nextTca.tca - now) : '—'}
           foot={nextTca?.id ?? ''}
         />
-        <MetricTile label="Screening latency" value="42" unit="s" foot="p95 over last 6 passes" />
+        <MetricTile
+          label="Screening latency"
+          value={(cascade.elapsedMs / 1000).toFixed(1)}
+          unit="s"
+          foot={`${fmtInt(cascade.propagations)} SGP4 propagations`}
+        />
       </div>
 
       {/* Table + side panels */}
@@ -281,6 +329,19 @@ export function Dashboard() {
             <RegimePlot events={rows} />
           </Panel>
 
+          <CascadePanel cascade={cascade} live={live} />
+
+          {error && (
+            <div
+              role="alert"
+              data-sev="HIGH"
+              className="glass lift rounded-md border border-hairline px-[14px] py-3"
+            >
+              <div className="label mb-1">Screening run failed</div>
+              <div className="num text-xs- text-secondary">{error}</div>
+            </div>
+          )}
+
           {selected && (
             <Panel title={`Selected event — ${selected.id}`} className="flex-1">
               <div className="flex flex-col gap-[14px] p-[14px]">
@@ -318,7 +379,13 @@ export function Dashboard() {
                   <Link to={`/console/conjunction/${selected.id}`} className="flex-1">
                     <Button variant="primary" className="w-full py-2 text-sm">Open detail view</Button>
                   </Link>
-                  <Button className="px-[13px] py-2 text-sm text-secondary">Acknowledge</Button>
+                  <Button
+                    className="px-[13px] py-2 text-sm text-secondary"
+                    onClick={() => toggleAck(selected.id)}
+                    aria-pressed={isAcknowledged(selected.id)}
+                  >
+                    {isAcknowledged(selected.id) ? 'Acknowledged' : 'Acknowledge'}
+                  </Button>
                 </div>
               </div>
             </Panel>

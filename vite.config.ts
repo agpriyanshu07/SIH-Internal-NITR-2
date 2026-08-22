@@ -17,6 +17,13 @@ export default defineConfig({
       { find: '#wasm-multi-thread', replacement: stub },
     ],
   },
+  optimizeDeps: {
+    // Vite's dev-mode dependency pre-bundling crawls satellite.js's package
+    // `imports` map, which reaches the WASM entry (and its top-level await)
+    // before the aliases above can redirect it. Excluding it makes the dev
+    // server serve satellite.js as plain source ESM, where the aliases apply.
+    exclude: ['satellite.js'],
+  },
   worker: {
     // The screening worker is an ES module so it can import the engine directly
     // rather than being handed a duplicated copy of it.

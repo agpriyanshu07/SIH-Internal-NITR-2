@@ -6,6 +6,7 @@ import { SearchIcon } from './Icon';
 import { useTheme } from '../hooks/useTheme';
 import { initials, useOperator } from '../hooks/useOperator';
 import { FEATURES, type Feature } from '../data/features';
+import { OBJECTS, SNAPSHOT_EPOCH } from '../data/objects';
 
 /**
  * The console shell: glass sidebar over the drifting field lighting, top bar
@@ -16,8 +17,20 @@ import { FEATURES, type Feature } from '../data/features';
  */
 
 /** Last synthetic TLE fetch — 2 m 14 s before the session opened, then live. */
-const LAST_FETCH = Date.now() - (2 * 60 + 14) * 1000;
-const STALE_AFTER_MS = 3 * 60 * 60 * 1000;
+/**
+ * Element-set freshness, read from the snapshot rather than asserted.
+ *
+ * This used to be `Date.now() - 134s` — a hard-coded "fetched 2 m 14 s ago"
+ * that was true no matter what the data was. It is now the age of the OLDEST
+ * element set the console is screening with, measured from each object's own
+ * TLE epoch. The oldest, not the average: a prediction is only as fresh as the
+ * stalest orbit that went into it.
+ */
+const OLDEST_ELSET_DAYS = OBJECTS.reduce((m, o) => Math.max(m, o.age), 0);
+const OLDEST_ELSET_MS = OLDEST_ELSET_DAYS * 86400000;
+
+/** Beyond three days a TLE has drifted far enough to warrant flagging. */
+const STALE_AFTER_MS = 3 * 86400000;
 
 const NAV_GROUPS: { label: string; ids: string[] }[] = [
   { label: 'Operations', ids: ['conjunctions', 'viewer', 'catalogue', 'manoeuvres'] },
@@ -77,7 +90,7 @@ export function Shell() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const fetchAgeMs = now - LAST_FETCH;
+  const fetchAgeMs = OLDEST_ELSET_MS;
   const stale = fetchAgeMs > STALE_AFTER_MS;
   const who = operator?.name ?? 'Signed out';
 
@@ -150,7 +163,7 @@ export function Shell() {
           <div className="relative z-10 flex items-center gap-5">
             <div
               className="flex items-center gap-2"
-              title={`Last element-set fetch ${fmtUTC(new Date(LAST_FETCH))}`}
+              title={`Snapshot captured ${fmtUTC(new Date(SNAPSHOT_EPOCH))} · oldest element set ${OLDEST_ELSET_DAYS.toFixed(2)} d before that`}
             >
               <span
                 className={`h-[6px] w-[6px] flex-none rounded-full ${
@@ -158,7 +171,7 @@ export function Shell() {
                 }`}
               />
               <span className="whitespace-nowrap font-mono text-xs- tracking-data text-secondary">
-                TLE EPOCH · {fmtAge(fetchAgeMs)} AGO{stale && ' — STALE'}
+                OLDEST ELSET · {fmtAge(fetchAgeMs)}{stale && ' — STALE'}
               </span>
             </div>
 
