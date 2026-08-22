@@ -76,7 +76,7 @@ export const FEATURES: Feature[] = [
     to: '/console/viewer',
     status: 'live',
     group: 'Operations',
-    note: 'Time scrubber, play/pause, rate control and layer toggles all drive the canvas. Clicking an object selects it.',
+    note: 'Time scrubber, play/pause, rate control and layer toggles all drive the canvas, on the same snapshot-anchored clock as the rest of the console. Clicking an object selects it. The orbits themselves are a SCHEMATIC: circles drawn from each object\'s real inclination, RAAN and mean motion, not SGP4 output. Positions are right to a glance, not to a kilometre — the conjunction geometry on the detail view is the propagated one.',
   },
   {
     id: 'catalogue',

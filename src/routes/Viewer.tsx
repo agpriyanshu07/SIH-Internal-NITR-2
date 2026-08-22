@@ -5,6 +5,7 @@ import { fmtNorad, fmtUTC } from '../data/format';
 import { angularRate, palette, projectGlobe, projectOrbitPoint } from '../lib/projection';
 import { Panel, Segmented } from '../components/primitives';
 import { PauseIcon, PlayIcon } from '../components/Icon';
+import { EPOCH_OFFSET } from '../hooks/useNow';
 import type { SpaceObject } from '../data/types';
 
 /**
@@ -299,7 +300,13 @@ export function Viewer() {
     if (best) setSelected(best.norad);
   };
 
-  const simTime = new Date(Date.now() + offset * 1000);
+  /*
+   * The viewer runs on the console clock, not the wall clock. Everything else
+   * on the console is anchored to the snapshot capture instant; a scrubber
+   * reading today's date beside a top bar reading the capture date would be a
+   * contradiction the operator has to resolve themselves.
+   */
+  const simTime = new Date(Date.now() + EPOCH_OFFSET + offset * 1000);
 
   return (
     <div className="relative h-full min-h-[640px]">
@@ -311,7 +318,7 @@ export function Viewer() {
 
       <div className="pointer-events-none absolute left-6 top-6 flex flex-col gap-[6px]">
         <div className="text-base font-semibold tracking-[0.06em] text-primary">KESSLER</div>
-        <div className="label">Orbital viewer — inertial frame</div>
+        <div className="label">Orbital viewer — inertial frame · schematic projection</div>
       </div>
 
       {/* Layers + object list */}
@@ -400,7 +407,17 @@ export function Viewer() {
           <div className="flex min-w-0 flex-1 flex-col gap-[7px]">
             <div className="flex items-baseline justify-between gap-3">
               <span className="num text-xs text-primary">{fmtUTC(simTime)}</span>
-              <span className="label">Propagated · {rate === '1' ? 'real time' : `${rate}×`}</span>
+              {/* "Schematic", not "propagated". The screening engine runs SGP4;
+                  this canvas draws circular two-body orbits from each object's
+                  real elements, which reads correctly at a glance but is not the
+                  same computation. Calling it propagated would borrow the
+                  engine's credibility for a picture. */}
+              <span
+                className="label"
+                title="Orbits are drawn as circles from each object's real inclination, RAAN and mean motion. Conjunction geometry comes from the SGP4 screening run, not from this canvas."
+              >
+                Schematic · {rate === '1' ? 'real time' : `${rate}×`}
+              </span>
             </div>
             <input
               type="range"

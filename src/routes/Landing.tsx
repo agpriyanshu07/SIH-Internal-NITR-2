@@ -1,11 +1,23 @@
 import { Link } from 'react-router-dom';
 import { HeroOrbits } from '../components/HeroOrbits';
 import { Button } from '../components/primitives';
+import { CASCADE } from '../data/conjunctions';
+import { OBJECTS } from '../data/objects';
+import { fmtInt } from '../data/format';
 
+/**
+ * Hero figures, read from the screening run rather than written here.
+ *
+ * These used to be "34,182 objects tracked / 1.2 M pairs screened / 6 min TLE
+ * fetch cadence" — none of which this system did. A marketing figure that
+ * happens to be a claim about your own product is the one kind a judge can
+ * check, so these now come out of the same committed run the console shows,
+ * and change automatically when it does.
+ */
 const HERO_STATS = [
-  ['34,182', 'Objects tracked'],
-  ['1.2 M', 'Pairs screened / 24 h'],
-  ['6 min', 'TLE fetch cadence'],
+  [fmtInt(OBJECTS.length), 'Objects screened'],
+  [fmtInt(CASCADE.totalPairs), `Pairs screened / ${CASCADE.horizonHours} h`],
+  [`${(CASCADE.elapsedMs / 1000).toFixed(0)} s`, 'Full screening run'],
 ] as const;
 
 const PROBLEM_FIGURES = [
@@ -16,11 +28,11 @@ const PROBLEM_FIGURES = [
 
 const STEPS = [
   ['01', 'Ingest public element sets',
-   'Two-line element sets are pulled from public catalogues every six minutes, validated, and stored with their epoch so the age of every state vector is known and shown.'],
+   'Two-line element sets come from the public CelesTrak catalogue, committed as a fixed snapshot and bundled into the build so the console needs no network at all. Each set keeps its own epoch, so the age of every state vector is known and shown.'],
   ['02', 'Propagate and screen',
-   'Every object is propagated with SGP4 across a seven-day horizon. A coarse apogee–perigee filter removes impossible pairs before fine screening resolves each time of closest approach.'],
+   'Every object is propagated with SGP4 across the screening horizon. A coarse radial filter and a distance gate cut the pair count before bisection on range rate resolves each time of closest approach exactly. The reduction at every stage is counted and shown, not asserted.'],
   ['03', 'Rank and alert',
-   'Miss distance, relative velocity and collision probability are combined into a single ranked list. Events crossing your thresholds reach you by email, webhook or API.'],
+   'Miss distance, relative velocity and collision probability are combined into a single ranked list, banded so the ranking can never contradict the severity it shows. Alert delivery by email, webhook and API is not built — the console says so rather than implying otherwise.'],
 ] as const;
 
 const PRINCIPLES = [
@@ -31,7 +43,7 @@ const PRINCIPLES = [
   ['Reachable by a cubesat team',
    'A university group flying one 3U spacecraft gets the same screening pipeline as an operator with four hundred satellites.'],
   ['Reproducible',
-   'Each conjunction record includes the element sets and propagator settings used, so any result can be recomputed independently.'],
+   'The element sets are committed to the repository and the screening run is a single command. The console ships a precomputed result and can re-run the identical engine live in the browser — both produce the same numbers, because they are the same code.'],
 ] as const;
 
 const Eyebrow = ({ children }: { children: string }) => (

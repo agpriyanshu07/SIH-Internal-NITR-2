@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom';
 import { COUNTS, FEATURES, STATUS_LABEL, STATUS_SEV, type Feature } from '../data/features';
 import { Panel, SeverityChip } from '../components/primitives';
+import { CASCADE } from '../data/conjunctions';
+import { OBJECTS, SNAPSHOT_EPOCH } from '../data/objects';
+import { STEP_S } from '../data/engine/screen';
+import { fmtInt, fmtUTC } from '../data/format';
+import { ProvenanceFooter } from '../components/Provenance';
 
 /**
  * Prototype status.
@@ -67,18 +72,68 @@ export function Status() {
       </div>
 
       <Panel title="Data">
+        <div className="flex flex-col gap-4 p-5">
+          <p className="text-base leading-[1.65] text-secondary [text-wrap:pretty]">
+            <span className="text-primary">Measured.</span> Objects, element sets and
+            their epochs come from a committed CelesTrak snapshot of{' '}
+            {fmtInt(OBJECTS.length)} real tracked objects, captured{' '}
+            {fmtUTC(new Date(SNAPSHOT_EPOCH))}. Times of closest approach, miss
+            distances and relative velocities are propagated from those element sets
+            with SGP4 and refined by bisection on range rate. Nothing on the
+            conjunction table was authored — it is what the propagator found.
+          </p>
+          <p className="text-base leading-[1.65] text-secondary [text-wrap:pretty]">
+            <span className="text-primary">Assumed, and stated wherever it is used.</span>{' '}
+            Probability of collision needs a positional covariance, and a two-line
+            element set does not carry one, so the 1σ is inferred from element-set age
+            and from a radar cross-section class inferred in turn from object type —
+            real RCS lives in the SATCAT. The Thresholds screen lets you scale that σ
+            and watch every severity band move, which is the honest way to show how
+            much of the ranking rests on it.
+          </p>
+          <p className="text-base leading-[1.65] text-secondary [text-wrap:pretty]">
+            <span className="text-primary">Still synthetic.</span> The manoeuvre log's
+            burn history. Nothing in that table was ever planned or flown; the burn
+            advisor beside it is real, and works against real screened events.
+          </p>
+          <p className="text-base leading-[1.65] text-secondary [text-wrap:pretty]">
+            There is no backend and no network request at runtime — the snapshot is
+            bundled into the build. The console clock is anchored to the capture
+            instant rather than the wall clock, because propagating these element sets
+            from today would be arithmetic rather than prediction.
+          </p>
+          <div className="border-t border-hairline-soft pt-4">
+            <ProvenanceFooter />
+          </div>
+        </div>
+      </Panel>
+
+      <Panel title="Measured screening cascade">
         <div className="flex flex-col gap-3 p-5">
           <p className="text-base leading-[1.65] text-secondary [text-wrap:pretty]">
-            Every number in this console is synthetic. There is no backend, no network request and
-            no orbital propagation — object names, NORAD IDs, element sets, miss distances and
-            collision probabilities are produced by a seeded generator and are identical on every
-            reload.
+            Counted during the committed run, not stored as constants. The point of a
+            screening cascade is that it discards pairs without discarding events, and
+            a hard-coded figure would make that claim impossible to check —{' '}
+            <span className="num text-primary">npm run validate</span> checks the cut
+            against brute-force all-pairs.
           </p>
-          <p className="text-base leading-[1.65] text-secondary [text-wrap:pretty]">
-            Probability of collision is <span className="text-primary">derived</span> from miss
-            distance, object size and an assumed positional uncertainty, so the four numbers on any
-            row stay consistent with each other. It is not a real screening result.
-          </p>
+          <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ['All pairs', fmtInt(CASCADE.totalPairs)],
+              ['After radial filter', fmtInt(CASCADE.afterRadialFilter)],
+              ['Coarse candidates', fmtInt(CASCADE.candidates)],
+              ['Confirmed events', fmtInt(CASCADE.events)],
+              ['SGP4 propagations', fmtInt(CASCADE.propagations)],
+              ['Horizon', `${CASCADE.horizonHours} h`],
+              ['Sample step', `${STEP_S} s`],
+              ['Wall clock', `${(CASCADE.elapsedMs / 1000).toFixed(1)} s`],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <div className="label mb-1">{k}</div>
+                <div className="num text-md text-primary">{v}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </Panel>
 

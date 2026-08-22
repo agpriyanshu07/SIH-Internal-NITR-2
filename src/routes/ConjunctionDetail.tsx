@@ -1,5 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { conjunctionById, SCREENING_THRESHOLD_KM } from '../data/conjunctions';
+import { PROVENANCE, SNAPSHOT_EPOCH, groupOf } from '../data/objects';
+import { OriginBadge } from '../components/Provenance';
 import { fmtDur, fmtNorad, fmtPc, fmtUTC } from '../data/format';
 import { useNow } from '../hooks/useNow';
 import { Button, Panel, SeverityChip } from '../components/primitives';
@@ -11,13 +13,15 @@ function ObjectSpec({ object, role }: { object: SpaceObject; role: 'Primary' | '
   const rows: [string, string][] = [
     ['Type', object.type],
     ['Operator', object.op],
-    ['Launch date', object.launch],
+    // A TLE's international designator carries the launch year, not the day.
+    ['Launch year', object.launch],
     ['Mean altitude', `${object.alt} km`],
     ['Apogee / perigee', `${object.apogee} / ${object.perigee} km`],
     ['Inclination', `${object.incl.toFixed(4)}°`],
     ['Period', `${object.period.toFixed(1)} min`],
-    ['Radar cross-section', object.rcs],
-    ['TLE epoch age', `${object.age.toFixed(1)} d`],
+    // Assumed from object class — real RCS is in the SATCAT, not in a TLE.
+    ['Radar cross-section', `${object.rcs} (assumed)`],
+    ['TLE epoch age', `${object.age.toFixed(2)} d`],
   ];
 
   return (
@@ -93,8 +97,14 @@ export function ConjunctionDetail() {
             {event.A.name} <span className="font-normal text-tertiary">×</span> {event.B.name}
           </h1>
           <p className="font-mono text-sm text-secondary">
-            {fmtNorad(event.A.norad)} · {fmtNorad(event.B.norad)} — screened against public element sets
+            {fmtNorad(event.A.norad)} · {fmtNorad(event.B.norad)} — SGP4 screening of{' '}
+            {PROVENANCE.source.split(' (')[0]} captured {fmtUTC(new Date(SNAPSHOT_EPOCH))}
           </p>
+        </div>
+
+        <div className="mb-1 flex flex-wrap gap-[6px]">
+          <OriginBadge group={groupOf(event.A.norad)} />
+          <OriginBadge group={groupOf(event.B.norad)} />
         </div>
 
         <div className="flex flex-wrap items-start gap-[26px]">
@@ -174,15 +184,31 @@ export function ConjunctionDetail() {
                 element-set age. It is a screening product.
               </p>
               <p className="text-base leading-[1.65] text-secondary [text-wrap:pretty]">
+                Two inputs to the probability are assumed rather than measured, because a
+                TLE carries neither: the 1σ positional covariance, and each object's radar
+                cross-section class. The miss distance and relative velocity above are
+                neither — both were propagated. You can vary the σ assumption on the{' '}
+                <Link
+                  to="/console/thresholds"
+                  className="text-secondary underline underline-offset-2 hover:text-primary"
+                >
+                  thresholds
+                </Link>{' '}
+                screen and watch this event's severity move.
+              </p>
+              <p className="text-base leading-[1.65] text-secondary [text-wrap:pretty]">
                 It is <span className="text-primary">not</span> a basis for a manoeuvre decision.
                 Before acting, request a Conjunction Data Message from the 18th Space Defense
                 Squadron or your operator's own covariance-bearing analysis.
               </p>
               <div className="flex flex-col gap-[7px] border-t border-hairline-soft pt-[11px]">
                 {[
+                  ['Miss distance', 'MEASURED — SGP4 AT REFINED TCA'],
+                  ['Relative velocity', 'MEASURED — SGP4 AT REFINED TCA'],
                   ['Covariance', 'NOT AVAILABLE IN TLE'],
                   ['Pc method', `FOSTER, ASSUMED ${event.sigma.toFixed(2)} km σ`],
-                  ['Element-set age', `${event.maxAge.toFixed(1)} d (oldest in pair)`],
+                  ['Radar cross-section', `${event.A.rcs} / ${event.B.rcs} — ASSUMED FROM CLASS`],
+                  ['Element-set age', `${event.maxAge.toFixed(2)} d (oldest in pair)`],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-3">
                     <span className="font-mono text-xs- uppercase tracking-[0.08em] text-tertiary">{k}</span>

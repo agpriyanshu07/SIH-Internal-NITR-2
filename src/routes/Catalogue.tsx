@@ -195,7 +195,7 @@ export function Catalogue() {
             {rows.length === 0 ? (
               <EmptyState
                 title="No objects match that filter"
-                body="Nothing in the registered subset matches. Try a NORAD ID, an operator, or a partial object name."
+                body="Nothing in the screened catalogue matches. Try a NORAD ID, an operator, or a partial object name."
                 action={<Button className="mt-2 px-[13px] py-[7px] text-sm text-secondary" onClick={() => setQ('')}>Clear filter</Button>}
               />
             ) : rows.map((o) => (
