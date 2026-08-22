@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CATALOGUE_TOTAL, OBJECTS } from '../data/objects';
+import { OBJECTS, groupOf } from '../data/objects';
+import { OriginBadge, ProvenanceFooter } from '../components/Provenance';
 import { TLE_FIELD_NOTES } from '../data/tle';
-import { meanMotion } from '../data/orbital';
 import { fmtInt, fmtNorad } from '../data/format';
 import { Button, EmptyState } from '../components/primitives';
 import { CloseIcon, SearchIcon } from '../components/Icon';
@@ -38,13 +38,16 @@ function TleDrawer({ object, onClose }: { object: SpaceObject; onClose: () => vo
   const values: Record<string, string> = {
     norad: fmtNorad(object.norad),
     intl: object.intl,
-    epoch: `${object.age.toFixed(1)} d ago`,
+    epoch: `${object.age.toFixed(2)} d before the screening epoch`,
     incl: `${object.incl.toFixed(4)}°`,
     raan: `${object.raan.toFixed(4)}°`,
     ecc: object.ecc.toFixed(7),
     argp: `${object.argp.toFixed(4)}°`,
     ma: `${object.ma.toFixed(4)}°`,
-    mm: meanMotion(object.alt).toFixed(8),
+    // Read straight off line 2 (columns 53–63) rather than recomputed from the
+    // rounded mean altitude, which would disagree with the element set printed
+    // three lines below it.
+    mm: object.tle[1].slice(52, 63).trim(),
   };
 
   return (
@@ -59,8 +62,11 @@ function TleDrawer({ object, onClose }: { object: SpaceObject; onClose: () => vo
 
       <div className="min-h-0 flex-1 overflow-auto p-5">
         <div className="mb-[3px] text-xl font-medium text-primary">{object.name}</div>
-        <div className="mb-5 font-mono text-xs text-tertiary">
+        <div className="mb-3 font-mono text-xs text-tertiary">
           {object.type} · {object.op} · launched {object.launch}
+        </div>
+        <div className="mb-5">
+          <OriginBadge group={groupOf(object.norad)} />
         </div>
 
         <div className="mb-2 overflow-x-auto rounded border border-hairline bg-deep px-[14px] py-3">
@@ -71,7 +77,8 @@ function TleDrawer({ object, onClose }: { object: SpaceObject; onClose: () => vo
           ))}
         </div>
         <div className="mb-[22px] font-mono text-2xs uppercase tracking-[0.08em] text-tertiary">
-          Two-line element set, fixed-column format · generated {object.age.toFixed(1)} d ago
+          Real element set as published · this prediction rests on a{' '}
+          {object.age.toFixed(2)}-day-old element set
         </div>
 
         <div className="mb-[6px] font-mono text-2xs uppercase tracking-[0.12em] text-accent">
@@ -156,10 +163,7 @@ export function Catalogue() {
           />
         </div>
         <div className="flex items-center gap-[18px]">
-          <div className="hidden font-mono text-xs- tracking-[0.08em] text-tertiary lg:block">
-            SOURCE — PUBLIC CATALOGUE · {fmtInt(CATALOGUE_TOTAL)} OBJECTS · SHOWING REGISTERED SUBSET
-          </div>
-          <Button className="px-3 py-[6px] text-sm text-secondary">Add asset</Button>
+          <ProvenanceFooter className="hidden lg:flex" />
         </div>
       </div>
 
@@ -216,7 +220,12 @@ export function Catalogue() {
                 <div className="num text-right text-sm text-primary">{o.incl.toFixed(2)}</div>
                 <div className="num text-right text-sm text-secondary">{o.ecc.toFixed(7)}</div>
                 <div className="num text-right text-sm text-primary">{o.period.toFixed(1)}</div>
-                <div className="num text-right text-xs text-tertiary">{o.age.toFixed(1)}</div>
+                <div
+                  className={`num text-right text-xs ${o.age > 3 ? 'text-risk-high' : 'text-tertiary'}`}
+                  title={`Element set is ${o.age.toFixed(2)} days old${o.age > 3 ? ' — stale enough that the propagated position has drifted' : ''}`}
+                >
+                  {o.age.toFixed(2)}
+                </div>
               </div>
             ))}
             </div>

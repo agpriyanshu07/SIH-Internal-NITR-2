@@ -52,7 +52,7 @@ export const FEATURES: Feature[] = [
     label: 'Positional uncertainty',
     status: 'partial',
     group: 'Operations',
-    note: 'A TLE carries no covariance, so the 1-sigma used for Pc is ASSUMED, not measured: it grows with real element-set age and with a radar cross-section class inferred from object type, since RCS lives in the SATCAT and not in a TLE. Both assumptions are disclosed on the detail view, and the Thresholds screen lets you scale sigma and watch the severity banding move.',
+    note: 'A TLE carries no covariance, so the 1-sigma used for Pc is ASSUMED, not measured: it grows with real element-set age and with a radar cross-section class inferred from object type, since RCS lives in the SATCAT and not in a TLE. Both assumptions are disclosed on the detail view. The Thresholds screen exposes the sigma as a scale control and re-bands every event live, so you can see how much of the severity ranking rests on it.',
   },
   {
     id: 'conjunctions',
@@ -100,7 +100,7 @@ export const FEATURES: Feature[] = [
     to: '/console/thresholds',
     status: 'live',
     group: 'Configuration',
-    note: 'Sets the screening floor. Changes apply immediately to the dashboard and the manoeuvre log, and persist across reloads.',
+    note: 'Sets the screening floor and the assumed positional uncertainty. Changes apply immediately to the dashboard and the manoeuvre log, and persist across reloads.',
   },
   {
     id: 'signin',

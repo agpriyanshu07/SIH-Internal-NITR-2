@@ -23,11 +23,22 @@ export interface Thresholds {
   horizonHours: number;
   /** Element sets older than this are excluded as untrustworthy, days. */
   maxElementAgeDays: number;
+  /**
+   * Multiplier on the assumed 1-sigma positional uncertainty.
+   *
+   * Not a floor like the others — a modelling assumption. A TLE carries no
+   * covariance, so the sigma behind every Pc on this console is inferred from
+   * element-set age and tracking quality. This lets an operator ask what the
+   * board looks like under a more or less pessimistic assumption. 1 is the
+   * console's own estimate.
+   */
+  sigmaScale: number;
 }
 
 /**
- * Defaults admit everything the generator produced — the floor is opt-in, so a
- * fresh console shows the full screened set rather than silently hiding a tail.
+ * Defaults admit everything the screening run produced — the floor is opt-in,
+ * so a fresh console shows the full screened set rather than silently hiding a
+ * tail, and sigma sits at the console's own estimate rather than a hedge.
  */
 export const DEFAULT_THRESHOLDS: Thresholds = {
   minSeverity: 'ALL',
@@ -35,6 +46,7 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
   minPc: 0,
   horizonHours: 72,
   maxElementAgeDays: 10,
+  sigmaScale: 1,
 };
 
 const KEY = 'kessler.thresholds';

@@ -2,6 +2,8 @@ import * as satellite from 'satellite.js';
 import { loadCatalogue, MANIFEST, SNAPSHOT_EPOCH } from './snapshot-node';
 import { periApo, screen, SCREEN_KM, STEP_S, CO_ORBIT_KM } from '../src/data/engine/screen';
 import { refine } from '../src/data/engine/refine';
+import { runScreening } from '../src/data/engine/run';
+import { SEVERITY_RANK } from '../src/data/riskScore';
 
 /**
  * Known-answer tests for the screening engine.
@@ -265,6 +267,52 @@ section('6. Catalogue elements are consistent with the propagator');
     'perigee/apogee agree with the filter geometry to under 1 km',
     worst < 1,
     `largest disagreement ${worst.toFixed(4)} km across ${catalogue.length} objects`,
+  );
+}
+
+// ── 7. The score column agrees with the severity column ─────────────────────
+// The table sorts by score by default and prints a severity chip on every row.
+// If those two ever disagree the operator is looking at a contradiction, so the
+// score is banded by severity rather than blended freely — this is the check
+// that keeps it that way.
+section('7. Sorting by score never contradicts the severity chips');
+{
+  const { conjunctions } = runScreening(catalogue, {
+    start: new Date(SNAPSHOT_EPOCH),
+    hours: 12,
+    includeSeparation: false,
+  });
+  const sorted = [...conjunctions].sort((a, b) => b.score - a.score);
+  let inversions = 0;
+  for (let i = 1; i < sorted.length; i++) {
+    if (SEVERITY_RANK[sorted[i].sev] > SEVERITY_RANK[sorted[i - 1].sev]) inversions++;
+  }
+
+  // And the bands must not merely avoid inverting — their score ranges must not
+  // overlap at all, or two adjacent rows could share a score across a boundary.
+  const range = new Map<string, [number, number]>();
+  for (const c of conjunctions) {
+    const cur = range.get(c.sev) ?? [Infinity, -Infinity];
+    range.set(c.sev, [Math.min(cur[0], c.score), Math.max(cur[1], c.score)]);
+  }
+  const ordered = [...range.entries()].sort(
+    (a, b) => SEVERITY_RANK[a[0] as keyof typeof SEVERITY_RANK] -
+      SEVERITY_RANK[b[0] as keyof typeof SEVERITY_RANK],
+  );
+  let overlaps = 0;
+  for (let i = 1; i < ordered.length; i++) {
+    if (ordered[i][1][0] <= ordered[i - 1][1][1]) overlaps++;
+  }
+
+  check(
+    'no severity inversion when sorted by score',
+    inversions === 0,
+    `${inversions} inversions over ${sorted.length} events`,
+  );
+  check(
+    'score ranges of adjacent severity bands do not overlap',
+    overlaps === 0,
+    ordered.map(([sev, [lo, hi]]) => `${sev} ${lo}-${hi}`).join(', '),
   );
 }
 

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { RESOLVED } from '../data/conjunctions';
+import { RESOLVED, reband } from '../data/conjunctions';
 import { fmtPc } from '../data/format';
 import { DEFAULT_THRESHOLDS, passesThresholds, useThresholds } from '../state/thresholds';
 import { Button, Panel, SeverityChip } from '../components/primitives';
@@ -51,7 +51,19 @@ const slider =
 export function Thresholds() {
   const { thresholds, set, reset, modified } = useThresholds();
 
-  const admitted = RESOLVED.filter((e) => passesThresholds(e, thresholds));
+  // Sigma is applied before the floor, so the counts below reflect the same
+  // severities the dashboard will show.
+  const rebanded = RESOLVED.map((e) => reband(e, thresholds.sigmaScale));
+  const admitted = rebanded.filter((e) => passesThresholds(e, thresholds));
+
+  /* What scaling sigma does to the banding, independent of the floor. */
+  const bandsAt = (scale: number) =>
+    RESOLVED.map((e) => reband(e, scale)).reduce(
+      (acc, e) => ({ ...acc, [e.sev]: (acc[e.sev] ?? 0) + 1 }),
+      {} as Record<Severity, number>,
+    );
+  const baseline = bandsAt(1);
+  const current = bandsAt(thresholds.sigmaScale);
   const byBand = admitted.reduce(
     (acc, e) => ({ ...acc, [e.sev]: (acc[e.sev] ?? 0) + 1 }),
     {} as Record<Severity, number>,
@@ -179,11 +191,74 @@ export function Thresholds() {
         </div>
       </Panel>
 
+      <Panel title="Uncertainty model">
+        <div className="px-5 pb-5 pt-1">
+          <p className="max-w-[720px] pt-4 text-base leading-[1.65] text-secondary [text-wrap:pretty]">
+            Miss distance and relative velocity on this console are{' '}
+            <span className="text-primary">measured</span> — propagated from real
+            element sets. Probability of collision is not, quite: turning a miss
+            distance into a probability needs a positional covariance, and a
+            two-line element set does not carry one. The console assumes a
+            1-sigma that grows with element-set age and with how poorly each
+            object's size class is tracked. That assumption is the softest number
+            on the screen, so it is adjustable rather than hidden.
+          </p>
+
+          <Row
+            label="1-sigma scale"
+            hint="Multiplies the assumed positional uncertainty. Larger sigma spreads the miss distribution, which lowers Pc for close passes and re-bands severity live."
+            value={`${thresholds.sigmaScale.toFixed(2)}×`}
+          >
+            <input
+              type="range"
+              min={0.25}
+              max={4}
+              step={0.05}
+              value={thresholds.sigmaScale}
+              onChange={(e) => set('sigmaScale', +e.target.value)}
+              aria-label="Positional uncertainty scale"
+              className={slider}
+            />
+          </Row>
+
+          <div className="grid gap-4 border-t border-hairline-soft py-5 md:grid-cols-[240px_1fr]">
+            <div>
+              <div className="text-md font-medium text-primary">Severity under this assumption</div>
+              <div className="mt-1 max-w-[300px] text-sm leading-[1.55] text-secondary [text-wrap:pretty]">
+                Every event re-banded at this sigma, against the console's own
+                estimate. The floor above is not applied here.
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-x-5 gap-y-3">
+              {(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'NOMINAL'] as Severity[]).map((sv) => {
+                const now = current[sv] ?? 0;
+                const was = baseline[sv] ?? 0;
+                const delta = now - was;
+                return (
+                  <div key={sv} className="flex items-center gap-2">
+                    <SeverityChip sev={sv} bordered />
+                    <span className="num text-sm text-primary">{now}</span>
+                    {delta !== 0 && (
+                      <span
+                        className={`num text-2xs ${delta > 0 ? 'text-risk-high' : 'text-risk-low'}`}
+                      >
+                        {delta > 0 ? '+' : ''}
+                        {delta}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </Panel>
+
       <Panel
         title="Effect of these thresholds"
         aside={
           <span className="num text-2xs text-tertiary">
-            {admitted.length} / {RESOLVED.length}
+            {admitted.length} / {rebanded.length}
           </span>
         }
       >
@@ -191,7 +266,7 @@ export function Thresholds() {
           <div className="flex items-baseline gap-3">
             <span className="num text-3xl text-accent">{admitted.length}</span>
             <span className="text-md text-secondary">
-              of {RESOLVED.length} screened events reach the console
+              of {rebanded.length} screened events reach the console
             </span>
           </div>
 

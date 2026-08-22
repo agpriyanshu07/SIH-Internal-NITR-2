@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GROUP_COUNTS, OBJECTS, PROVENANCE } from '../data/objects';
+import { GROUP_COUNTS, GROUP_EVENT, OBJECTS, PROVENANCE, groupOf } from '../data/objects';
 import { conjunctionsToCsv, downloadCsv } from '../data/csv';
+import { reband } from '../data/conjunctions';
 import { SEVERITY_RANK } from '../data/riskScore';
 import { fmtDur, fmtInt, fmtNorad, fmtPc, fmtUTC } from '../data/format';
 import { useNow } from '../hooks/useNow';
 import { useAcknowledged } from '../hooks/useAcknowledged';
 import { useScreening } from '../hooks/useScreening';
 import { CascadePanel } from '../components/CascadePanel';
+import { OriginBadge, ProvenanceFooter } from '../components/Provenance';
 import { Button, MetricTile, Panel, Segmented, SeverityChip, EmptyState } from '../components/primitives';
 import { RegimePlot } from '../components/RegimePlot';
 import { ArrowDown, ArrowUp } from '../components/Icon';
@@ -93,8 +95,17 @@ export function Dashboard() {
    * dashboard can only ever show events that cleared it. The panel filters
    * below then work within that set.
    */
+  /*
+   * Re-band first, then filter. The covariance behind Pc is an assumption, so
+   * the operator can scale it; severity and score follow from the scaled Pc,
+   * and only then does the screening floor decide what gets through. Doing it
+   * the other way round would filter on a Pc the operator is not looking at.
+   */
   const screened = useMemo(
-    () => events.filter((e) => passesThresholds(e, thresholds)),
+    () =>
+      events
+        .map((e) => reband(e, thresholds.sigmaScale))
+        .filter((e) => passesThresholds(e, thresholds)),
     [events, thresholds],
   );
 
@@ -134,6 +145,22 @@ export function Dashboard() {
   );
 
   const highRisk = counts.CRITICAL + counts.HIGH;
+
+  /*
+   * How much of the urgent traffic traces back to one of the two events that
+   * created these clouds. On this snapshot it is nearly all of it, which is the
+   * policy point the catalogue makes on its own once the data carries the
+   * grouping — no editorialising required.
+   */
+  const fromDestruction = useMemo(
+    () =>
+      screened.filter(
+        (c) =>
+          SEVERITY_RANK[c.sev] >= SEVERITY_RANK.HIGH &&
+          (GROUP_EVENT[groupOf(c.a) ?? ''] || GROUP_EVENT[groupOf(c.b) ?? '']),
+      ).length,
+    [screened],
+  );
 
   return (
     <div className="flex min-h-full flex-col">
@@ -220,6 +247,16 @@ export function Dashboard() {
           unit="s"
           foot={`${fmtInt(cascade.propagations)} SGP4 propagations`}
         />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 px-5 pt-4">
+        <ProvenanceFooter />
+        {fromDestruction > 0 && (
+          <div className="font-mono text-2xs uppercase tracking-[0.08em] text-secondary">
+            {fromDestruction} of {highRisk} high-severity events involve debris from a
+            deliberate or accidental destruction
+          </div>
+        )}
       </div>
 
       {/* Table + side panels */}
@@ -357,6 +394,11 @@ export function Dashboard() {
                       <span className="num flex-none text-xs text-tertiary">{fmtNorad(o.norad)}</span>
                     </div>
                   ))}
+                </div>
+
+                <div className="flex flex-wrap gap-[6px]">
+                  <OriginBadge group={groupOf(selected.a)} />
+                  <OriginBadge group={groupOf(selected.b)} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-[14px] gap-y-3 border-t border-hairline-soft pt-3">

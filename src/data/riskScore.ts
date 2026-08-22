@@ -31,25 +31,91 @@ export interface RiskInputs {
 /**
  * Composite 0–100 risk score used to rank the conjunction table.
  *
- * The current implementation is a straight map of log10(Pc) onto 0–100, which
- * is what the design's reference logic does. It means the Score column is a
- * monotone restatement of the Pc column — informative, but it adds nothing the
- * operator could not already read off Pc.
+ * Pc is what an operator compares against published action thresholds, and
+ * severity is banded from Pc alone (above). The score is a *triage* aid: given
+ * two events in the same band, which one should a human look at first?
  *
- * TODO(you): blend in the other three inputs. Things worth weighing:
- *   - `relv` decides how much energy a hit releases, and how little warning
- *     there is; 14 km/s is a categorically worse 1 km miss than 7 km/s.
- *   - `maxAge` is a confidence penalty, not a hazard: a 6-day-old element set
- *     means the miss distance itself is soft. Should a stale pair score higher
- *     (screen it, we don't know enough) or lower (don't cry wolf on bad data)?
- *   - `miss` correlates with Pc but is not redundant — Pc also folds in sigma.
+ * The obvious implementation — a weighted blend of Pc with the other inputs —
+ * does not work, and it is worth saying why rather than shipping it. Severity
+ * bands are decades of Pc, so two events either side of a boundary differ
+ * infinitesimally in the Pc term. Any non-zero weight on anything else lets the
+ * lower-severity one outrank the higher, and the table's default sort starts
+ * contradicting the severity chip printed next to it. Measured on the real
+ * event set, a 90/7/3 blend produced six such inversions and left the LOW and
+ * MEDIUM score ranges overlapping.
  *
- * Keep the return clamped to 0–100 and keep it monotone in Pc, or the table's
- * default sort stops agreeing with the severity chips.
+ * So the score is banded by construction: severity picks the interval, and the
+ * other factors only order events inside it. Sorting by score can therefore
+ * never disagree with the chips, and the column still says something the Pc
+ * column does not.
+ *
+ * Within a band:
+ *
+ *   `pc`     — position across the band's own decade(s), and still the
+ *              dominant term.
+ *
+ *   `relv`   — how much energy a hit releases and how little warning there is.
+ *              A 1 km miss at 14 km/s is categorically worse than the same miss
+ *              at 7 km/s: a bigger debris field, and less time to act.
+ *
+ *   `maxAge` — a CONFIDENCE penalty, not a hazard, and the judgement call worth
+ *              stating outright: a stale pair ranks HIGHER, not lower. The
+ *              argument for lower is "don't cry wolf on bad data". We take the
+ *              other side — a 6-day-old element set means the 2 km miss we just
+ *              computed could really be 200 m, and soft numbers are a reason to
+ *              look sooner, not later. Because it can only move an event inside
+ *              its band, it never promotes a badly-measured harmless pass over
+ *              a well-measured dangerous one.
+ *
+ * `miss` is deliberately unused: Pc already folds in both the miss distance and
+ * the sigma it has to be judged against, so using it again would double-count
+ * the one and ignore the other.
  */
-export function riskScore({ pc }: RiskInputs): number {
-  const normalised = (Math.log10(pc) + 9) / 6.5;
-  return Math.round(Math.max(0.02, Math.min(0.99, normalised)) * 100);
+
+/** Score interval per severity band. Contiguous, so the sort is total. */
+const BAND_SCORE: Record<Severity, [number, number]> = {
+  NOMINAL: [2, 24],
+  LOW: [25, 49],
+  MEDIUM: [50, 69],
+  HIGH: [70, 89],
+  CRITICAL: [90, 99],
+};
+
+/** Pc interval per severity band, matching severityFor() exactly. */
+const BAND_PC: Record<Severity, [number, number]> = {
+  NOMINAL: [1e-12, 1e-7],
+  LOW: [1e-7, 1e-5],
+  MEDIUM: [1e-5, 1e-4],
+  HIGH: [1e-4, 1e-3],
+  CRITICAL: [1e-3, 1e-1],
+};
+
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+/** Weights within a band. Pc leads; the other two break ties meaningfully. */
+const W_PC = 0.7;
+const W_RELV = 0.2;
+const W_AGE = 0.1;
+
+export function riskScore({ pc, relv, maxAge }: RiskInputs): number {
+  const sev = severityFor(pc);
+  const [scoreLo, scoreHi] = BAND_SCORE[sev];
+  const [pcLo, pcHi] = BAND_PC[sev];
+
+  // Where this Pc sits across its own band, on a log scale like the bands.
+  const pcTerm = clamp01(
+    (Math.log10(Math.max(pc, pcLo)) - Math.log10(pcLo)) /
+      (Math.log10(pcHi) - Math.log10(pcLo)),
+  );
+
+  // Closing speed across the range LEO geometry actually produces.
+  const relvTerm = clamp01((relv - 1.5) / (15 - 1.5));
+
+  // Element-set age, saturating at a week — past that it is all equally bad.
+  const ageTerm = clamp01(maxAge / 7);
+
+  const within = W_PC * pcTerm + W_RELV * relvTerm + W_AGE * ageTerm;
+  return Math.round(scoreLo + within * (scoreHi - scoreLo));
 }
 
 /** Rank order for severity, so filters can express "this band or worse". */
