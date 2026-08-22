@@ -1,4 +1,5 @@
 import { fmtUTC } from './format';
+import { groupOf } from './engine/catalogue';
 import type { ResolvedConjunction } from './types';
 
 /**
@@ -10,6 +11,15 @@ import type { ResolvedConjunction } from './types';
  * precision, since the file is for further work, not for reading.
  */
 
+/**
+ * Columns.
+ *
+ * Each object carries its OWN element-set age, not just the pair's oldest. The
+ * pair maximum is what drives sigma, but the per-object figure is what tells a
+ * reader which half of the pair the uncertainty came from — a 0.8-day-old ISS
+ * element set against a 9.5-day-old fragment is a different situation from two
+ * equally stale objects, and the pair maximum cannot distinguish them.
+ */
 const COLUMNS = [
   'event_id',
   'tca_utc',
@@ -22,8 +32,12 @@ const COLUMNS = [
   'oldest_element_set_days',
   'primary_name',
   'primary_norad',
+  'primary_element_set_age_days',
+  'primary_group',
   'secondary_name',
   'secondary_norad',
+  'secondary_element_set_age_days',
+  'secondary_group',
 ] as const;
 
 /** RFC 4180: quote anything containing a comma, quote or newline; double the quotes. */
@@ -48,8 +62,12 @@ export function conjunctionsToCsv(rows: ResolvedConjunction[]): string {
         r.maxAge,
         r.A.name,
         r.A.norad,
+        r.A.age,
+        groupOf(r.A.norad) ?? '',
         r.B.name,
         r.B.norad,
+        r.B.age,
+        groupOf(r.B.norad) ?? '',
       ]
         .map(cell)
         .join(','),
