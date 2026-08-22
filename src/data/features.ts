@@ -68,7 +68,7 @@ export const FEATURES: Feature[] = [
     to: '/console',
     status: 'live',
     group: 'Operations',
-    note: 'Separation chart, both object specification panels, encounter geometry and the data-quality disclosure. The separation curve is propagated on demand from both element sets, not fitted. Reached by opening any row.',
+    note: 'Separation chart, both object specification panels, encounter geometry, the risk-model breakdown and the data-quality disclosure. The separation curve is propagated on demand from both element sets, not fitted. Export report downloads this single event as CSV. Reached by opening any row.',
   },
   {
     id: 'viewer',
@@ -150,7 +150,7 @@ export const FEATURES: Feature[] = [
     label: 'Acknowledge event',
     status: 'partial',
     group: 'Actions',
-    note: 'Marks an event acknowledged and remembers it across reloads, in this browser only. There is no backend, so nothing is recorded against an operator, nothing is sent, and no one else can see it.',
+    note: 'Marks an event acknowledged from either the dashboard or the detail view and remembers it across reloads. Acknowledged rows are dimmed and tagged ACK in the table, and the detail view carries a chip. Still partial, not live: there is no backend, so nothing is recorded against an operator, nothing is sent, and no one else can see it — it is local to this browser.',
   },
 ];
 

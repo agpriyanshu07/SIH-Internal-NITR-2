@@ -314,6 +314,7 @@ export function Dashboard() {
               ) : (
                 rows.map((r) => {
                   const sel = r.id === selId;
+                  const ackd = isAcknowledged(r.id);
                   return (
                     <div
                       key={r.id}
@@ -326,13 +327,24 @@ export function Dashboard() {
                         if (e.key === 'Enter') navigate(`/console/conjunction/${r.id}`);
                         if (e.key === ' ') { e.preventDefault(); setSelId(r.id); }
                       }}
+                      aria-label={ackd ? `${r.id}, acknowledged` : r.id}
                       className={`grid ${COLS} h-[46px] cursor-pointer items-center gap-x-2 border-b border-hairline-soft px-[14px] ${
                         sel
                           ? 'rise glass bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
                           : 'hover:-translate-y-px hover:bg-panel-raised'
-                      }`}
+                      } ${ackd && !sel ? 'opacity-55' : ''}`}
                     >
-                      <SeverityChip sev={r.sev} />
+                      <span className="flex min-w-0 items-center gap-[7px]">
+                        <SeverityChip sev={r.sev} />
+                        {ackd && (
+                          <span
+                            title="Acknowledged in this browser"
+                            className="flex-none font-mono text-2xs uppercase tracking-[0.08em] text-tertiary"
+                          >
+                            ACK
+                          </span>
+                        )}
+                      </span>
                       <div className="num text-right text-base text-primary">{r.score}</div>
                       <div className="min-w-0 pl-[14px]">
                         <div className="truncate text-sm+ text-primary">{r.A.name}</div>

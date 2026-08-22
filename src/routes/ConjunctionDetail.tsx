@@ -3,6 +3,8 @@ import { conjunctionById, SCREENING_THRESHOLD_KM } from '../data/conjunctions';
 import { PROVENANCE, SNAPSHOT_EPOCH, groupOf } from '../data/objects';
 import { OriginBadge } from '../components/Provenance';
 import { ScoreModel } from '../components/ScoreModel';
+import { conjunctionsToCsv, downloadCsv } from '../data/csv';
+import { useAcknowledged } from '../hooks/useAcknowledged';
 import { fmtDur, fmtNorad, fmtPc, fmtUTC } from '../data/format';
 import { useNow } from '../hooks/useNow';
 import { Button, Panel, SeverityChip } from '../components/primitives';
@@ -53,7 +55,9 @@ function ObjectSpec({ object, role }: { object: SpaceObject; role: 'Primary' | '
 export function ConjunctionDetail() {
   const { id = '' } = useParams();
   const now = useNow();
+  const { toggle: toggleAck, isAcknowledged } = useAcknowledged();
   const event = conjunctionById(id);
+  const ackd = event ? isAcknowledged(event.id) : false;
 
   if (!event) {
     return (
@@ -103,9 +107,18 @@ export function ConjunctionDetail() {
           </p>
         </div>
 
-        <div className="mb-1 flex flex-wrap gap-[6px]">
+        <div className="mb-1 flex flex-wrap items-center gap-[6px]">
           <OriginBadge group={groupOf(event.A.norad)} />
           <OriginBadge group={groupOf(event.B.norad)} />
+          {ackd && (
+            <span
+              title="Acknowledged in this browser. There is no backend, so this was not recorded against an operator or sent anywhere."
+              className="inline-flex items-center gap-[6px] rounded border border-hairline px-[7px] py-[2px] font-mono text-2xs uppercase tracking-[0.08em] text-tertiary"
+            >
+              <span className="h-[5px] w-[5px] rounded-full bg-[color:var(--t3)]" />
+              Acknowledged
+            </span>
+          )}
         </div>
 
         <div className="flex flex-wrap items-start gap-[26px]">
@@ -115,8 +128,25 @@ export function ConjunctionDetail() {
             <div className="num text-xs text-tertiary">{fmtUTC(new Date(event.tca))}</div>
           </div>
           <div className="flex gap-2 pt-4">
-            <Button className="px-[14px] py-2 text-sm text-secondary">Export report</Button>
-            <Button variant="primary" className="px-[14px] py-2 text-sm">Acknowledge event</Button>
+            <Button
+              className="px-[14px] py-2 text-sm text-secondary"
+              onClick={() =>
+                void downloadCsv(
+                  `kessler-${event.id}.csv`,
+                  conjunctionsToCsv([event]),
+                )
+              }
+            >
+              Export report
+            </Button>
+            <Button
+              variant={ackd ? 'secondary' : 'primary'}
+              className="px-[14px] py-2 text-sm"
+              onClick={() => toggleAck(event.id)}
+              aria-pressed={ackd}
+            >
+              {ackd ? 'Acknowledged' : 'Acknowledge event'}
+            </Button>
           </div>
         </div>
       </div>
