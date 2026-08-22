@@ -44,6 +44,18 @@ npm run screen      # re-run the screening engine and commit the result
 npm run validate    # known-answer tests for the engine
 ```
 
+`npm run screen` is deterministic: re-running it reproduces all 2,955 events
+byte for byte. The one field that changes is `cascade.elapsedMs`, which is how
+long the run took on *your* machine — it is a measurement, not a constant, and
+the dashboard shows it as the screening latency. So a one-line diff on
+`src/data/precomputed.json` after re-screening is expected, and a diff of any
+other field is not.
+
+`KESSLER_HOURS=24 npm run screen` overrides the horizon. Note that the console
+also defaults its screening window to `DEFAULT_HORIZON_HOURS`, so committing a
+run at a shorter horizon leaves the dashboard's window filter offering more
+than the data covers — `npm run validate` checks for exactly that.
+
 The output in `dist/` uses relative asset paths and hash-based routing, so it can
 be served from any static host or subdirectory without server-side rewrites. It
 is not yet a single self-contained file — Chrome blocks ES modules loaded over

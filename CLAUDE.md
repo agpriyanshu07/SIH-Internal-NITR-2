@@ -79,6 +79,16 @@ scripts/fetch-snapshot.sh   # refresh the snapshot from CelesTrak, by hand
 
 Run `npm run build` and `npm run validate` before committing engine changes.
 
+`npm run screen` is deterministic — the only field that changes between runs is
+`cascade.elapsedMs`, a measurement of the machine that ran it. A one-line diff
+on `precomputed.json` is expected; a diff in any other field means something
+changed in the engine.
+
+The screening horizon lives in ONE place, `DEFAULT_HORIZON_HOURS` in
+engine/run.ts, read by both the precompute script and `DEFAULT_THRESHOLDS`.
+They used to be separate and drifted to 24 h vs 72 h, which silently rebuilt
+the dashboard with a third of the events. Do not reintroduce a second literal.
+
 ## Style
 
 - Semantic CSS tokens only (`bg-panel`, `text-secondary`, `border-hairline`,
