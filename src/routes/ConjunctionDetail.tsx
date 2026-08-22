@@ -3,6 +3,7 @@ import { conjunctionById, SCREENING_THRESHOLD_KM } from '../data/conjunctions';
 import { PROVENANCE, SNAPSHOT_EPOCH, groupOf } from '../data/objects';
 import { OriginBadge } from '../components/Provenance';
 import { ScoreModel } from '../components/ScoreModel';
+import { Consequence } from '../components/Consequence';
 import { conjunctionsToCsv, downloadCsv } from '../data/csv';
 import { useAcknowledged } from '../hooks/useAcknowledged';
 import { fmtDur, fmtNorad, fmtPc, fmtUTC } from '../data/format';
@@ -252,6 +253,10 @@ export function ConjunctionDetail() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="px-6 pb-6">
+        <Consequence event={event} />
       </div>
     </div>
   );

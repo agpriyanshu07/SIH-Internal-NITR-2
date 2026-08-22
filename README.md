@@ -205,6 +205,53 @@ the displacement lands square across the miss vector. The console shows both.
 It is still not a re-screen: nothing checks whether the burn creates a new
 conjunction with a third object.
 
+### If the pass were a collision
+
+Every event carries a consequence analysis, chaining three published models onto
+the real screened encounter:
+
+- **NASA Standard Breakup Model** (Johnson et al., EVOLVE 4.0, 2001) — the same
+  model used to reconstruct the Iridium 33 / Cosmos 2251 and Fengyun 1C clouds
+  this catalogue is built from. It decides whether the impact is catastrophic
+  (the 40 J/g specific-energy threshold), then draws fragments from
+  `N(L) = 0.1·M^0.75·L^-1.71` with the model's own bimodal area-to-mass and
+  ejection-velocity distributions.
+- **Isotropic ejection** onto the parent's real SGP4 state at TCA, giving each
+  fragment its own orbit.
+- **King-Hele drag decay** for how long each one stays up.
+
+Three limits, all stated in the panel itself. Object **masses are assumed** from
+class — a TLE carries no mass — and fragment count scales as mass^0.75, so that
+assumption propagates into every figure. Only fragments **≥ 10 cm** are modelled:
+the real cloud holds orders of magnitude more debris than any catalogue tracks.
+And lifetimes are order-of-magnitude only, because atmospheric density swings by
+more than a factor of ten across the solar cycle and solar activity is not
+modelled — so they are reported in bands, never as dates.
+
+### Where the debris comes down
+
+This is the part where a prototype is most tempted to draw a dot on a map, and
+it does not.
+
+**The longitude is not predictable.** A re-entry prediction carries roughly
+±10–20% error on the remaining lifetime; applied to the final orbit that is
+minutes of uncertainty, and an object at 7.7 km/s crosses a quarter of the
+planet in ten. No tool can name the country, and one that does is decorating.
+
+**The latitude is exactly predictable, and more interesting than it sounds.** An
+orbit of inclination *i* never crosses ±*i* — a hard geometric bound, not a
+confidence interval. Within that band the time spent at each latitude is
+
+```
+p(φ) ∝ cos φ / √(sin²i − sin²φ)
+```
+
+which says something counter-intuitive: debris is *least* likely to come down
+over the equator and *most* likely near its turning latitudes, where its motion
+is momentarily parallel to a line of latitude. For a 97.5° sun-synchronous
+orbit, 17.7% of the re-entry probability sits in each of the two bands around
+±83°, against about 2% per band through the tropics.
+
 ### Probability of collision
 
 Derived, not authored. Miss distance and relative velocity are measured; Pc then

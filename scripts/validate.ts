@@ -7,6 +7,18 @@ import { refine } from '../src/data/engine/refine';
 import { DEFAULT_HORIZON_HOURS, runScreening } from '../src/data/engine/run';
 import { SEVERITY_RANK } from '../src/data/riskScore';
 import { applyAlongTrackDeltaV, propagateState } from '../src/data/engine/twobody';
+import {
+  density,
+  lifetimeDays,
+  reachableLatitude,
+  reentryLatitudeDistribution,
+} from '../src/data/engine/decay';
+import {
+  CATASTROPHIC_THRESHOLD_JG,
+  fragmentCount,
+  modelBreakup,
+  specificEnergy,
+} from '../src/data/engine/breakup';
 
 /**
  * Known-answer tests for the screening engine.
@@ -420,6 +432,129 @@ section('9. Two-body propagator is self-consistent');
       `re-propagated ${actual.toFixed(4)} km vs closed form ${closed.toFixed(4)} km (${(rel * 100).toFixed(1)}%)`,
     );
   }
+}
+
+// ── 10. Atmosphere and orbital decay ────────────────────────────────────────
+// The decay model drives every "when does this come down" figure. It cannot be
+// checked to a year — density swings by more than 10x over the solar cycle,
+// which is exactly why the UI reports bands. What CAN be checked is that it
+// behaves like drag: monotone in altitude, monotone in ballistic coefficient,
+// and inside the right order of magnitude at the ends.
+section('10. Atmospheric decay behaves like drag');
+{
+  let monotoneRho = true;
+  for (let h = 100; h < 1000; h += 25) {
+    if (!(density(h) > density(h + 25))) monotoneRho = false;
+  }
+  check(
+    'density falls monotonically with altitude',
+    monotoneRho,
+    `100 km ${density(100).toExponential(1)} -> 800 km ${density(800).toExponential(1)} kg/m3`,
+  );
+
+  const lives = [200, 300, 400, 500, 600, 700].map((h) => lifetimeDays(h, h, 0.01));
+  let monotoneLife = true;
+  for (let i = 1; i < lives.length; i++) if (!(lives[i] > lives[i - 1])) monotoneLife = false;
+  check(
+    'lifetime increases monotonically with altitude',
+    monotoneLife,
+    lives.map((d, i) => `${200 + i * 100}km ${(d / 365.25).toFixed(1)}y`).join(', '),
+  );
+
+  const heavy = lifetimeDays(600, 600, 0.005);
+  const light = lifetimeDays(600, 600, 0.5);
+  check(
+    'a higher area-to-mass ratio decays sooner',
+    light < heavy,
+    `A/m 0.5 -> ${(light / 365.25).toFixed(2)} y vs A/m 0.005 -> ${(heavy / 365.25).toFixed(1)} y at 600 km`,
+  );
+
+  check(
+    'a 200 km orbit decays within a year, an 800 km one does not',
+    lifetimeDays(200, 200, 0.01) < 365 && lifetimeDays(800, 800, 0.005) > 10 * 365,
+    `200 km ${(lifetimeDays(200, 200, 0.01)).toFixed(0)} d, 800 km ${(lifetimeDays(800, 800, 0.005) / 365.25).toFixed(0)} y`,
+  );
+
+  // An eccentric orbit decays through its perigee, so it must come down sooner
+  // than a circular orbit at its apogee altitude.
+  check(
+    'an eccentric orbit decays faster than a circular one at its apogee',
+    lifetimeDays(300, 900, 0.05) < lifetimeDays(900, 900, 0.05),
+    `300x900 km ${(lifetimeDays(300, 900, 0.05) / 365.25).toFixed(2)} y vs 900 km circular`,
+  );
+}
+
+// ── 11. Where debris can come down ──────────────────────────────────────────
+// The latitude bound is the one genuinely hard prediction in the re-entry
+// story, so it gets checked rather than asserted.
+section('11. Re-entry latitude is bounded by inclination');
+{
+  let ok = true;
+  let sums = true;
+  let peaksHigh = true;
+  for (const inc of [51.6, 74, 86.4, 98.7]) {
+    const bins = reentryLatitudeDistribution(inc, 180);
+    const bound = reachableLatitude(inc);
+    // Nothing outside the reachable band, at all.
+    for (const b of bins) {
+      if (Math.abs(b.lat) > bound + 1 && b.p > 0) ok = false;
+    }
+    const total = bins.reduce((a, b) => a + b.p, 0);
+    if (Math.abs(total - 1) > 1e-9) sums = false;
+    // The distribution must peak near the turning latitude, not the equator.
+    const peak = bins.reduce((m, b) => (b.p > m.p ? b : m));
+    if (Math.abs(peak.lat) < bound * 0.7) peaksHigh = false;
+  }
+  check('probability is exactly zero outside +/- inclination', ok, 'checked 4 inclinations');
+  check('the distribution is normalised', sums, 'sums to 1 for all four');
+  check(
+    'debris is likeliest near the turning latitude, not the equator',
+    peaksHigh,
+    'peak |lat| within 30% of the inclination bound in every case',
+  );
+}
+
+// ── 12. The NASA Standard Breakup Model ─────────────────────────────────────
+section('12. Breakup model matches its published form');
+{
+  // A 1 kg fragment onto a 1000 kg satellite at 14 km/s: 98 J/g, well past the
+  // 40 J/g threshold, so the target is destroyed entirely.
+  const ep = specificEnergy(1000, 1, 14);
+  check(
+    'specific energy puts a 1 kg hit at 14 km/s over the catastrophic threshold',
+    ep > CATASTROPHIC_THRESHOLD_JG,
+    `${ep.toFixed(1)} J/g vs ${CATASTROPHIC_THRESHOLD_JG} J/g threshold`,
+  );
+  check(
+    'the same fragment at 2 km/s is not catastrophic',
+    specificEnergy(1000, 1, 2) < CATASTROPHIC_THRESHOLD_JG,
+    `${specificEnergy(1000, 1, 2).toFixed(1)} J/g`,
+  );
+
+  // N(Lc) = 0.1 * M^0.75 * Lc^-1.71 — more fragments at smaller sizes, always.
+  const n10 = fragmentCount(1000, 0.1);
+  const n100 = fragmentCount(1000, 1.0);
+  check(
+    'fragment count follows the power law and grows as size falls',
+    n10 > n100 && Math.abs(n10 / n100 - Math.pow(0.1, -1.71)) < 1e-6,
+    `N(>10cm)=${n10.toFixed(0)}, N(>1m)=${n100.toFixed(0)} for a 1 t breakup`,
+  );
+
+  const A = catalogue.find((e) => e.group === 'indian-assets')!;
+  const B = catalogue.find((e) => e.group === 'cosmos-2251-debris')!;
+  const r = modelBreakup(A.object, B.object, 14, A.group, B.group);
+  check(
+    'a modelled cloud has physical fragments',
+    r.fragments.length > 0 &&
+      r.fragments.every((f) => f.mass > 0 && f.aOverM > 0 && f.dvMs > 0 && f.lc >= 0.1),
+    `${r.fragments.length} modelled of ${r.predictedCount} predicted, catastrophic=${r.catastrophic}`,
+  );
+  check(
+    'the same collision always produces the same cloud',
+    JSON.stringify(modelBreakup(A.object, B.object, 14, A.group, B.group).fragments) ===
+      JSON.stringify(r.fragments),
+    'seeded from the pair, so a reload cannot reshuffle the debris',
+  );
 }
 
 section('Result');

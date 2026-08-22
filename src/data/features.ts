@@ -48,6 +48,13 @@ export const FEATURES: Feature[] = [
     note: 'A committed CelesTrak GP snapshot — 859 real tracked objects across five groups, all captured at one instant so their epochs are mutually consistent: the ISS and CSS stations, ISRO\u2019s LEO fleet, and the Cosmos 1408, Iridium 33 and Cosmos 2251 debris clouds. Bundled into the build, so the console makes no network request at any point. The console clock is anchored to the capture instant, because propagating these element sets from today would be arithmetic rather than prediction.',
   },
   {
+    id: 'consequence',
+    label: 'Collision consequence',
+    status: 'partial',
+    group: 'Operations',
+    note: 'On any event, models what a hit would produce: the NASA Standard Breakup Model for the fragment cloud, isotropic ejection onto the parent\u2019s real SGP4 state, and King-Hele drag decay for how long each fragment stays up. Partial for three honest reasons. Object MASSES are assumed from class, and fragment count scales as mass^0.75, so that assumption propagates into every figure. Only fragments at or above 10 cm are modelled — the real cloud holds orders of magnitude more debris than any catalogue tracks. And lifetimes are order-of-magnitude only, because atmospheric density varies by more than 10x over the solar cycle and solar activity is not modelled; they are reported in bands, never as dates. What is NOT approximate is the re-entry latitude bound: an orbit never crosses its own inclination, and the latitude distribution inside that band is a closed form. Re-entry LONGITUDE is not predicted at all, because it is not predictable.',
+  },
+  {
     id: 'covariance',
     label: 'Positional uncertainty',
     status: 'partial',
