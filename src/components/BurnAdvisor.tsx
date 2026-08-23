@@ -14,6 +14,7 @@ import { useNow } from '../hooks/useNow';
 import { useThresholds } from '../state/thresholds';
 import type { ResolvedConjunction } from '../data/types';
 import { Panel, SeverityChip } from './primitives';
+import { sliderFill } from '../lib/slider';
 
 /**
  * Plan a burn against a real screened event.
@@ -24,9 +25,6 @@ import { Panel, SeverityChip } from './primitives';
  * than a single number — see data/advisor.ts for why the pessimistic end is
  * "no improvement at all".
  */
-
-const slider =
-  'h-[3px] w-full cursor-pointer appearance-none rounded-sm bg-panel-high accent-[color:var(--accent)]';
 
 export function BurnAdvisor({ events }: { events: ResolvedConjunction[] }) {
   const now = useNow(5000);
@@ -150,7 +148,8 @@ export function BurnAdvisor({ events }: { events: ResolvedConjunction[] }) {
             step={0.5}
             value={deltaV}
             onChange={(e) => setDeltaV(+e.target.value)}
-            className={slider}
+            style={sliderFill(deltaV, 0, 50)}
+              className="k-slider"
           />
           <div className="num text-xs- text-tertiary">
             Δs ≈ 3 · Δv · t = {outcome.displacementKm.toFixed(3)} km of along-track

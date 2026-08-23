@@ -4,6 +4,7 @@ import { fmtPc } from '../data/format';
 import { DEFAULT_THRESHOLDS, passesThresholds, useThresholds } from '../state/thresholds';
 import { Button, Panel, SeverityChip } from '../components/primitives';
 import type { Severity } from '../data/types';
+import { sliderFill } from '../lib/slider';
 
 /**
  * Screening thresholds.
@@ -44,9 +45,6 @@ function Row({
     </div>
   );
 }
-
-const slider =
-  'h-[3px] w-full cursor-pointer appearance-none rounded-sm bg-panel-high accent-[color:var(--accent)]';
 
 export function Thresholds() {
   const { thresholds, set, reset, modified } = useThresholds();
@@ -134,7 +132,8 @@ export function Thresholds() {
               value={thresholds.maxMissKm}
               onChange={(e) => set('maxMissKm', +e.target.value)}
               aria-label="Maximum miss distance in kilometres"
-              className={slider}
+              style={sliderFill(thresholds.maxMissKm, 0.5, 25)}
+              className="k-slider"
             />
           </Row>
 
@@ -151,7 +150,8 @@ export function Thresholds() {
               value={pcIndex}
               onChange={(e) => set('minPc', PC_STOPS[+e.target.value])}
               aria-label="Minimum probability of collision"
-              className={slider}
+              style={sliderFill(pcIndex, 0, PC_STOPS.length - 1)}
+              className="k-slider"
             />
           </Row>
 
@@ -168,7 +168,8 @@ export function Thresholds() {
               value={thresholds.horizonHours}
               onChange={(e) => set('horizonHours', +e.target.value)}
               aria-label="Screening horizon in hours"
-              className={slider}
+              style={sliderFill(thresholds.horizonHours, 6, 72)}
+              className="k-slider"
             />
           </Row>
 
@@ -185,7 +186,8 @@ export function Thresholds() {
               value={thresholds.maxElementAgeDays}
               onChange={(e) => set('maxElementAgeDays', +e.target.value)}
               aria-label="Maximum element set age in days"
-              className={slider}
+              style={sliderFill(thresholds.maxElementAgeDays, 1, 10)}
+              className="k-slider"
             />
           </Row>
         </div>
@@ -217,7 +219,8 @@ export function Thresholds() {
               value={thresholds.sigmaScale}
               onChange={(e) => set('sigmaScale', +e.target.value)}
               aria-label="Positional uncertainty scale"
-              className={slider}
+              style={sliderFill(thresholds.sigmaScale, 0.25, 4)}
+              className="k-slider"
             />
           </Row>
 

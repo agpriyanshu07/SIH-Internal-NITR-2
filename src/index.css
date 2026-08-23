@@ -60,6 +60,13 @@
     --glass: blur(22px) saturate(150%);
     --lift: 0 1px 0 0 rgba(255, 255, 255, 0.075) inset,
       0 18px 44px -18px rgba(0, 0, 0, 0.62);
+    /*
+     * --lift at control scale. Same two-part language — an inset top highlight
+     * over a soft drop shadow — with the blur and offset brought down to suit a
+     * 14px thumb rather than a panel. Not a second shadow vocabulary.
+     */
+    --lift-sm: 0 1px 0 0 rgba(255, 255, 255, 0.16) inset,
+      0 2px 7px -2px rgba(0, 0, 0, 0.7);
 
     /* The opaque base the whole glass stack is composited over. */
     --base: #04070d;
@@ -99,6 +106,8 @@
     --glass: blur(22px) saturate(130%);
     --lift: 0 1px 0 0 rgba(255, 255, 255, 0.85) inset,
       0 18px 44px -20px rgba(20, 40, 70, 0.28);
+    --lift-sm: 0 1px 0 0 rgba(255, 255, 255, 0.7) inset,
+      0 2px 7px -2px rgba(20, 40, 70, 0.35);
 
     --base: #dde4ec;
     --globe: #eef1f6;
@@ -273,6 +282,141 @@
     background: linear-gradient(90deg, transparent, var(--accent-wash), transparent);
     animation: ksweep 9s linear infinite;
     pointer-events: none;
+  }
+
+  /*
+   * Range slider.
+   *
+   * `appearance: none` removes the native control INCLUDING its thumb, and
+   * `accent-color` stops applying once it is gone — so a range input styled
+   * only with utility classes renders as a bare grey bar with a default thumb
+   * the browser puts back inconsistently. Everything the control needs is
+   * therefore declared here, once, for all thirteen of them.
+   *
+   * The visible bar is 3px but the input is 18px tall: the bar is what you
+   * look at, the box is what you have to hit. A 3px-tall input is a 3px-tall
+   * pointer target.
+   *
+   * Fill position comes in as --k-fill, set per input from sliderFill() in
+   * lib/slider.ts. Keeping it a custom property rather than a full inline
+   * gradient means the gradient is written once here instead of thirteen times
+   * in TSX, and it works the same for a linear km value or the Pc slider's
+   * log-scale index — both report their own min/max/value.
+   */
+  .k-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 18px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .k-slider::-webkit-slider-runnable-track {
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(
+      to right,
+      var(--accent) var(--k-fill, 0%),
+      var(--panel-high) var(--k-fill, 0%)
+    );
+  }
+  .k-slider::-moz-range-track {
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(
+      to right,
+      var(--accent) var(--k-fill, 0%),
+      var(--panel-high) var(--k-fill, 0%)
+    );
+  }
+
+  /*
+   * The thumb. Vendor pseudo-elements cannot be combined into one selector —
+   * a browser drops the whole rule if it does not recognise every selector in
+   * the list — so webkit and moz are declared separately throughout.
+   *
+   * box-sizing is set explicitly because `*` does not match a vendor pseudo-
+   * element, so Tailwind's border-box preflight never reaches it; without this
+   * the 1px border pushes the thumb to 16px and the centring is off by a pixel.
+   */
+  .k-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 1px solid var(--accent-border);
+    box-shadow: var(--lift-sm);
+    /* Centre a 14px thumb on a 3px track. */
+    margin-top: -5.5px;
+    transition:
+      transform 130ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 130ms ease;
+  }
+  .k-slider::-moz-range-thumb {
+    box-sizing: border-box;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 1px solid var(--accent-border);
+    box-shadow: var(--lift-sm);
+    transition:
+      transform 130ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 130ms ease;
+  }
+
+  /* Same hover language as Button: brighten to --accent-hover and grow a hair. */
+  .k-slider:hover::-webkit-slider-thumb {
+    background: var(--accent-hover);
+    transform: scale(1.15);
+  }
+  .k-slider:hover::-moz-range-thumb {
+    background: var(--accent-hover);
+    transform: scale(1.15);
+  }
+  /* Dragging settles back down, so the grab reads as a press rather than a lift. */
+  .k-slider:active::-webkit-slider-thumb {
+    transform: scale(1.04);
+  }
+  .k-slider:active::-moz-range-thumb {
+    transform: scale(1.04);
+  }
+
+  /*
+   * Keyboard focus belongs on the thumb, not on the 18px box around the track —
+   * the global :focus-visible rule would otherwise draw a wide rectangle that
+   * reads as a layout bug. The ring reuses --accent-wash rather than adding a
+   * colour.
+   */
+  .k-slider:focus-visible {
+    outline: none;
+  }
+  .k-slider:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px var(--accent-wash), var(--lift-sm);
+  }
+  .k-slider:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 3px var(--accent-wash), var(--lift-sm);
+  }
+
+  /*
+   * The global reduced-motion rule covers `*`, `*::before` and `*::after`, none
+   * of which match a vendor pseudo-element — so the thumb needs saying again.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .k-slider::-webkit-slider-thumb,
+    .k-slider::-moz-range-thumb {
+      transition: none;
+    }
+    .k-slider:hover::-webkit-slider-thumb,
+    .k-slider:hover::-moz-range-thumb,
+    .k-slider:active::-webkit-slider-thumb,
+    .k-slider:active::-moz-range-thumb {
+      transform: none;
+    }
   }
 
   .label {
