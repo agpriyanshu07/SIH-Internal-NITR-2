@@ -71,9 +71,17 @@ engine/impact.ts             centre-of-mass mechanics, J2 nodal precession
   -> engine/breakup.ts       NASA Standard Breakup Model
   -> engine/thermal.ts       Sutton-Graves heating, lumped-mass demise
   -> engine/decay.ts         King-Hele drag decay, re-entry latitude
+  -> engine/cascade.ts       Kessler particle-in-a-box flux on surviving assets
   -> data/consequence.ts     the chain, with every assumption an input
   -> routes/Analysis.tsx     the workbench; Consequence.tsx summarises it
 ```
+
+**Two different things are called "cascade" in this codebase, and conflating them
+will produce nonsense.** `ScreenCascade` in `engine/screen.ts` (and
+`components/CascadePanel.tsx`) is the *pair-reduction* cascade — how many pairs
+each filter stage rejected. `engine/cascade.ts` (and `components/CascadeRisk.tsx`)
+is the *Kessler* cascade — the added collision rate a debris cloud imposes on
+everything still flying. They share a word and nothing else.
 
 `workers/screening.worker.ts` runs `engine/run.ts` unchanged, so the "Run
 screening" button performs a real screening run rather than replaying one. The

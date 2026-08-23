@@ -280,6 +280,55 @@ The A/m dependence and the survive/demise boundary near 0.15 m²/kg are the
 meaningful outputs; the absolute altitude is not calibrated against flight data
 and the UI says so.
 
+### The cloud, as the field draws it
+
+Every fragment is plotted twice at its own orbital period — once at apogee, once
+at perigee. That is a **Gabbard diagram**, the standard published view of a
+breakup, and the X it produces is geometry rather than coincidence: a fragment
+ejected prograde raises its apogee while keeping perigee near the collision
+point, and a retrograde one does the reverse, so both arms cross at the parent
+orbit. Horizontal spread is the energy imparted; vertical spread is the
+eccentricity it produced. Fragments whose perigee has been driven into the
+atmosphere sit on the floor of the plot and are the same population counted as
+immediate re-entries.
+
+### Cascade risk — what the cloud does to everything else
+
+The consequence analysis would otherwise stop at *here are 1,400 new objects*,
+which is a fact without a consequence. The cloud is therefore fed back as an
+environment, and the **added** collision rate on every crewed station and ISRO
+asset is reported.
+
+This is deliberately **not** a conjunction screen. Days after a breakup a
+fragment's position *around* its orbit is no longer known — the period error
+wraps within weeks — so naming specific future close approaches would invent
+precision the model does not contain. What survives is the orbit's shape, so the
+spread cloud is treated as a gas and a rate is computed by the particle-in-a-box
+formulation of Kessler & Cour-Palais (1978), the paper this console is named
+after:
+
+```
+rate = n · v · A          [collisions per second]
+```
+
+with *n* the fragment number density, *v* the mean closing speed and *A* the
+asset's cross-section. It yields a rate, not a schedule.
+
+Two details are easy to get wrong and are checked rather than assumed. Shell
+occupancy is weighted by the time a fragment actually spends at each altitude
+(d*t* ∝ *r*² d*ν*, so an eccentric orbit lingers near apogee) rather than by its
+perigee–apogee span. And closing speed is averaged over a uniform node
+distribution rather than taken as a constant — co-planar, co-altitude objects
+genuinely do close slowly, which is why a constellation is safer against its own
+debris than against anybody else's.
+
+What bounds it: the gas picture needs the cloud spread around the Earth, which
+nodal precession takes the reported number of days to do, so these figures are a
+floor for the first weeks. Cross-sections are assumed by size class because a
+TLE carries no geometry, and rate is linear in cross-section. Only fragments at
+or above 10 cm are modelled. What is reported is the *increment* from one event,
+never total environmental risk.
+
 ### Where the debris comes down
 
 This is the part where a prototype is most tempted to draw a dot on a map, and
@@ -380,6 +429,19 @@ makes the engine faster and quieter while dropping real close approaches.
    candidates and the same distances as the filtered cascade.
 5. The screening radius covers the step size at the maximum closing speed.
 6. Derived perigee/apogee agree with the filter's own geometry.
+7. A circular orbit spends all of its time in its own altitude shell and none in
+   any other; an eccentric one demonstrably lingers near apogee.
+8. Closing speed rises with plane angle and stays inside physical bounds.
+
+It also checks the breakup model against the **observed catalogues** of three
+real hypervelocity events, rather than only against its own published form.
+Cosmos 1408 comes out at 0.80× the catalogued fragment count and Iridium 33 ×
+Kosmos 2251 at 0.53×, both inside the factor of three the model claims for
+itself. Fengyun-1C lands at 0.33× and is **reported rather than asserted**: it
+fragmented well beyond what a statistical fit to the average event predicts.
+Widening the band until it passed would have been tuning away a real result, and
+dropping the case would have meant quoting the agreement while hiding the
+disagreement — so it prints every run, with the reason.
 
 ## The single-file build
 
