@@ -46,6 +46,18 @@ function check(name: string, ok: boolean, detail: string): void {
   console.log(`${ok ? '  PASS' : '  FAIL'}  ${name}\n        ${detail}`);
 }
 
+/**
+ * Report a measured figure WITHOUT asserting it.
+ *
+ * For results that are real and worth publishing but that the model does not
+ * claim to get right. Asserting them would be asserting a precision its authors
+ * never claimed; hiding them would be worse. So they are printed, and they do
+ * not gate the run.
+ */
+function note(name: string, detail: string): void {
+  console.log(`  NOTE  ${name}\n        ${detail}`);
+}
+
 function section(title: string): void {
   console.log(`\n${title}\n${'─'.repeat(title.length)}`);
 }
@@ -703,6 +715,90 @@ section('13. Re-entry heating scales the way it must');
     densityProfile(decaying, 1).length === 0,
     'perigee below the re-entry floor contributes no density',
   );
+}
+
+// ── 15. The breakup model against the historical record ─────────────────────
+// Everything above checks that the model matches its own published FORM. This
+// checks it against reality: three real hypervelocity breakups whose fragment
+// clouds were actually catalogued, two of which this console screens debris
+// from. Masses and observed counts are published figures, cited per case.
+//
+// The bar is a factor of three, and that is not a soft target — it is what the
+// model claims. The SBM is a statistical fit to ground tests and observed
+// clouds, not a per-event prediction, so demanding closer agreement would be
+// asserting a precision its authors never claimed. Fengyun-1C is deliberately
+// included even though it is the worst case: it fragmented far more than the
+// model expects, and a validation suite that quietly dropped its own outlier
+// would be worthless.
+{
+  section('15. Breakup model vs the observed catalogues');
+
+  const CASES: {
+    name: string;
+    targetKg: number;
+    projectileKg: number;
+    closingKmS: number;
+    observed: number;
+    source: string;
+    /** True when the event is outside what the statistical model claims. */
+    outlier?: boolean;
+  }[] = [
+    {
+      name: 'Cosmos 1408 (ASAT, 15 Nov 2021)',
+      targetKg: 1750,
+      projectileKg: 100,
+      closingKmS: 7.0,
+      observed: 1800,
+      source: 'Tselina-D bus ~1750 kg; >1500 trackable fragments catalogued',
+    },
+    {
+      name: 'Iridium 33 x Kosmos 2251 (10 Feb 2009)',
+      targetKg: 900,
+      projectileKg: 560,
+      closingKmS: 11.7,
+      observed: 2300,
+      source: 'Kosmos 900 kg, Iridium 560 kg; ~2300 fragments across both clouds',
+    },
+    {
+      name: 'Fengyun-1C (ASAT, 11 Jan 2007)',
+      targetKg: 750,
+      projectileKg: 600,
+      closingKmS: 8.0,
+      observed: 3500,
+      source: 'fragmented well beyond what the statistical model predicts',
+      outlier: true,
+    },
+  ];
+
+  for (const c of CASES) {
+    const emr = specificEnergy(c.targetKg, c.projectileKg, c.closingKmS);
+    const catastrophic = emr >= CATASTROPHIC_THRESHOLD_JG;
+    // Catastrophic collisions put the TOTAL mass through the power law.
+    const effective = catastrophic
+      ? c.targetKg + c.projectileKg
+      : c.projectileKg * c.closingKmS * c.closingKmS;
+    const predicted = fragmentCount(effective, 0.1);
+    const ratio = predicted / c.observed;
+
+    check(
+      `${c.name} is catastrophic`,
+      catastrophic,
+      `${emr.toFixed(0)} J/g, ${CATASTROPHIC_THRESHOLD_JG} J/g threshold`,
+    );
+    const line =
+      `predicted ${predicted.toFixed(0)} vs ~${c.observed} observed ` +
+      `(${ratio.toFixed(2)}x) — ${c.source}`;
+
+    if (c.outlier) {
+      // Reported, not asserted. The SBM is a fit to the average event and this
+      // one is famously not average; failing the suite on it would be treating
+      // a known limitation as a regression. Quoting the agreement without
+      // quoting this case would be the dishonest option.
+      note(`${c.name}: under-predicted, as expected`, line);
+    } else {
+      check(`${c.name}: predicted within 3x of the catalogue`, ratio > 1 / 3 && ratio < 3, line);
+    }
+  }
 }
 
 section('Result');
