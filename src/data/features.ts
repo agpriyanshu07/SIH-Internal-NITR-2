@@ -56,6 +56,22 @@ export const FEATURES: Feature[] = [
     note: 'A research workbench, and a summary panel on every event. Impact mechanics are taken in the centre-of-mass frame (the only frame in which the energy means anything), the NASA Standard Breakup Model produces the cloud, each parent\u2019s fragments are ejected about that parent\u2019s own real SGP4 state with momentum conserved per sub-cloud, King-Hele drag gives orbital lifetime, differential J2 precession gives how long the cloud takes to become a shell, and Sutton-Graves heating with a lumped-mass demise criterion decides which fragments survive re-entry at all. Every assumption that moves the answer — both masses, the material mix, drag coefficient, solar activity, entry angle — is a control rather than a constant, and the fragment-level output exports to CSV. Partial for three honest reasons. Object MASSES are assumed from class, and fragment count scales as mass^0.75, so that assumption propagates into every figure. Only fragments at or above 10 cm are modelled — the real cloud holds orders of magnitude more debris than any catalogue tracks. And lifetimes are order-of-magnitude only, because atmospheric density varies by more than 10x over the solar cycle and solar activity is not modelled; they are reported in bands, never as dates. What is NOT approximate is the re-entry latitude bound: an orbit never crosses its own inclination, and the latitude distribution inside that band is a closed form. Re-entry LONGITUDE is not predicted at all, because it is not predictable.',
   },
   {
+    id: 'cascade',
+    label: 'Cascade risk',
+    to: '/console/analysis',
+    status: 'partial',
+    group: 'Operations',
+    note: 'Closes the loop the console is named after: the modelled debris cloud is fed back as an environment and the ADDED collision rate on every crewed station and ISRO asset is computed, using the particle-in-a-box formulation of Kessler & Cour-Palais (1978) — rate = n \u00b7 v \u00b7 A. Shell occupancy is weighted by the time a fragment actually spends at each altitude (dt proportional to r squared), not by its perigee-apogee span, and closing speed is averaged over a uniform node distribution rather than assumed. Partial, and the limits bound the numbers. The gas picture only holds once nodal precession has spread the cloud around the Earth, which takes the number of days reported beside it; before that the debris is a clump and the risk is concentrated, so these figures are a floor for the first weeks. Cross-sections are assumed by size class because a TLE carries no geometry, and rate is linear in cross-section. Only fragments at or above 10 cm are modelled. What is reported is the INCREMENT from one event, never total environmental risk. Deliberately not a conjunction screen: days after a breakup a fragment\u2019s position around its orbit is unknown, so naming specific future close approaches would be inventing precision the model does not contain.',
+  },
+  {
+    id: 'gabbard',
+    label: 'Gabbard diagram',
+    to: '/console/analysis',
+    status: 'live',
+    group: 'Operations',
+    note: 'Apogee and perigee of every modelled fragment against its orbital period \u2014 the standard published view of a breakup cloud. Period is derived from the perigee and apogee already computed for each fragment, so the plot introduces no new modelling of its own. Fragments whose perigee has been driven into the atmosphere are drawn on the floor of the plot and are the same population the panel counts as immediate re-entries.',
+  },
+  {
     id: 'covariance',
     label: 'Positional uncertainty',
     status: 'partial',

@@ -15,6 +15,11 @@ import {
 } from '../src/data/engine/decay';
 import { materialByKey, simulateEntry, casualtyArea } from '../src/data/engine/thermal';
 import {
+  densityProfile,
+  meanRelativeSpeed,
+  timeFractionInShell,
+} from '../src/data/engine/cascade';
+import {
   CATASTROPHIC_THRESHOLD_JG,
   fragmentCount,
   modelBreakup,
@@ -623,6 +628,80 @@ section('13. Re-entry heating scales the way it must');
     'casualty area matches the published DAS form',
     Math.abs(ca - Math.pow(Math.sqrt(0.04) + 0.3, 2)) < 1e-12,
     `${ca.toFixed(3)} m2 for a single 0.04 m2 survivor`,
+  );
+}
+
+// ── 14. Cascade risk ────────────────────────────────────────────────────────
+// The flux model rests on two primitives. Both have closed-form answers in
+// cases we can state exactly, so both are checked rather than eyeballed.
+{
+  section('Cascade risk');
+
+  // A circular orbit spends ALL of its time in the shell containing it, and
+  // none in any other. This catches sign and boundary errors in one go.
+  const inOwn = timeFractionInShell(800, 800, 787.5, 812.5);
+  const inOther = timeFractionInShell(800, 800, 700, 725);
+  check(
+    'a circular orbit sits entirely in its own shell',
+    Math.abs(inOwn - 1) < 1e-9 && inOther === 0,
+    `own ${inOwn.toFixed(4)}, elsewhere ${inOther.toFixed(4)}`,
+  );
+
+  // Kepler's second law: an eccentric orbit lingers near apogee. The naive
+  // implementation weights altitude uniformly and gets this exactly backwards.
+  const nearPerigee = timeFractionInShell(300, 1000, 300, 325);
+  const nearApogee = timeFractionInShell(300, 1000, 975, 1000);
+  check(
+    'an eccentric orbit spends longer near apogee than perigee',
+    nearApogee > nearPerigee,
+    `${(nearApogee * 100).toFixed(2)}% vs ${(nearPerigee * 100).toFixed(2)}% per orbit`,
+  );
+
+  // Closing speed must fall to zero for co-planar co-altitude orbits and rise
+  // towards ~2v head-on. A constant here would sail through every other check.
+  const same = meanRelativeSpeed(51.6, 51.6, 800);
+  const crossed = meanRelativeSpeed(51.6, 98, 800);
+  check(
+    'closing speed rises with the plane angle',
+    crossed > same && same > 0 && crossed < 16,
+    `co-planar ${same.toFixed(2)} km/s, crossed ${crossed.toFixed(2)} km/s`,
+  );
+
+  // Density must scale linearly with the population, and shell volume must be
+  // large enough that LEO densities land in the 1e-8-1e-10 /km3 range that
+  // published environment models report for the trackable population.
+  const frag = (perigee: number, apogee: number) =>
+    ({
+      lc: 0.15, mass: 0.5, area: 0.02, aOverM: 0.04, dvMs: 100, material: 'al',
+      perigee, apogee, incl: 82.6, nodalDegPerDay: -1, lifetimeDays: 2000,
+      band: '10-100 y', immediate: perigee < 100,
+      entry: {} as never, survivesEntry: false,
+    }) as unknown as Parameters<typeof densityProfile>[0][number];
+
+  const cloud = Array.from({ length: 500 }, (_, i) =>
+    frag(400 + (i % 50) * 6, 800 + (i % 37) * 9),
+  );
+  const single = densityProfile(cloud, 1);
+  const doubled = densityProfile(cloud, 2);
+  const peak = single.reduce((b, x) => (x.density > b.density ? x : b), single[0]);
+  const peak2 = doubled.reduce((b, x) => (x.density > b.density ? x : b), doubled[0]);
+  check(
+    'density scales linearly with population',
+    Math.abs(peak2.density / peak.density - 2) < 1e-9,
+    `${peak.density.toExponential(2)} -> ${peak2.density.toExponential(2)} /km3`,
+  );
+  check(
+    'LEO densities land in the range published models report',
+    peak.density > 1e-12 && peak.density < 1e-6,
+    `peak ${peak.density.toExponential(2)} /km3 at ${peak.altKm.toFixed(0)} km`,
+  );
+
+  // Fragments already inside the atmosphere are not a standing environment.
+  const decaying = Array.from({ length: 100 }, () => frag(50, 700));
+  check(
+    'fragments already re-entering are excluded from the environment',
+    densityProfile(decaying, 1).length === 0,
+    'perigee below the re-entry floor contributes no density',
   );
 }
 

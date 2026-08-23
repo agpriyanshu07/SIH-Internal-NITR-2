@@ -9,6 +9,7 @@ import { downloadCsv } from '../data/csv';
 import { Button, Panel } from '../components/primitives';
 import { LatitudePlot } from '../components/LatitudePlot';
 import { GabbardPlot } from '../components/GabbardPlot';
+import { CascadeRisk } from '../components/CascadeRisk';
 
 /**
  * Consequence analysis workbench.
@@ -378,6 +379,13 @@ export function Analysis() {
               parentAltKm={(event.A.alt + event.B.alt) / 2}
             />
           </Panel>
+
+          <CascadeRisk
+            fragments={result.fragments}
+            predictedCount={result.breakup.predictedCount}
+            cloudInclDeg={event.A.incl}
+            shellFormationDays={result.shellFormationDays}
+          />
 
           <Panel title="Where it comes down" bodyClassName="p-[16px]">
             <div className="mb-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
