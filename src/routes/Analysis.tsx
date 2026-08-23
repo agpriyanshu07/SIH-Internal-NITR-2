@@ -6,7 +6,7 @@ import { DEFAULT_MATERIAL_MIX } from '../data/engine/thermal';
 import { entryById } from '../data/objects';
 import { fmtInt } from '../data/format';
 import { downloadCsv } from '../data/csv';
-import { Button, Panel } from '../components/primitives';
+import { Button, Panel, Select } from '../components/primitives';
 import { LatitudePlot } from '../components/LatitudePlot';
 import { GabbardPlot } from '../components/GabbardPlot';
 import { CascadeRisk } from '../components/CascadeRisk';
@@ -199,18 +199,18 @@ export function Analysis() {
           <Panel title="Scenario" bodyClassName="px-[14px] pb-[14px] pt-1">
             <div className="flex flex-col gap-[7px] pt-3">
               <label htmlFor="ev" className="label">Event</label>
-              <select
+              <Select
                 id="ev"
                 value={event.id}
                 onChange={(e) => setEventId(e.target.value)}
-                className="w-full rounded border border-hairline bg-panel-raised px-3 py-2 font-mono text-xs text-primary outline-none focus-visible:border-[color:var(--accent)]"
+                className="py-2 pl-3 font-mono text-xs"
               >
                 {candidates.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.sev} · {c.relv.toFixed(1)} km/s · {c.A.name} × {c.B.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             <Field

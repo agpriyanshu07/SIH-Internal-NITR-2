@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useNow } from '../hooks/useNow';
 import { fmtAge, fmtUTC } from '../data/format';
 import { SearchIcon } from './Icon';
+import { TextField } from './primitives';
 import { useTheme } from '../hooks/useTheme';
 import { initials, useOperator } from '../hooks/useOperator';
 import { FEATURES, type Feature } from '../data/features';
@@ -147,24 +148,26 @@ export function Shell() {
       <div className="flex min-w-0 flex-col">
         <header className="sweep flex h-[52px] flex-none items-center justify-between gap-4 border-b border-hairline-soft px-5">
           <form
-            className="glass lift relative z-10 flex h-[30px] w-full max-w-[340px] items-center gap-2 rounded border border-hairline bg-panel px-[10px] focus-within:border-accent-border"
+            className="relative z-10 w-full max-w-[340px]"
             onSubmit={(e) => {
               e.preventDefault();
               navigate(`/console/catalogue?q=${encodeURIComponent(query)}`);
             }}
           >
-            <SearchIcon className="flex-none text-tertiary" />
-            <input
+            <TextField
               ref={searchRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search objects, NORAD ID, conjunction ID"
               aria-label="Search objects"
-              className="min-w-0 flex-1 border-0 bg-transparent text-sm text-primary outline-none"
+              className="glass lift h-[30px] px-[10px]"
+              icon={<SearchIcon className="flex-none text-tertiary" />}
+              trailing={
+                <kbd className="flex-none rounded-sm border border-hairline px-[5px] py-px font-mono text-xs- text-tertiary">
+                  /
+                </kbd>
+              }
             />
-            <kbd className="flex-none rounded-sm border border-hairline px-[5px] py-px font-mono text-xs- text-tertiary">
-              /
-            </kbd>
           </form>
 
           <div className="relative z-10 flex items-center gap-5">

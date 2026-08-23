@@ -33,6 +33,12 @@ export const ChevronRight = ({ size = 12, className }: IconProps) => (
   </svg>
 );
 
+export const ChevronDown = ({ size = 12, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <path d="M3.5 6 8 10.5 12.5 6" />
+  </svg>
+);
+
 export const CloseIcon = ({ size = 12, className }: IconProps) => (
   <svg {...base(size)} className={className}>
     <path d="M3.5 3.5 12.5 12.5M12.5 3.5 3.5 12.5" />

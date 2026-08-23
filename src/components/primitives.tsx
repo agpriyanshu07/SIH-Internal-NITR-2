@@ -1,4 +1,11 @@
-import type { ReactNode, ButtonHTMLAttributes } from 'react';
+import type {
+  ReactNode,
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  SelectHTMLAttributes,
+} from 'react';
+import { forwardRef } from 'react';
+import { ChevronDown } from './Icon';
 import type { Severity } from '../data/types';
 
 /* The small, repeated pieces of the design's component library. */
@@ -139,6 +146,79 @@ export function Segmented<T extends string>({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ── Text field ─────────────────────────────────────────────────
+
+/**
+ * A place to type, with an optional leading icon.
+ *
+ * There were four of these and three different treatments: the top-bar search
+ * had glass, a lift and an accent border on focus; the catalogue filter was the
+ * same control one screen over with none of it; the two sign-in fields used
+ * `focus:` rather than `focus-visible:`, so their border lit up on a mouse
+ * click as well as a tab. Same control, one surface.
+ *
+ * The ring goes on the wrapper rather than the input because the icon sits
+ * inside the border, so the input's own box is not the box worth ringing.
+ */
+export type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
+  icon?: ReactNode;
+  trailing?: ReactNode;
+  inputClassName?: string;
+};
+
+/* Forwards its ref to the input, not the wrapper — the top bar's `/` shortcut
+   focuses this field, and a div cannot take focus. */
+export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
+  function TextField(
+    { icon, trailing, className = '', inputClassName = '', ...rest },
+    ref,
+  ) {
+    return (
+      <div
+        className={`k-control flex items-center gap-[10px] ${className}`}
+        /* A styling hook, not an ARIA claim: the invalid state belongs to the
+           input, which carries the real aria-invalid via {...rest}. Announcing
+           it on the wrapper too would have a screen reader say it twice. */
+        data-invalid={rest['aria-invalid'] ? 'true' : undefined}
+      >
+        {icon}
+        <input
+          {...rest}
+          ref={ref}
+          className={`min-w-0 flex-1 border-0 bg-transparent text-sm text-primary outline-none placeholder:text-tertiary ${inputClassName}`}
+        />
+        {trailing}
+      </div>
+    );
+  },
+);
+
+// ── Select ───────────────────────────────────────────────────────
+
+/**
+ * A native select wearing the app's chevron instead of the platform's.
+ *
+ * The list that drops down still belongs to the operating system, and that is
+ * the right trade: a hand-rolled listbox would have to re-earn keyboard
+ * behaviour, type-ahead and touch handling that the native control already
+ * has. What is replaced is the closed state — the part that sits inside a panel
+ * all day next to hairlines this app drew itself.
+ */
+export function Select({
+  className = '',
+  ...rest
+}: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <div className="relative flex w-full items-center">
+      <select {...rest} className={`k-control k-select ${className}`} />
+      <ChevronDown
+        size={11}
+        className="pointer-events-none absolute right-[10px] text-tertiary"
+      />
     </div>
   );
 }

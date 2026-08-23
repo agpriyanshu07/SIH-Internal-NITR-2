@@ -13,7 +13,7 @@ import { fmtDur } from '../data/format';
 import { useNow } from '../hooks/useNow';
 import { useThresholds } from '../state/thresholds';
 import type { ResolvedConjunction } from '../data/types';
-import { Panel, SeverityChip } from './primitives';
+import { Panel, Select, SeverityChip } from './primitives';
 import { sliderFill } from '../lib/slider';
 
 /**
@@ -104,18 +104,18 @@ export function BurnAdvisor({ events }: { events: ResolvedConjunction[] }) {
           <label htmlFor="advisor-event" className="label">
             Against event
           </label>
-          <select
+          <Select
             id="advisor-event"
             value={event.id}
             onChange={(e) => setEventId(e.target.value)}
-            className="w-full rounded border border-hairline bg-panel-raised px-3 py-2 font-mono text-sm text-primary outline-none focus-visible:border-[color:var(--accent)]"
+            className="py-2 pl-3 font-mono text-sm"
           >
             {candidates.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.sev} · {c.miss.toFixed(3)} km · {c.A.name} × {c.B.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="grid grid-cols-2 gap-x-[14px] gap-y-3">
@@ -149,7 +149,7 @@ export function BurnAdvisor({ events }: { events: ResolvedConjunction[] }) {
             value={deltaV}
             onChange={(e) => setDeltaV(+e.target.value)}
             style={sliderFill(deltaV, 0, 50)}
-              className="k-slider"
+            className="k-slider"
           />
           <div className="num text-xs- text-tertiary">
             Δs ≈ 3 · Δv · t = {outcome.displacementKm.toFixed(3)} km of along-track

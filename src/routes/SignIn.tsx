@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Panel } from '../components/primitives';
+import { Button, Panel, TextField } from '../components/primitives';
 import { DEMO_OPERATOR, useOperator } from '../hooks/useOperator';
 import { HeroOrbits } from '../components/HeroOrbits';
 
@@ -75,16 +75,14 @@ export function SignIn() {
           >
             <label className="flex flex-col gap-2">
               <span className="label">Work email</span>
-              <input
+              <TextField
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setTouched(true)}
                 placeholder="flight.dynamics@operator.org"
                 aria-invalid={touched && !valid}
-                className={`h-[38px] rounded border bg-panel px-3 text-sm text-primary outline-none ${
-                  touched && !valid ? 'border-risk-critical' : 'border-hairline focus:border-accent-border'
-                }`}
+                className="h-[38px] px-3"
               />
               {touched && !valid && (
                 <span className="font-mono text-2xs tracking-data text-risk-critical">
@@ -95,11 +93,11 @@ export function SignIn() {
 
             <label className="flex flex-col gap-2">
               <span className="label">Workspace (optional)</span>
-              <input
+              <TextField
                 value={workspace}
                 onChange={(e) => setWorkspace(e.target.value)}
                 placeholder="e.g. cubesat-lab"
-                className="h-[38px] rounded border border-hairline bg-panel px-3 text-sm text-primary outline-none focus:border-accent-border"
+                className="h-[38px] px-3"
               />
             </label>
 

@@ -419,6 +419,101 @@
     }
   }
 
+  /*
+   * The shared surface of every control you type into or pick from.
+   *
+   * Buttons had a hover and a focus treatment; text fields and selects had
+   * neither, or had one of three hand-written approximations of it. Same border
+   * token, same hover lift, same focus ring as Button — a control you type into
+   * should not look like it came from a different app than the one you click.
+   *
+   * `:focus-within` and `:focus-visible` are both listed because the surface is
+   * sometimes the element itself (a select) and sometimes a wrapper around it
+   * (a search field with a leading icon), and the two cases need the ring drawn
+   * on the same box either way.
+   */
+  .k-control {
+    border: 1px solid var(--hairline);
+    border-radius: 4px;
+    background: var(--panel);
+    color: var(--t1);
+    transition:
+      border-color 130ms ease,
+      background-color 130ms ease,
+      box-shadow 130ms ease;
+  }
+  .k-control:hover {
+    border-color: var(--t3);
+    background: var(--panel-raised);
+  }
+  .k-control:focus-within,
+  .k-control:focus-visible {
+    /*
+     * Replaces the global :focus-visible outline rather than adding to it. An
+     * outline is drawn outside the border box, so on a control that already has
+     * a border it reads as two concentric rectangles a pixel apart. The wash
+     * ring sits flush against the border instead, which is the same signal the
+     * slider thumb gives.
+     */
+    outline: none;
+    border-color: var(--accent-border);
+    box-shadow: 0 0 0 3px var(--accent-wash);
+  }
+  /* A control that also carries .lift keeps it while focused. Without this the
+     ring replaces the drop shadow outright and the field appears to sink into
+     the bar the moment you tab to it. */
+  .k-control.lift:focus-within,
+  .k-control.lift:focus-visible {
+    box-shadow:
+      0 0 0 3px var(--accent-wash),
+      var(--lift);
+  }
+  .k-control[aria-invalid='true'],
+  .k-control[data-invalid='true'] {
+    border-color: var(--risk-critical);
+  }
+  .k-control:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+  .k-control:disabled:hover {
+    border-color: var(--hairline);
+    background: var(--panel);
+  }
+
+  /*
+   * A select on top of that surface.
+   *
+   * The one thing left in the app that was still drawn by the operating system:
+   * a grey native disclosure triangle, in whatever shape and colour the host
+   * platform felt like, sitting inside a panel that had agreed on 1.25px
+   * strokes everywhere else. `appearance: none` removes it and Select draws a
+   * ChevronDown in its place, at the same stroke weight as every other icon;
+   * the padding here reserves the room that chevron needs.
+   */
+  .k-select {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    /* Reserved for the chevron Select draws. Call sites set padding-left only;
+       a `px-*` utility here would win the cascade and put the text under it. */
+    padding-right: 28px;
+    cursor: pointer;
+    text-overflow: ellipsis;
+  }
+  /* The dropdown list itself is the platform's, so its options need a colour
+     that is legible against the platform's menu background, not the app's. */
+  .k-select option {
+    background: var(--base);
+    color: var(--t1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .k-control {
+      transition: none;
+    }
+  }
+
   .label {
     @apply font-mono text-2xs uppercase tracking-label text-tertiary;
   }
