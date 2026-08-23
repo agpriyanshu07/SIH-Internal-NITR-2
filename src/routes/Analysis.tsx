@@ -8,6 +8,7 @@ import { fmtInt } from '../data/format';
 import { downloadCsv } from '../data/csv';
 import { Button, Panel } from '../components/primitives';
 import { LatitudePlot } from '../components/LatitudePlot';
+import { GabbardPlot } from '../components/GabbardPlot';
 
 /**
  * Consequence analysis workbench.
@@ -355,6 +356,27 @@ export function Analysis() {
               survive/demise boundary are the meaningful outputs, the absolute altitude
               is not calibrated against flight data.
             </p>
+          </Panel>
+
+          <Panel
+            title="Gabbard diagram"
+            aside={<span className="num text-2xs text-tertiary">APOGEE + PERIGEE vs PERIOD</span>}
+            bodyClassName="p-[16px]"
+          >
+            <p className="mb-4 max-w-[72ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+              The standard picture of a breakup, and the one every published
+              reconstruction of Fengyun-1C and Iridium–Kosmos uses. Each fragment is
+              plotted twice at its own period — apogee and perigee. Fragments thrown
+              forwards raise their apogee while keeping perigee near the collision
+              altitude; those thrown backwards do the reverse. The two arms cross at the
+              parent orbit, which is why a breakup always draws an{' '}
+              <span className="text-primary">X</span>. Horizontal spread is the energy
+              imparted; vertical spread is the eccentricity it produced.
+            </p>
+            <GabbardPlot
+              fragments={result.fragments}
+              parentAltKm={(event.A.alt + event.B.alt) / 2}
+            />
           </Panel>
 
           <Panel title="Where it comes down" bodyClassName="p-[16px]">

@@ -6,6 +6,7 @@ import { fmtInt } from '../data/format';
 import type { ResolvedConjunction } from '../data/types';
 import { Panel } from './primitives';
 import { LatitudePlot } from './LatitudePlot';
+import { GabbardPlot } from './GabbardPlot';
 
 /**
  * Consequence analysis: what this cloud would do if the pass were a hit.
@@ -139,6 +140,38 @@ export function Consequence({ event }: { event: ResolvedConjunction }) {
             not modelled here. Anything finer than an order of magnitude would be
             invented precision.
           </p>
+        </div>
+      </div>
+
+      {/* ── 2b. The cloud, drawn the way the field draws it ── */}
+      <div className="flex flex-col gap-3 border-t border-hairline-soft pt-5">
+        <div className="flex items-baseline justify-between gap-3">
+          <div className="label">Gabbard diagram</div>
+          <span className="num text-2xs text-tertiary">
+            {fmtInt(result.fragments.length)} FRAGMENTS PLOTTED
+          </span>
+        </div>
+
+        <p className="max-w-[70ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+          Each fragment appears twice at its own orbital period — once at its apogee,
+          once at its perigee. The <span className="text-primary">X</span> is the
+          signature of a breakup, and it is geometry rather than coincidence: a fragment
+          thrown forwards keeps its perigee near the collision point and flings its
+          apogee outwards, while one thrown backwards does the exact opposite. Both arms
+          therefore cross at the parent orbit, marked here in the accent colour.
+        </p>
+        <p className="max-w-[70ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+          The fragments on the floor of the plot have had their perigee pushed into the
+          atmosphere and are already coming down — they are the same{' '}
+          <span className="num text-primary">{fmtInt(result.immediateReentries)}</span>{' '}
+          counted above, seen from a different angle.
+        </p>
+
+        <div className="mt-1">
+          <GabbardPlot
+            fragments={result.fragments}
+            parentAltKm={(event.A.alt + event.B.alt) / 2}
+          />
         </div>
       </div>
 
