@@ -140,7 +140,7 @@ export function Landing() {
         {/* Hero */}
         <section className="grid items-center gap-14 px-6 py-16 lg:grid-cols-[1fr_minmax(0,620px)] lg:px-10 lg:py-[88px]">
           <div className="flex flex-col gap-[26px]">
-            <div className="label tracking-eyebrow">Conjunction screening — Low Earth Orbit</div>
+            <div className="label-strong tracking-eyebrow">Conjunction screening — Low Earth Orbit</div>
             <h1 className="text-[clamp(38px,5.4vw,60px)] font-semibold leading-[1.02] tracking-display text-primary">
               Know which<br />close approach<br />matters.
             </h1>
@@ -164,7 +164,7 @@ export function Landing() {
               {HERO_STATS.map(([value, label]) => (
                 <div key={label} className="flex flex-col gap-[5px]">
                   <dt className="num text-[21px] text-primary">{value}</dt>
-                  <dd className="label">{label}</dd>
+                  <dd className="label-strong">{label}</dd>
                 </div>
               ))}
             </dl>
@@ -183,7 +183,7 @@ export function Landing() {
             >
               Schematic · {fmtInt(OBJECTS.length)} real element sets
             </div>
-            <div className="absolute bottom-[14px] left-4 flex gap-[18px] font-mono text-2xs text-tertiary">
+            <div className="absolute bottom-[14px] left-4 flex gap-[18px] font-mono text-2xs text-secondary">
               <span>PAYLOAD</span><span>ROCKET BODY</span><span>DEBRIS</span>
             </div>
           </div>
@@ -207,11 +207,20 @@ export function Landing() {
               </p>
               <div className="grid max-w-[620px] grid-cols-1 gap-px overflow-hidden rounded-md border border-hairline bg-hairline sm:grid-cols-3">
                 {PROBLEM_FIGURES.map(([value, plus, unit, note]) => (
-                  <div key={note} className="glass bg-panel p-5">
+                  /*
+                    bg-deep, not bg-panel.
+                    --panel is white at 5%, and .glass is blur + saturate(150%).
+                    Over the warm gradient blob that combination lifts the panel
+                    to about rgb(104,88,80) — a washed-out grey card, and the
+                    caption on it measured 2.89:1. --deep is the dark
+                    translucent instead, so the glass reads as glass over a dark
+                    scene rather than as fog.
+                  */
+                  <div key={note} className="glass bg-deep p-5">
                     <div className="num text-[26px] text-primary">
                       {value}
-                      {plus && <span className="text-[16px] text-tertiary">{plus}</span>}
-                      {unit && <span className="ml-1 text-md text-tertiary">{unit}</span>}
+                      {plus && <span className="text-[16px] text-secondary">{plus}</span>}
+                      {unit && <span className="ml-1 text-md text-secondary">{unit}</span>}
                     </div>
                     <p className="mt-2 text-sm leading-[1.5] text-secondary">{note}</p>
                   </div>
@@ -260,7 +269,8 @@ export function Landing() {
             <span className="text-sm font-semibold tracking-[0.04em] text-secondary">KESSLER</span>
             <span className="font-mono text-2xs text-tertiary">Orbital conjunction screening</span>
           </div>
-          <div className="flex gap-[22px] text-sm text-tertiary">
+          {/* text-secondary: --t3 measured 3.98:1 here, over the blue blob. */}
+          <div className="flex gap-[22px] text-sm text-secondary">
             {FOOTER_LINKS.map(([label, href]) => (
               <NavLink key={label} label={label} href={href} />
             ))}
