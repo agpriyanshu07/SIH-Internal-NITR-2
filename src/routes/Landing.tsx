@@ -46,6 +46,69 @@ const PRINCIPLES = [
    'The element sets are committed to the repository and the screening run is a single command. The console ships a precomputed result and can re-run the identical engine live in the browser — both produce the same numbers, because they are the same code.'],
 ] as const;
 
+/**
+ * Nav that goes somewhere.
+ *
+ * These were inert <span>s reading "Platform / Methodology / Data sources /
+ * Docs" — decorative chrome for pages that do not exist. On a project whose
+ * pitch is that it does not claim what it has not built, a fake nav bar is the
+ * same defect as a fake metric, just quieter. Every entry now resolves: three
+ * to sections of this page, one to the console.
+ */
+const NAV = [
+  ['The problem', '#problem'],
+  ['Method', '#method'],
+  ['Why this exists', '#principles'],
+  ['Console', '/console'],
+] as const;
+
+/** Same rule in the footer. "API" and "Contact" are gone: neither exists. */
+const FOOTER_LINKS = [
+  ['Method', '#method'],
+  ['Status', '/console/status'],
+  ['Console', '/console'],
+] as const;
+
+/**
+ * One nav entry: an in-page jump or a route.
+ *
+ * In-page jumps cannot be <a href="#method"> here. The app is on a hash router,
+ * so the router owns the fragment: it reads `#method` as a route, finds no
+ * match and rewrites the URL straight back to `#/`. The link renders, focuses
+ * and clicks, and the page does not move — which is the same defect as the
+ * inert <span>s this replaced, only harder to notice. Verified in a browser
+ * before believing it.
+ *
+ * So a jump is a button that scrolls, and a route is a <Link>. Smooth scrolling
+ * is skipped under prefers-reduced-motion, per the rest of the app.
+ */
+function scrollToSection(id: string) {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById(id)?.scrollIntoView({
+    behavior: reduced ? 'auto' : 'smooth',
+    block: 'start',
+  });
+}
+
+const NavLink = ({ label, href }: { label: string; href: string }) => {
+  if (!href.startsWith('#')) {
+    return (
+      <Link to={href} className="rounded-sm hover:text-primary">
+        {label}
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className="rounded-sm hover:text-primary"
+      onClick={() => scrollToSection(href.slice(1))}
+    >
+      {label}
+    </button>
+  );
+};
+
 const Eyebrow = ({ children }: { children: string }) => (
   <div className="font-mono text-2xs uppercase tracking-eyebrow text-accent">{children}</div>
 );
@@ -59,8 +122,8 @@ export function Landing() {
           <div className="flex items-center gap-9">
             <span className="text-lg font-semibold tracking-[0.04em] text-primary">KESSLER</span>
             <nav className="hidden gap-[26px] text-base text-secondary md:flex">
-              {['Platform', 'Methodology', 'Data sources', 'Docs'].map((l) => (
-                <span key={l} className="cursor-default">{l}</span>
+              {NAV.map(([label, href]) => (
+                <NavLink key={label} label={label} href={href} />
               ))}
             </nav>
           </div>
@@ -90,7 +153,12 @@ export function Landing() {
               <Link to="/console">
                 <Button variant="primary" className="px-5 py-[11px] text-base">Screen your catalogue</Button>
               </Link>
-              <Button className="px-5 py-[11px] text-base">Read the method</Button>
+              <Button
+                className="px-5 py-[11px] text-base"
+                onClick={() => scrollToSection('method')}
+              >
+                Read the method
+              </Button>
             </div>
             <dl className="mt-[14px] flex flex-wrap gap-8 border-t border-hairline-soft pt-[22px]">
               {HERO_STATS.map(([value, label]) => (
@@ -104,8 +172,16 @@ export function Landing() {
 
           <div className="glass lift relative h-[380px] overflow-hidden rounded-md border border-hairline-soft bg-deep lg:h-[520px]">
             <HeroOrbits />
-            <div className="absolute left-4 top-[14px] label">
-              LEO — 200 to 2000 km · propagated live
+            {/* "Propagated live" was false: this canvas never imported
+                satellite.js and never called propagate(). It draws circular
+                orbits from each object's real elements — the same schematic the
+                orbital viewer draws, and labelled with the same word, so the
+                two screens hold one standard of truth rather than two. */}
+            <div
+              className="absolute left-4 top-[14px] label"
+              title="Orbits are drawn as circles from each object's real altitude, inclination, RAAN and mean anomaly, at compressed time. Conjunction geometry comes from the SGP4 screening run, not from this canvas."
+            >
+              Schematic · {fmtInt(OBJECTS.length)} real element sets
             </div>
             <div className="absolute bottom-[14px] left-4 flex gap-[18px] font-mono text-2xs text-tertiary">
               <span>PAYLOAD</span><span>ROCKET BODY</span><span>DEBRIS</span>
@@ -114,7 +190,7 @@ export function Landing() {
         </section>
 
         {/* Problem */}
-        <section className="border-t border-hairline-soft px-6 py-16 lg:px-10 lg:py-[76px]">
+        <section id="problem" className="border-t border-hairline-soft px-6 py-16 lg:px-10 lg:py-[76px]">
           <div className="grid items-start gap-14 lg:grid-cols-[400px_1fr]">
             <div className="flex flex-col gap-[14px]">
               <Eyebrow>The problem</Eyebrow>
@@ -146,7 +222,7 @@ export function Landing() {
         </section>
 
         {/* How it works */}
-        <section className="border-t border-hairline-soft px-6 py-16 lg:px-10 lg:py-[76px]">
+        <section id="method" className="border-t border-hairline-soft px-6 py-16 lg:px-10 lg:py-[76px]">
           <div className="mb-[34px]"><Eyebrow>How it works</Eyebrow></div>
           <div className="grid gap-10 md:grid-cols-3">
             {STEPS.map(([n, title, body]) => (
@@ -160,7 +236,7 @@ export function Landing() {
         </section>
 
         {/* Why this exists */}
-        <section className="grid items-start gap-14 border-t border-hairline-soft px-6 py-16 lg:grid-cols-[400px_1fr] lg:px-10 lg:py-[76px]">
+        <section id="principles" className="grid items-start gap-14 border-t border-hairline-soft px-6 py-16 lg:grid-cols-[400px_1fr] lg:px-10 lg:py-[76px]">
           <div className="flex flex-col gap-[14px]">
             <Eyebrow>Why this exists</Eyebrow>
             <h2 className="text-4xl font-semibold tracking-tighter text-primary">
@@ -185,13 +261,25 @@ export function Landing() {
             <span className="font-mono text-2xs text-tertiary">Orbital conjunction screening</span>
           </div>
           <div className="flex gap-[22px] text-sm text-tertiary">
-            {['Method', 'API', 'Status', 'Contact'].map((l) => <span key={l}>{l}</span>)}
+            {FOOTER_LINKS.map(([label, href]) => (
+              <NavLink key={label} label={label} href={href} />
+            ))}
           </div>
         </footer>
 
         <div className="border-t border-hairline-soft px-6 py-4 lg:px-10">
-          <p className="font-mono text-2xs uppercase tracking-[0.08em] text-tertiary">
-            Prototype · all data on this site is synthetic
+          <p className="max-w-[92ch] font-mono text-2xs leading-[1.6] tracking-[0.08em] text-tertiary">
+            <span className="uppercase text-secondary">
+              The orbital data and the screening are real. The operational trappings are not.
+            </span>{' '}
+            Objects, element sets, propagation, times of closest approach, miss distances and
+            relative velocities come from a committed CelesTrak snapshot screened with SGP4.
+            The manoeuvre log&rsquo;s burn records are synthetic, sign-in authenticates nothing,
+            and acknowledgements live only in your browser.{' '}
+            <Link to="/console/status" className="text-accent underline-offset-2 hover:underline">
+              Per-feature breakdown
+            </Link>
+            . Nothing here should be used for any operational purpose.
           </p>
         </div>
       </div>
