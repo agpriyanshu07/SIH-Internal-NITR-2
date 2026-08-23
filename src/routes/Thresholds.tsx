@@ -3,7 +3,9 @@ import { RESOLVED, reband } from '../data/conjunctions';
 import { fmtPc } from '../data/format';
 import { DEFAULT_THRESHOLDS, passesThresholds, useThresholds } from '../state/thresholds';
 import { Button, Panel, SeverityChip } from '../components/primitives';
+import { FEATURES, STATUS_LABEL } from '../data/features';
 import type { Severity } from '../data/types';
+import { sliderFill } from '../lib/slider';
 
 /**
  * Screening thresholds.
@@ -14,6 +16,15 @@ import type { Severity } from '../data/types';
  */
 
 const SEVERITIES: (Severity | 'ALL')[] = ['ALL', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+
+/**
+ * The Configuration capabilities that do not exist, read from the registry
+ * rather than listed here — if one is ever built, its entry changes status and
+ * it leaves this panel on its own.
+ */
+const NOT_BUILT_CONFIG = FEATURES.filter(
+  (f) => f.group === 'Configuration' && f.status === 'not-built',
+);
 
 /** Pc is chosen on a log scale — the useful range spans six decades. 0 is "off". */
 const PC_STOPS = [0, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3];
@@ -44,9 +55,6 @@ function Row({
     </div>
   );
 }
-
-const slider =
-  'h-[3px] w-full cursor-pointer appearance-none rounded-sm bg-panel-high accent-[color:var(--accent)]';
 
 export function Thresholds() {
   const { thresholds, set, reset, modified } = useThresholds();
@@ -134,7 +142,8 @@ export function Thresholds() {
               value={thresholds.maxMissKm}
               onChange={(e) => set('maxMissKm', +e.target.value)}
               aria-label="Maximum miss distance in kilometres"
-              className={slider}
+              style={sliderFill(thresholds.maxMissKm, 0.5, 25)}
+              className="k-slider"
             />
           </Row>
 
@@ -151,7 +160,8 @@ export function Thresholds() {
               value={pcIndex}
               onChange={(e) => set('minPc', PC_STOPS[+e.target.value])}
               aria-label="Minimum probability of collision"
-              className={slider}
+              style={sliderFill(pcIndex, 0, PC_STOPS.length - 1)}
+              className="k-slider"
             />
           </Row>
 
@@ -168,7 +178,8 @@ export function Thresholds() {
               value={thresholds.horizonHours}
               onChange={(e) => set('horizonHours', +e.target.value)}
               aria-label="Screening horizon in hours"
-              className={slider}
+              style={sliderFill(thresholds.horizonHours, 6, 72)}
+              className="k-slider"
             />
           </Row>
 
@@ -185,7 +196,8 @@ export function Thresholds() {
               value={thresholds.maxElementAgeDays}
               onChange={(e) => set('maxElementAgeDays', +e.target.value)}
               aria-label="Maximum element set age in days"
-              className={slider}
+              style={sliderFill(thresholds.maxElementAgeDays, 1, 10)}
+              className="k-slider"
             />
           </Row>
         </div>
@@ -217,7 +229,8 @@ export function Thresholds() {
               value={thresholds.sigmaScale}
               onChange={(e) => set('sigmaScale', +e.target.value)}
               aria-label="Positional uncertainty scale"
-              className={slider}
+              style={sliderFill(thresholds.sigmaScale, 0.25, 4)}
+              className="k-slider"
             />
           </Row>
 
@@ -297,6 +310,45 @@ export function Thresholds() {
           </div>
         </div>
       </Panel>
+
+      {/*
+        The rest of Configuration.
+
+        Alert routing and API keys are the two capabilities this screen's own
+        nav group offers and this prototype does not have. Their reasons lived
+        only in a sidebar tooltip and on the status page — nowhere a person
+        configuring thresholds would meet them. Stating them here, from the same
+        registry entry that marks them not-built, means the explanation cannot
+        drift from the claim.
+
+        Deliberately not a disabled form. A form that cannot submit is a worse
+        answer than a sentence saying why there is nothing to submit to.
+      */}
+      {NOT_BUILT_CONFIG.length > 0 && (
+        <Panel title="Not built in this prototype">
+          <div className="flex flex-col gap-4 p-5">
+            {NOT_BUILT_CONFIG.map((f) => (
+              <div key={f.id} className="flex flex-col gap-[5px]">
+                <div className="flex items-center gap-[9px]">
+                  <span className="text-md text-primary">{f.label}</span>
+                  <span className="flex-none rounded-sm border border-hairline px-[6px] py-px font-mono text-2xs uppercase tracking-[0.08em] text-tertiary">
+                    {STATUS_LABEL[f.status]}
+                  </span>
+                </div>
+                <p className="max-w-[68ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+                  {f.note}
+                </p>
+              </div>
+            ))}
+            <p className="max-w-[68ch] border-t border-hairline-soft pt-4 text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+              Both are absent on purpose rather than pending. A console with no
+              backend cannot deliver an alert or authenticate a token, and a form
+              that pretended otherwise would be the one dishonest thing on a screen
+              whose entire job is to state what the numbers rest on.
+            </p>
+          </div>
+        </Panel>
+      )}
 
       <p className="font-mono text-2xs uppercase tracking-[0.08em] text-tertiary">
         Defaults · severity {DEFAULT_THRESHOLDS.minSeverity} · miss ≤{' '}

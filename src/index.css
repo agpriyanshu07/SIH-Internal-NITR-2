@@ -60,6 +60,13 @@
     --glass: blur(22px) saturate(150%);
     --lift: 0 1px 0 0 rgba(255, 255, 255, 0.075) inset,
       0 18px 44px -18px rgba(0, 0, 0, 0.62);
+    /*
+     * --lift at control scale. Same two-part language — an inset top highlight
+     * over a soft drop shadow — with the blur and offset brought down to suit a
+     * 14px thumb rather than a panel. Not a second shadow vocabulary.
+     */
+    --lift-sm: 0 1px 0 0 rgba(255, 255, 255, 0.16) inset,
+      0 2px 7px -2px rgba(0, 0, 0, 0.7);
 
     /* The opaque base the whole glass stack is composited over. */
     --base: #04070d;
@@ -99,6 +106,8 @@
     --glass: blur(22px) saturate(130%);
     --lift: 0 1px 0 0 rgba(255, 255, 255, 0.85) inset,
       0 18px 44px -20px rgba(20, 40, 70, 0.28);
+    --lift-sm: 0 1px 0 0 rgba(255, 255, 255, 0.7) inset,
+      0 2px 7px -2px rgba(20, 40, 70, 0.35);
 
     --base: #dde4ec;
     --globe: #eef1f6;
@@ -224,7 +233,10 @@
   }
 
   input::placeholder { color: var(--t3); }
-  input { font-family: 'IBM Plex Mono', monospace; }
+  /* A select does not inherit font-family, so it has to be named alongside
+     input or its closed state renders in the platform UI font. */
+  input,
+  select { font-family: 'IBM Plex Mono', monospace; }
   button { font-family: inherit; }
 
   * { scrollbar-width: thin; scrollbar-color: var(--panel-high) transparent; }
@@ -273,6 +285,236 @@
     background: linear-gradient(90deg, transparent, var(--accent-wash), transparent);
     animation: ksweep 9s linear infinite;
     pointer-events: none;
+  }
+
+  /*
+   * Range slider.
+   *
+   * `appearance: none` removes the native control INCLUDING its thumb, and
+   * `accent-color` stops applying once it is gone — so a range input styled
+   * only with utility classes renders as a bare grey bar with a default thumb
+   * the browser puts back inconsistently. Everything the control needs is
+   * therefore declared here, once, for all thirteen of them.
+   *
+   * The visible bar is 3px but the input is 18px tall: the bar is what you
+   * look at, the box is what you have to hit. A 3px-tall input is a 3px-tall
+   * pointer target.
+   *
+   * Fill position comes in as --k-fill, set per input from sliderFill() in
+   * lib/slider.ts. Keeping it a custom property rather than a full inline
+   * gradient means the gradient is written once here instead of thirteen times
+   * in TSX, and it works the same for a linear km value or the Pc slider's
+   * log-scale index — both report their own min/max/value.
+   */
+  .k-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 18px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .k-slider::-webkit-slider-runnable-track {
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(
+      to right,
+      var(--accent) var(--k-fill, 0%),
+      var(--panel-high) var(--k-fill, 0%)
+    );
+  }
+  .k-slider::-moz-range-track {
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(
+      to right,
+      var(--accent) var(--k-fill, 0%),
+      var(--panel-high) var(--k-fill, 0%)
+    );
+  }
+
+  /*
+   * The thumb. Vendor pseudo-elements cannot be combined into one selector —
+   * a browser drops the whole rule if it does not recognise every selector in
+   * the list — so webkit and moz are declared separately throughout.
+   *
+   * box-sizing is set explicitly because `*` does not match a vendor pseudo-
+   * element, so Tailwind's border-box preflight never reaches it; without this
+   * the 1px border pushes the thumb to 16px and the centring is off by a pixel.
+   */
+  .k-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 1px solid var(--accent-border);
+    box-shadow: var(--lift-sm);
+    /* Centre a 14px thumb on a 3px track. */
+    margin-top: -5.5px;
+    transition:
+      transform 130ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 130ms ease;
+  }
+  .k-slider::-moz-range-thumb {
+    box-sizing: border-box;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 1px solid var(--accent-border);
+    box-shadow: var(--lift-sm);
+    transition:
+      transform 130ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 130ms ease;
+  }
+
+  /* Same hover language as Button: brighten to --accent-hover and grow a hair. */
+  .k-slider:hover::-webkit-slider-thumb {
+    background: var(--accent-hover);
+    transform: scale(1.15);
+  }
+  .k-slider:hover::-moz-range-thumb {
+    background: var(--accent-hover);
+    transform: scale(1.15);
+  }
+  /* Dragging settles back down, so the grab reads as a press rather than a lift. */
+  .k-slider:active::-webkit-slider-thumb {
+    transform: scale(1.04);
+  }
+  .k-slider:active::-moz-range-thumb {
+    transform: scale(1.04);
+  }
+
+  /*
+   * Keyboard focus belongs on the thumb, not on the 18px box around the track —
+   * the global :focus-visible rule would otherwise draw a wide rectangle that
+   * reads as a layout bug. The ring reuses --accent-wash rather than adding a
+   * colour.
+   */
+  .k-slider:focus-visible {
+    outline: none;
+  }
+  .k-slider:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px var(--accent-wash), var(--lift-sm);
+  }
+  .k-slider:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 3px var(--accent-wash), var(--lift-sm);
+  }
+
+  /*
+   * The global reduced-motion rule covers `*`, `*::before` and `*::after`, none
+   * of which match a vendor pseudo-element — so the thumb needs saying again.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .k-slider::-webkit-slider-thumb,
+    .k-slider::-moz-range-thumb {
+      transition: none;
+    }
+    .k-slider:hover::-webkit-slider-thumb,
+    .k-slider:hover::-moz-range-thumb,
+    .k-slider:active::-webkit-slider-thumb,
+    .k-slider:active::-moz-range-thumb {
+      transform: none;
+    }
+  }
+
+  /*
+   * The shared surface of every control you type into or pick from.
+   *
+   * Buttons had a hover and a focus treatment; text fields and selects had
+   * neither, or had one of three hand-written approximations of it. Same border
+   * token, same hover lift, same focus ring as Button — a control you type into
+   * should not look like it came from a different app than the one you click.
+   *
+   * `:focus-within` and `:focus-visible` are both listed because the surface is
+   * sometimes the element itself (a select) and sometimes a wrapper around it
+   * (a search field with a leading icon), and the two cases need the ring drawn
+   * on the same box either way.
+   */
+  .k-control {
+    border: 1px solid var(--hairline);
+    border-radius: 4px;
+    background: var(--panel);
+    color: var(--t1);
+    transition:
+      border-color 130ms ease,
+      background-color 130ms ease,
+      box-shadow 130ms ease;
+  }
+  .k-control:hover {
+    border-color: var(--t3);
+    background: var(--panel-raised);
+  }
+  .k-control:focus-within,
+  .k-control:focus-visible {
+    /*
+     * Replaces the global :focus-visible outline rather than adding to it. An
+     * outline is drawn outside the border box, so on a control that already has
+     * a border it reads as two concentric rectangles a pixel apart. The wash
+     * ring sits flush against the border instead, which is the same signal the
+     * slider thumb gives.
+     */
+    outline: none;
+    border-color: var(--accent-border);
+    box-shadow: 0 0 0 3px var(--accent-wash);
+  }
+  /* A control that also carries .lift keeps it while focused. Without this the
+     ring replaces the drop shadow outright and the field appears to sink into
+     the bar the moment you tab to it. */
+  .k-control.lift:focus-within,
+  .k-control.lift:focus-visible {
+    box-shadow:
+      0 0 0 3px var(--accent-wash),
+      var(--lift);
+  }
+  .k-control[aria-invalid='true'],
+  .k-control[data-invalid='true'] {
+    border-color: var(--risk-critical);
+  }
+  .k-control:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+  .k-control:disabled:hover {
+    border-color: var(--hairline);
+    background: var(--panel);
+  }
+
+  /*
+   * A select on top of that surface.
+   *
+   * The one thing left in the app that was still drawn by the operating system:
+   * a grey native disclosure triangle, in whatever shape and colour the host
+   * platform felt like, sitting inside a panel that had agreed on 1.25px
+   * strokes everywhere else. `appearance: none` removes it and Select draws a
+   * ChevronDown in its place, at the same stroke weight as every other icon;
+   * the padding here reserves the room that chevron needs.
+   */
+  .k-select {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    /* Reserved for the chevron Select draws. Call sites set padding-left only;
+       a `px-*` utility here would win the cascade and put the text under it. */
+    padding-right: 28px;
+    cursor: pointer;
+    text-overflow: ellipsis;
+  }
+  /* The dropdown list itself is the platform's, so its options need a colour
+     that is legible against the platform's menu background, not the app's. */
+  .k-select option {
+    background: var(--base);
+    color: var(--t1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .k-control {
+      transition: none;
+    }
   }
 
   .label {

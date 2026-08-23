@@ -101,7 +101,7 @@ export function GabbardPlot({
             />
             <text
               x={PAD.l - 6} y={py(t) + 3} textAnchor="end"
-              className="font-mono" style={{ fill: 'var(--t3)', fontSize: 9 }}
+              className="num" style={{ fill: 'var(--t3)', fontSize: 9 }}
             >
               {t.toFixed(0)}
             </text>
@@ -112,7 +112,7 @@ export function GabbardPlot({
         {ticks(xLo, xHi, 6).map((t) => (
           <text
             key={`x${t}`} x={px(t)} y={H - PAD.b + 14} textAnchor="middle"
-            className="font-mono" style={{ fill: 'var(--t3)', fontSize: 9 }}
+            className="num" style={{ fill: 'var(--t3)', fontSize: 9 }}
           >
             {t.toFixed(0)}
           </text>

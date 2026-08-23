@@ -7,6 +7,7 @@ import { Panel, Segmented } from '../components/primitives';
 import { PauseIcon, PlayIcon } from '../components/Icon';
 import { EPOCH_OFFSET } from '../hooks/useNow';
 import type { SpaceObject } from '../data/types';
+import { sliderFill } from '../lib/slider';
 
 /**
  * 2D orbital viewer.
@@ -427,7 +428,8 @@ export function Viewer() {
               value={offset}
               onChange={(e) => setOffset(+e.target.value)}
               aria-label="Simulated time"
-              className="h-[3px] w-full cursor-pointer appearance-none rounded-sm bg-panel-high accent-[color:var(--accent)]"
+              style={sliderFill(offset, 0, SPAN_SECONDS)}
+              className="k-slider"
             />
           </div>
 

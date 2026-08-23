@@ -6,10 +6,11 @@ import { DEFAULT_MATERIAL_MIX } from '../data/engine/thermal';
 import { entryById } from '../data/objects';
 import { fmtInt } from '../data/format';
 import { downloadCsv } from '../data/csv';
-import { Button, Panel } from '../components/primitives';
+import { Button, Panel, Select } from '../components/primitives';
 import { LatitudePlot } from '../components/LatitudePlot';
 import { GabbardPlot } from '../components/GabbardPlot';
 import { CascadeRisk } from '../components/CascadeRisk';
+import { sliderFill } from '../lib/slider';
 
 /**
  * Consequence analysis workbench.
@@ -24,9 +25,6 @@ import { CascadeRisk } from '../components/CascadeRisk';
  * fragment-level output is exportable. An assumption you can sweep is a
  * finding; an assumption buried in a constant is a claim.
  */
-
-const slider =
-  'h-[3px] w-full cursor-pointer appearance-none rounded-sm bg-panel-high accent-[color:var(--accent)]';
 
 function Field({
   label,
@@ -114,16 +112,24 @@ export function Analysis() {
     };
   }, [alFrac]);
 
+  /*
+   * Resolved once: the label, the input's value and the slider's fill all have
+   * to agree, and reading them off `opts` reintroduces the optional type for no
+   * benefit.
+   */
+  const massTarget = massA ?? defaultMassA;
+  const massProjectile = massB ?? defaultMassB;
+
   const opts: ConsequenceOptions = useMemo(
     () => ({
-      massTargetKg: massA ?? defaultMassA,
-      massProjectileKg: massB ?? defaultMassB,
+      massTargetKg: massTarget,
+      massProjectileKg: massProjectile,
       cd,
       solarActivity: solar,
       entryAngleDeg: entryAngle,
       materialMix,
     }),
-    [massA, massB, defaultMassA, defaultMassB, cd, solar, entryAngle, materialMix],
+    [massTarget, massProjectile, cd, solar, entryAngle, materialMix],
   );
 
   const result = useMemo(
@@ -193,34 +199,36 @@ export function Analysis() {
           <Panel title="Scenario" bodyClassName="px-[14px] pb-[14px] pt-1">
             <div className="flex flex-col gap-[7px] pt-3">
               <label htmlFor="ev" className="label">Event</label>
-              <select
+              <Select
                 id="ev"
                 value={event.id}
                 onChange={(e) => setEventId(e.target.value)}
-                className="w-full rounded border border-hairline bg-panel-raised px-3 py-2 font-mono text-xs text-primary outline-none focus-visible:border-[color:var(--accent)]"
+                className="py-2 pl-3 font-mono text-xs"
               >
                 {candidates.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.sev} · {c.relv.toFixed(1)} km/s · {c.A.name} × {c.B.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             <Field
               label="Target mass"
-              value={`${fmtInt(opts.massTargetKg ?? 0)} kg`}
+              value={`${fmtInt(massTarget)} kg`}
               hint="A TLE carries no mass. Fragment count scales as mass^0.75, so this is the single most consequential input on the screen."
             >
               <input type="range" min={1} max={20000} step={1}
-                     value={opts.massTargetKg} onChange={(e) => setMassA(+e.target.value)}
-                     aria-label="Target mass in kilograms" className={slider} />
+                     value={massTarget} onChange={(e) => setMassA(+e.target.value)}
+                     aria-label="Target mass in kilograms" style={sliderFill(massTarget, 1, 20000)}
+              className="k-slider" />
             </Field>
 
-            <Field label="Projectile mass" value={`${(opts.massProjectileKg ?? 0).toFixed(1)} kg`}>
+            <Field label="Projectile mass" value={`${massProjectile.toFixed(1)} kg`}>
               <input type="range" min={0.1} max={2000} step={0.1}
-                     value={opts.massProjectileKg} onChange={(e) => setMassB(+e.target.value)}
-                     aria-label="Projectile mass in kilograms" className={slider} />
+                     value={massProjectile} onChange={(e) => setMassB(+e.target.value)}
+                     aria-label="Projectile mass in kilograms" style={sliderFill(massProjectile, 0.1, 2000)}
+              className="k-slider" />
             </Field>
 
             <Field
@@ -230,7 +238,8 @@ export function Analysis() {
             >
               <input type="range" min={0} max={1} step={0.01} value={alFrac}
                      onChange={(e) => setAlFrac(+e.target.value)}
-                     aria-label="Aluminium fraction of the fragment mix" className={slider} />
+                     aria-label="Aluminium fraction of the fragment mix" style={sliderFill(alFrac, 0, 1)}
+              className="k-slider" />
             </Field>
 
             <Field
@@ -240,7 +249,8 @@ export function Analysis() {
             >
               <input type="range" min={0.3} max={3} step={0.05} value={solar}
                      onChange={(e) => setSolar(+e.target.value)}
-                     aria-label="Solar activity density multiplier" className={slider} />
+                     aria-label="Solar activity density multiplier" style={sliderFill(solar, 0.3, 3)}
+              className="k-slider" />
             </Field>
 
             <Field
@@ -250,13 +260,15 @@ export function Analysis() {
             >
               <input type="range" min={0.02} max={2} step={0.01} value={entryAngle}
                      onChange={(e) => setEntryAngle(+e.target.value)}
-                     aria-label="Entry flight path angle in degrees" className={slider} />
+                     aria-label="Entry flight path angle in degrees" style={sliderFill(entryAngle, 0.02, 2)}
+              className="k-slider" />
             </Field>
 
             <Field label="Drag coefficient" value={cd.toFixed(2)}>
               <input type="range" min={1.5} max={3} step={0.05} value={cd}
                      onChange={(e) => setCd(+e.target.value)}
-                     aria-label="Drag coefficient" className={slider} />
+                     aria-label="Drag coefficient" style={sliderFill(cd, 1.5, 3)}
+              className="k-slider" />
             </Field>
           </Panel>
 

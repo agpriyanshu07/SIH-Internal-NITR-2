@@ -4,7 +4,7 @@ import { OBJECTS, groupOf, isIndianAsset } from '../data/objects';
 import { OriginBadge, ProvenanceFooter } from '../components/Provenance';
 import { TLE_FIELD_NOTES } from '../data/tle';
 import { fmtInt, fmtNorad } from '../data/format';
-import { Button, EmptyState } from '../components/primitives';
+import { Button, EmptyState, TextField } from '../components/primitives';
 import { CloseIcon, SearchIcon } from '../components/Icon';
 import type { SpaceObject } from '../data/types';
 
@@ -154,16 +154,14 @@ export function Catalogue() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-[52px] flex-none flex-wrap items-center justify-between gap-4 border-b border-hairline-soft px-6">
-        <div className="flex h-[30px] w-full max-w-[400px] items-center gap-[10px] rounded border border-hairline bg-panel px-[10px] focus-within:border-accent-border">
-          <SearchIcon className="flex-none text-tertiary" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter by name, NORAD ID, operator or class"
-            aria-label="Filter catalogue"
-            className="min-w-0 flex-1 border-0 bg-transparent text-sm text-primary outline-none"
-          />
-        </div>
+        <TextField
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Filter by name, NORAD ID, operator or class"
+          aria-label="Filter catalogue"
+          className="h-[30px] w-full max-w-[400px] px-[10px]"
+          icon={<SearchIcon className="flex-none text-tertiary" />}
+        />
         <div className="flex items-center gap-[18px]">
           <button
             type="button"

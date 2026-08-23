@@ -1,4 +1,11 @@
-import type { ReactNode, ButtonHTMLAttributes } from 'react';
+import type {
+  ReactNode,
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  SelectHTMLAttributes,
+} from 'react';
+import { forwardRef } from 'react';
+import { ChevronDown } from './Icon';
 import type { Severity } from '../data/types';
 
 /* The small, repeated pieces of the design's component library. */
@@ -143,6 +150,79 @@ export function Segmented<T extends string>({
   );
 }
 
+// ── Text field ─────────────────────────────────────────────────
+
+/**
+ * A place to type, with an optional leading icon.
+ *
+ * There were four of these and three different treatments: the top-bar search
+ * had glass, a lift and an accent border on focus; the catalogue filter was the
+ * same control one screen over with none of it; the two sign-in fields used
+ * `focus:` rather than `focus-visible:`, so their border lit up on a mouse
+ * click as well as a tab. Same control, one surface.
+ *
+ * The ring goes on the wrapper rather than the input because the icon sits
+ * inside the border, so the input's own box is not the box worth ringing.
+ */
+export type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
+  icon?: ReactNode;
+  trailing?: ReactNode;
+  inputClassName?: string;
+};
+
+/* Forwards its ref to the input, not the wrapper — the top bar's `/` shortcut
+   focuses this field, and a div cannot take focus. */
+export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
+  function TextField(
+    { icon, trailing, className = '', inputClassName = '', ...rest },
+    ref,
+  ) {
+    return (
+      <div
+        className={`k-control flex items-center gap-[10px] ${className}`}
+        /* A styling hook, not an ARIA claim: the invalid state belongs to the
+           input, which carries the real aria-invalid via {...rest}. Announcing
+           it on the wrapper too would have a screen reader say it twice. */
+        data-invalid={rest['aria-invalid'] ? 'true' : undefined}
+      >
+        {icon}
+        <input
+          {...rest}
+          ref={ref}
+          className={`min-w-0 flex-1 border-0 bg-transparent text-sm text-primary outline-none ${inputClassName}`}
+        />
+        {trailing}
+      </div>
+    );
+  },
+);
+
+// ── Select ───────────────────────────────────────────────────────
+
+/**
+ * A native select wearing the app's chevron instead of the platform's.
+ *
+ * The list that drops down still belongs to the operating system, and that is
+ * the right trade: a hand-rolled listbox would have to re-earn keyboard
+ * behaviour, type-ahead and touch handling that the native control already
+ * has. What is replaced is the closed state — the part that sits inside a panel
+ * all day next to hairlines this app drew itself.
+ */
+export function Select({
+  className = '',
+  ...rest
+}: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <div className="relative flex w-full items-center">
+      <select {...rest} className={`k-control k-select ${className}`} />
+      <ChevronDown
+        size={11}
+        className="pointer-events-none absolute right-[10px] text-tertiary"
+      />
+    </div>
+  );
+}
+
 // ── Metric tile ─────────────────────────────────────────────────────────────
 
 export function MetricTile({
@@ -183,7 +263,32 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center gap-[10px] px-6 py-8 text-center">
-      <div className="mb-1 h-[26px] w-[26px] rounded-full border border-hairline" />
+      {/*
+        A reticle rather than a bare circle. The empty ring this replaced read
+        as a placeholder someone had not got round to — which is the one thing
+        an empty state must not look like. Kept at 26px and on the hairline
+        weight: this marks the absence of data, it is not an illustration of it.
+      */}
+      <svg
+        viewBox="0 0 26 26"
+        aria-hidden="true"
+        className="mb-1 h-[26px] w-[26px] flex-none text-tertiary"
+      >
+        <circle
+          cx="13"
+          cy="13"
+          r="8.5"
+          fill="none"
+          stroke="currentColor"
+          strokeOpacity="0.55"
+        />
+        <path
+          d="M13 0.5v5M13 20.5v5M0.5 13h5M20.5 13h5"
+          stroke="currentColor"
+          strokeOpacity="0.35"
+        />
+        <circle cx="13" cy="13" r="1.25" fill="currentColor" fillOpacity="0.5" />
+      </svg>
       <div className="text-base text-primary">{title}</div>
       <div className="max-w-[300px] text-sm+ leading-[1.6] text-secondary [text-wrap:pretty]">
         {body}
