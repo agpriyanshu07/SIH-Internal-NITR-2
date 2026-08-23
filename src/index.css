@@ -520,6 +520,25 @@
   .label {
     @apply font-mono text-2xs uppercase tracking-label text-tertiary;
   }
+  /*
+   * .label where the backdrop is not the flat --base.
+   *
+   * --t3 measures about 4.9:1 against --base, which is fine, and that is what
+   * almost the whole console sits on. The landing hero does not: its glass
+   * panels are composited over two radial gradient blobs, and the warm one
+   * lifts the effective backdrop to around rgb(38,26,21). Measured on the
+   * rendered page rather than computed from tokens — sampling the actual
+   * pixels behind the glyphs — --t3 lands at 4.10:1 on the hero eyebrow,
+   * 4.12:1 on the stat labels and 4.27:1 on the canvas legend. All below AA.
+   *
+   * The fix is --t2, which measures 6.98:1 in the same places. No new colour is
+   * invented and the token is not changed globally, because it passes
+   * everywhere else and moving it would be a whole-app change to fix one
+   * section.
+   */
+  .label-strong {
+    @apply font-mono text-2xs uppercase tracking-label text-secondary;
+  }
   .num {
     @apply font-mono tabular-nums;
   }
