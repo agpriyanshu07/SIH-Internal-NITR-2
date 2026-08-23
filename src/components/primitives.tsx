@@ -183,7 +183,32 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center gap-[10px] px-6 py-8 text-center">
-      <div className="mb-1 h-[26px] w-[26px] rounded-full border border-hairline" />
+      {/*
+        A reticle rather than a bare circle. The empty ring this replaced read
+        as a placeholder someone had not got round to — which is the one thing
+        an empty state must not look like. Kept at 26px and on the hairline
+        weight: this marks the absence of data, it is not an illustration of it.
+      */}
+      <svg
+        viewBox="0 0 26 26"
+        aria-hidden="true"
+        className="mb-1 h-[26px] w-[26px] flex-none text-tertiary"
+      >
+        <circle
+          cx="13"
+          cy="13"
+          r="8.5"
+          fill="none"
+          stroke="currentColor"
+          strokeOpacity="0.55"
+        />
+        <path
+          d="M13 0.5v5M13 20.5v5M0.5 13h5M20.5 13h5"
+          stroke="currentColor"
+          strokeOpacity="0.35"
+        />
+        <circle cx="13" cy="13" r="1.25" fill="currentColor" fillOpacity="0.5" />
+      </svg>
       <div className="text-base text-primary">{title}</div>
       <div className="max-w-[300px] text-sm+ leading-[1.6] text-secondary [text-wrap:pretty]">
         {body}
