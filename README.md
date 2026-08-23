@@ -19,6 +19,10 @@ satellites and debris in Low Earth Orbit and ranks predicted close approaches.
 > `/console/status` for the per-feature breakdown. Nothing here should be used
 > for any operational purpose.
 
+Presenting this? `DEMO.md` has the spoken opening, the demo path with the event
+ids and figures to point at, and prepared answers to the questions that get
+asked. Every number in it is one a command in this repository reproduces.
+
 ## Running it
 
 ```bash
