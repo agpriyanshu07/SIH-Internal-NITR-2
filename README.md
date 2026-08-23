@@ -387,7 +387,7 @@ makes the engine faster and quieter while dropping real close approaches.
 npm run build:single    # -> dist-single/index.html
 ```
 
-One file, about 1.6 MB, with everything inlined: the JavaScript, the stylesheet,
+One file, about 1.7 MB, with everything inlined: the JavaScript, the stylesheet,
 the Latin font subsets, the committed orbital snapshot and the screening worker.
 No server, no network, no build step at the far end — open it and the console
 runs, with all 3,032 events already screened.

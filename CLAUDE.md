@@ -23,15 +23,28 @@ approach, miss distances, relative velocities, element-set ages, every figure in
 the pair-reduction cascade, and the burn advisor's re-propagated post-burn miss
 distance. All measured, none authored.
 
+**Modelled from published models, not measured.** The collision-consequence
+chain: NASA Standard Breakup Model for the fragment cloud, King-Hele for decay,
+Sutton-Graves for re-entry heating. Real models, applied to real events, but
+their inputs include assumptions — see below — so the outputs are estimates
+rather than observations, and the UI says which is which.
+
 **Assumed, and disclosed wherever used.** The 1-sigma positional covariance
 feeding Pc — a TLE carries no covariance. Radar cross-section class, inferred
 from object type because real RCS lives in the SATCAT, not in a TLE. Launch day:
-a designator gives only the year.
+a designator gives only the year. Object MASSES for the consequence analysis,
+where fragment count scales as mass^0.75 — the single most consequential
+assumption in that chain. Fragment material mix, drag coefficient, solar
+activity and entry angle: all controls on the analysis workbench rather than
+constants, because an assumption you can sweep is a finding and one buried in a
+constant is a claim.
 
 **Still synthetic.** The manoeuvre log's burn records. Sign-in authenticates
 nothing. Acknowledgements are localStorage only.
 
 ## Data flow
+
+Screening — what the dashboard shows:
 
 ```
 src/data/snapshot/*.txt      committed CelesTrak TLEs (verbatim) + manifest.json
@@ -41,6 +54,25 @@ src/data/snapshot/*.txt      committed CelesTrak TLEs (verbatim) + manifest.json
   -> engine/run.ts           the pipeline (+ Pc, severity, score)
   -> data/precomputed.json   committed result, for instant first paint
   -> data/conjunctions.ts    RESOLVED / conjunctionById / SEVERITY_COUNTS
+```
+
+Manoeuvre planning — what the burn advisor shows:
+
+```
+engine/twobody.ts            universal-variable state-vector propagation
+  -> data/advisor.ts         differential re-propagation of a burn
+  -> components/BurnAdvisor  one post-burn miss distance, not a range
+```
+
+Collision consequence — what the analysis workbench shows:
+
+```
+engine/impact.ts             centre-of-mass mechanics, J2 nodal precession
+  -> engine/breakup.ts       NASA Standard Breakup Model
+  -> engine/thermal.ts       Sutton-Graves heating, lumped-mass demise
+  -> engine/decay.ts         King-Hele drag decay, re-entry latitude
+  -> data/consequence.ts     the chain, with every assumption an input
+  -> routes/Analysis.tsx     the workbench; Consequence.tsx summarises it
 ```
 
 `workers/screening.worker.ts` runs `engine/run.ts` unchanged, so the "Run
@@ -68,6 +100,23 @@ the screens do not care where the numbers came from.
   unburned state go through the same two-body integrator and only their
   DIFFERENCE is used. Never propagate one arm one way and the other another —
   the cancellation is the whole reason the answer is trustworthy.
+- **Fragments do NOT leave from the pair's centre of mass.** It looks right —
+  that is where the combined momentum goes — but for two comparable masses at a
+  large angle `|v_cm|` is far below orbital speed, so every fragment goes
+  sub-orbital and whole clouds appear to de-orbit within the hour. A
+  hypervelocity breakup is not an inelastic merger: each body shatters and its
+  pieces keep ITS momentum. Model the two parents' clouds separately, conserving
+  momentum within each. This was a real bug; do not reintroduce it.
+- **Never suppress free-molecular heating.** Ramping entry heating to zero above
+  some altitude deletes precisely the heat that light, high-area fragments
+  experience — they decelerate too high to reach continuum flow at speed. It
+  inverts the model so compact heavy fragments demise and light ones survive.
+  The standard scaling is heat per unit mass ~ sqrt(A/m), and `npm run validate`
+  asserts it. Both regimes are computed and bridged harmonically.
+- **Thermal demise altitudes are not calibrated.** They run higher than the
+  65-80 km ORSAT and SCARAB report. The A/m dependence and the survive/demise
+  boundary are the meaningful outputs; do not quote the altitude as if it were
+  validated, and do not tune the model to hit a published number.
 - **satellite.js ships an optional WASM runtime** that pulls node built-ins and
   a top-level await. It is aliased away in `vite.config.ts` and excluded from
   dev pre-bundling. Do not remove either without checking `npm run build` and
@@ -79,7 +128,7 @@ the screens do not care where the numbers came from.
 npm run dev        # dev server
 npm run build      # tsc -b && vite build — the only CI this repo has
 npm run screen     # re-run screening, rewrite src/data/precomputed.json
-npm run validate   # known-answer tests for the engine (must stay 15/15)
+npm run validate   # known-answer tests for the engine (must stay 38/38)
 npm run build:single  # one self-contained file in dist-single/
 scripts/fetch-snapshot.sh   # refresh the snapshot from CelesTrak, by hand
 ```
