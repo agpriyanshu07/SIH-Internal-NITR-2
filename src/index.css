@@ -233,7 +233,10 @@
   }
 
   input::placeholder { color: var(--t3); }
-  input { font-family: 'IBM Plex Mono', monospace; }
+  /* A select does not inherit font-family, so it has to be named alongside
+     input or its closed state renders in the platform UI font. */
+  input,
+  select { font-family: 'IBM Plex Mono', monospace; }
   button { font-family: inherit; }
 
   * { scrollbar-width: thin; scrollbar-color: var(--panel-high) transparent; }

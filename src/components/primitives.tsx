@@ -189,7 +189,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
         <input
           {...rest}
           ref={ref}
-          className={`min-w-0 flex-1 border-0 bg-transparent text-sm text-primary outline-none placeholder:text-tertiary ${inputClassName}`}
+          className={`min-w-0 flex-1 border-0 bg-transparent text-sm text-primary outline-none ${inputClassName}`}
         />
         {trailing}
       </div>
