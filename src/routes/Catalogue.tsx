@@ -56,7 +56,7 @@ function TleDrawer({ object, onClose }: { object: SpaceObject; onClose: () => vo
   };
 
   return (
-    <aside className="glass flex min-h-0 flex-col border-l border-hairline bg-panel">
+    <aside className="slide-in glass flex min-h-0 flex-col border-l border-hairline bg-panel">
       <div className="flex h-11 flex-none items-center justify-between border-b border-hairline px-5">
         <div className="label">Element set — {fmtNorad(object.norad)}</div>
         <button type="button" onClick={onClose} aria-label="Close drawer"
@@ -192,6 +192,9 @@ export function Catalogue() {
   const rows = filtered.slice(current * PAGE_SIZE, current * PAGE_SIZE + PAGE_SIZE);
   const object = selected != null ? OBJECTS.find((o) => o.norad === selected) : undefined;
 
+  /** Changes whenever the population changes, to replay the row entrance. */
+  const listKey = `${q}|${isroOnly}|${band?.[0] ?? ''}|${sortKey}|${sortDir}|${current}`;
+
   const sortBy = (k: SortKey) => {
     if (k === sortKey) setSortDir((d) => (d === 1 ? -1 : 1));
     else { setSortKey(k); setSortDir(1); }
@@ -303,13 +306,19 @@ export function Catalogue() {
                * per cent of white; it does nothing but stop the eye sliding.
                */
               <div
-                key={o.norad}
+                /*
+                 * Keyed on the filter as well as the object, so changing the
+                 * filter remounts the rows and replays the entrance. Keyed on
+                 * the NORAD alone, React reuses the DOM and a new population
+                 * appears with no transition at all.
+                 */
+                key={`${listKey}-${o.norad}`}
                 role="button"
                 tabIndex={0}
                 onClick={() => setSelected(o.norad)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(o.norad); } }}
-                style={{ animationDelay: `${Math.min(i, 14) * 12}ms` }}
-                className={`grid ${COLS} h-9 cursor-pointer items-center border-b border-hairline-soft px-4 transition-colors ${
+                style={{ animationDelay: `${Math.min(i, 14) * 11}ms` }}
+                className={`row-in grid ${COLS} h-9 cursor-pointer items-center border-b border-hairline-soft px-4 transition-colors ${
                   o.norad === selected
                     ? 'bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
                     : `${i % 2 ? 'bg-[rgba(255,255,255,0.014)]' : ''} hover:bg-panel-raised`
