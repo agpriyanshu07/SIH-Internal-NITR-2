@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { OBJECTS, groupOf, isIndianAsset } from '../data/objects';
 import { OriginBadge, ProvenanceFooter } from '../components/Provenance';
+import { AgePip, ClassMark, ShellBar, SHELL_MIN_KM, SHELL_MAX_KM } from '../components/TableViz';
 import { TLE_FIELD_NOTES, TLE_GROUP_LABEL } from '../data/tle';
 import { fmtInt, fmtNorad } from '../data/format';
 import { Button, EmptyState, TextField } from '../components/primitives';
@@ -10,7 +11,8 @@ import type { SpaceObject } from '../data/types';
 
 type SortKey = 'name' | 'norad' | 'alt' | 'apogee' | 'perigee' | 'incl' | 'ecc' | 'period' | 'age';
 
-const PAGE_SIZE = 25;
+/* 36px rows fit half again as many as the 42px ones this was tuned for. */
+const PAGE_SIZE = 38;
 
 /**
  * Column template shared by the header and every row. The console shell takes
@@ -18,19 +20,19 @@ const PAGE_SIZE = 25;
  * for, so the fixed columns are a little tighter than the mockup's.
  */
 const COLS =
-  'grid-cols-[minmax(120px,1.3fr)_66px_92px_minmax(90px,1fr)_66px_66px_64px_78px_74px_54px] gap-x-[6px]';
+  'grid-cols-[minmax(116px,1.2fr)_62px_88px_minmax(84px,1fr)_112px_94px_56px_60px_84px] gap-x-[10px]';
 
-const HEADERS: { key: SortKey | null; label: string; align: 'left' | 'right'; pad?: boolean }[] = [
+const HEADERS: { key: SortKey | null; label: string; align: 'left' | 'right'; pad?: boolean; hint?: string }[] = [
   { key: 'name', label: 'Object', align: 'left' },
   { key: 'norad', label: 'NORAD', align: 'right' },
-  { key: null, label: 'Class', align: 'left', pad: true },
+  { key: null, label: 'Class', align: 'left' },
   { key: null, label: 'Operator', align: 'left' },
-  { key: 'apogee', label: 'Apo km', align: 'right' },
-  { key: 'perigee', label: 'Peri km', align: 'right' },
+  // The bullet chart. Sorting by perigee is what turns it into a shell map.
+  { key: 'perigee', label: 'Shell', align: 'left', hint: `Perigee to apogee on a fixed ${SHELL_MIN_KM}–${SHELL_MAX_KM} km scale, so every row is comparable. Sort by it to see the debris shells stack up.` },
+  { key: 'apogee', label: 'Peri–apo km', align: 'right' },
   { key: 'incl', label: 'Incl °', align: 'right' },
-  { key: 'ecc', label: 'Ecc', align: 'right' },
-  { key: 'period', label: 'Period min', align: 'right' },
-  { key: 'age', label: 'Age d', align: 'right' },
+  { key: 'period', label: 'Period', align: 'right' },
+  { key: 'age', label: 'Elset age d', align: 'right' },
 ];
 
 /** The annotated element-set drawer. */
@@ -224,11 +226,11 @@ export function Catalogue() {
       <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_470px] 2xl:grid-cols-[minmax(0,1fr)_520px]">
         <div className="flex min-w-0 flex-col border-r border-hairline-soft">
           <div className="min-h-0 flex-1 overflow-auto">
-            <div className="min-w-[880px]">
+            <div className="min-w-[860px]">
           <div className={`sticky top-0 z-10 grid ${COLS} h-[34px] items-center border-b border-hairline bg-panel-raised px-4`}>
             {HEADERS.map((h) => (
               h.key ? (
-                <button key={h.label} type="button" onClick={() => sortBy(h.key!)}
+                <button key={h.label} type="button" onClick={() => sortBy(h.key!)} title={h.hint}
                         className={`font-mono text-xs- uppercase tracking-[0.08em] transition-colors ${
                           h.align === 'right' ? 'text-right' : 'text-left'
                         } ${h.pad ? 'pl-[14px]' : ''} ${
@@ -252,34 +254,39 @@ export function Catalogue() {
                 body="Nothing in the screened catalogue matches. Try a NORAD ID, an operator, or a partial object name."
                 action={<Button className="mt-2 px-[13px] py-[7px] text-sm text-secondary" onClick={() => setQ('')}>Clear filter</Button>}
               />
-            ) : rows.map((o) => (
+            ) : rows.map((o, i) => (
+              /*
+               * 36px rows, not 42px, and every other one tinted.
+               *
+               * A console this dense should show thirty rows where it was
+               * showing twenty, and a wall of identically weighted rows is the
+               * hardest thing there is to keep your place in. The zebra is two
+               * per cent of white; it does nothing but stop the eye sliding.
+               */
               <div
                 key={o.norad}
                 role="button"
                 tabIndex={0}
                 onClick={() => setSelected(o.norad)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(o.norad); } }}
-                className={`grid ${COLS} h-[42px] cursor-pointer items-center border-b border-hairline-soft px-4 ${
+                style={{ animationDelay: `${Math.min(i, 14) * 12}ms` }}
+                className={`grid ${COLS} h-9 cursor-pointer items-center border-b border-hairline-soft px-4 transition-colors ${
                   o.norad === selected
-                    ? 'rise bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
-                    : 'hover:-translate-y-px hover:bg-panel-raised'
+                    ? 'bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
+                    : `${i % 2 ? 'bg-[rgba(255,255,255,0.014)]' : ''} hover:bg-panel-raised`
                 }`}
               >
                 <div className="truncate text-sm+ text-primary">{o.name}</div>
                 <div className="num text-right text-sm text-secondary">{fmtNorad(o.norad)}</div>
-                <div className="truncate pl-[14px] font-mono text-xs- tracking-data text-tertiary">{o.type}</div>
+                <ClassMark type={o.type} />
                 <div className="truncate text-sm text-secondary">{o.op}</div>
-                <div className="num text-right text-sm text-primary">{o.apogee}</div>
-                <div className="num text-right text-sm text-primary">{o.perigee}</div>
-                <div className="num text-right text-sm text-primary">{o.incl.toFixed(2)}</div>
-                <div className="num text-right text-sm text-secondary">{o.ecc.toFixed(7)}</div>
-                <div className="num text-right text-sm text-primary">{o.period.toFixed(1)}</div>
-                <div
-                  className={`num text-right text-xs ${o.age > 3 ? 'text-risk-high' : 'text-tertiary'}`}
-                  title={`Element set is ${o.age.toFixed(2)} days old${o.age > 3 ? ' — stale enough that the propagated position has drifted' : ''}`}
-                >
-                  {o.age.toFixed(2)}
+                <ShellBar perigee={o.perigee} apogee={o.apogee} type={o.type} />
+                <div className="num text-right text-sm text-primary">
+                  {o.perigee}<span className="text-tertiary">–</span>{o.apogee}
                 </div>
+                <div className="num text-right text-sm text-primary">{o.incl.toFixed(2)}</div>
+                <div className="num text-right text-sm text-primary">{o.period.toFixed(1)}</div>
+                <AgePip days={o.age} />
               </div>
             ))}
             </div>
