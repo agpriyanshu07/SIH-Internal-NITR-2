@@ -237,6 +237,44 @@ are already indistinguishable from `--t2`.
   two screens. 14 → 10 backdrop-filter surfaces. Not claimed as a measured win —
   see Known limits.
 
+### The catalogue became an instrument
+
+It was the weakest screen and the one this app opens on: 859 rows of numbers
+with no visual encoding at all. To see that the Cosmos 2251 cloud sits in a band
+around 700 km you had to read two columns of four-digit numbers and hold them in
+your head.
+
+- **A shell histogram, and it is the filter.** Mean altitude binned across
+  300–1700 km, each bin stacked by class. The debris clouds show up as what they
+  are — one bin at 671–712 km holds **145 objects, a sixth of the catalogue in a
+  41 km band**. Clicking a bin filters the table to it, which is the question you
+  have the moment you see a spike and previously had no way to ask. Square-root
+  heights, because that spike flattens everything else on a linear scale and
+  hides precisely the smaller shells someone is hunting for.
+- **Per-row marks**, none of which adds a figure: perigee-to-apogee as a bullet
+  chart on one shared scale, class as a mark plus its word, element-set age as a
+  pip against the screening threshold. Sort by shell and the clouds stack into
+  visible bands.
+- **Density**: rows 42px → 36px with a two per cent zebra, page size 25 → 38.
+  Eccentricity left the table — at four decimals it is the one column nobody can
+  scan, and the drawer already carries it with a full explanation.
+
+The scale is 300–1700 km, not the textbook 160–2000: this catalogue runs 340 km
+to 1,627 km, and a full-LEO scale squeezed every bar into the middle third of
+the column.
+
+### Motion
+
+Table rows arrive with a 240 ms fade and 4px lift, staggered 11 ms by index and
+capped at fourteen — shallower than the panel `.rise`, because it plays on thirty
+rows at once. Rows are keyed on the filter as well as the object, or React reuses
+the DOM and a new population appears with no transition at all. The drawer slides
+from the edge it is docked to.
+
+A real hole in the reduced-motion guard, found while adding them: it zeroed
+`animation-duration` but not `animation-delay`, so a staggered list still arrived
+late — just late and instant instead of late and animated.
+
 ### Interrogating the assumption
 
 The conjunction detail carries a sensitivity chart: Pc swept against the assumed
