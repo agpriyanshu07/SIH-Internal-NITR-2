@@ -98,6 +98,18 @@ Recorded because each was plausible-looking and wrong:
 - **The screening horizon existed in two places** and drifted to 24 h vs 72 h,
   silently rebuilding the dashboard with a third of the events. One constant now.
 - **The risk score contradicted its own severity chips** in six cases.
+- **`e.currentTarget` read inside a functional `setState`.** React clears it when
+  the handler returns and the updater runs after that, so the viewer's drag read
+  null on the first pointermove and took the whole route down — the canvas
+  vanished mid-drag. Caught by counting canvases across a scripted drag, not by
+  reading the diff.
+- **`releasePointerCapture` throws when the element does not hold capture**, and
+  the browser releases implicitly on pointerup, so the unguarded call threw on
+  every release.
+- **The manoeuvre log's event-driven branch was dead code.** It sliced the
+  twenty-six soonest events under a comment claiming "most severe first", found
+  no flyable asset among them, and produced nothing — so a filter chip in the UI
+  could never match.
 
 ---
 
@@ -225,7 +237,42 @@ are already indistinguishable from `--t2`.
   two screens. 14 → 10 backdrop-filter surfaces. Not claimed as a measured win —
   see Known limits.
 
+### Interrogating the assumption
+
+The conjunction detail carries a sensitivity chart: Pc swept against the assumed
+sigma across the same 0.25×–4× range the Thresholds slider offers, with the
+severity bands as background zones and every band crossing named. The app always
+disclosed that Pc rests on an assumed covariance — a TLE carries none — in a
+sentence. This makes the sentence something a researcher can interrogate per
+event: a conjunction that holds one band across the whole sweep does not depend
+on the assumption, and one that crosses is one where the assumption *is* the
+answer.
+
+The demo event answers it interestingly. CARTOSAT-2C × COSMOS 2251 DEB crosses
+four times — LOW beyond 0.29×, MEDIUM beyond 0.37×, HIGH beyond 0.49×, back to
+MEDIUM beyond 3.37×. The non-monotonic shape is the Foster model behaving
+correctly: Pc peaks where sigma is comparable to the miss distance. Nothing was
+tuned; the curve is 96 calls to the same `reband()` the slider drives.
+
+Built to the dataviz method, and two of its checks changed the design. It flags
+the severity palette used categorically — HIGH against MEDIUM measures ΔE 9.7
+for normal vision, 5.5 under deuteranopia, below the floor where colour alone
+can carry identity — so every band is directly labelled, every crossing is named
+in prose, and the aria-label states the whole finding; colour only reinforces.
+And it calls for a hover layer on a line chart by default, so there is a
+crosshair reading sigma, Pc and band under the cursor.
+
 ### Orbital viewer
+
+**The render loop is out of React.** Both the playback clock and the camera
+azimuth were React state advanced inside requestAnimationFrame, so every frame
+re-rendered the route and re-ran a 165-line draw effect to repaint a canvas —
+reconciliation between frames, which is what the choppiness was. Both are refs
+now; one loop mutates them and draws directly, and the text readouts run on
+their own 200 ms tick. Measured with a temporary render counter, playback
+paused: **idle re-renders 23 per 6 s → 0, and a 40-move drag 43 → 3.** Under an
+unthrottled frame rate, layout over ten seconds of idle rotation drops 119 ms →
+17 ms and style recalculation 372 ms → 158 ms.
 
 Auto-rotation when idle and drag-to-rotate, both as one extra term on the
 `spin` that `lib/projection` already takes — no rendering engine, and the label
@@ -240,12 +287,33 @@ arithmetic on the loop index, under a toggle labelled "Debris". The same
 generator removed from the landing hero, still running in the console. It draws
 real catalogue objects now.
 
+### Layout that fits
+
+The manoeuvre log's table demanded 900px inside a column squeezed against a
+fixed 400px advisor, so the last two columns sat behind a horizontal scroll at
+every common laptop width. Δv and axis share a cell (one quantity written two
+ways), "prompted by" is one line with the miss change in its title, and the
+side-by-side split moved from `xl` to `min-[1420px]` so the advisor stacks
+below rather than starving the table. **900px → 748px; no horizontal scroll at
+any of nine widths from 1024 to 1920.**
+
+While measuring it: the log's "prompted by an event" chip matched 0 of 16
+burns. Not a filter fault — no burn had a cause. `RESOLVED` is ordered by time
+of closest approach and the generator took `.slice(0, 26)` under a comment
+reading "most severe first", so it took the twenty-six *soonest* events, all of
+them debris against debris, found no controllable side, and pushed nothing. The
+whole event-driven branch was dead code. Now ranked by score, with the cap
+applied after filtering to events that have a flyable asset. Two of eighteen
+burns are event-prompted — two, because that is how many events in the run
+involve an asset anyone could fly.
+
 ### Landing page motion
 
 The three hero figures count up from zero on an ease-out cubic, with the last
-frame writing the exact target so what is read is the measured number. Sections
-lift in on scroll using the `.rise` keyframe already in `index.css` and an
-IntersectionObserver — no animation library. A live countdown to the soonest
+frame writing the exact target so what is read is the measured number. Sections lift in on
+scroll — `opacity-0 translate-y-3` to `opacity-100 translate-y-0` over 300 ms,
+with children staggered 40 ms apart by index — using an IntersectionObserver and
+`transition-delay`. No animation library: the initial chunk is unchanged. A live countdown to the soonest
 screened approach ticks on the console clock, from the same run and the same
 `DEFAULT_THRESHOLDS` the dashboard uses, so the two cannot disagree. Under
 `prefers-reduced-motion` the figures are final on first paint and the sections
@@ -292,6 +360,15 @@ These are open. None is hidden in the UI.
 - **Light theme** fails independently of any gradient: `--accent` on a light
   panel is about 3.0:1, and `--accent-ink` white on `--accent` is 3.77:1 on every
   primary button. Flat-surface token failures, untouched.
+- **Hardcoded pixel spacing is not normalised.** There is a lot of it and it is
+  not drift — it comes from the design's artboards, which are the validated
+  reference. Normalising `py-[13px]` to a scale step would be a large diff that
+  changes the design to satisfy a rule the design never followed.
+- **Smoothness of the viewer's rotation is argued, not measured.** The
+  architectural fix is measured — re-renders to zero — but this container
+  throttles requestAnimationFrame to about 4 Hz for a headless page, and both
+  builds repaint at 3.5–3.9 fps under it. The frame-rate claim needs a real
+  display.
 - **The dashboard renders all 2,901 screened events at once**, each with a live
   countdown, so 2,901 text nodes change every second and the browser lays them
   out: about 1.1 s of layout per 10 s idle, unchanged by isolating the clock.
