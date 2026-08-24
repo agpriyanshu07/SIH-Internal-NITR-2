@@ -109,7 +109,12 @@ function TleDrawer({ object, onClose }: { object: SpaceObject; onClose: () => vo
 export function Catalogue() {
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(() => params.get('q') ?? '');
-  const [isroOnly, setIsroOnly] = useState(false);
+  /*
+   * Seeded from the URL so the sidebar's Asset register entry lands here with
+   * the fleet already filtered. That entry is the register: it cannot be
+   * edited, but ?isro=1 is what "show me my assets" actually means here.
+   */
+  const [isroOnly, setIsroOnly] = useState(() => params.get('isro') === '1');
   const [sortKey, setSortKey] = useState<SortKey>('norad');
   const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [page, setPage] = useState(0);
@@ -119,10 +124,11 @@ export function Catalogue() {
   useEffect(() => {
     const next = new URLSearchParams(params);
     if (q) next.set('q', q); else next.delete('q');
+    if (isroOnly) next.set('isro', '1'); else next.delete('isro');
     setParams(next, { replace: true });
     setPage(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
+  }, [q, isroOnly]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
