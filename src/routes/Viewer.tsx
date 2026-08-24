@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { OBJECTS } from '../data/objects';
 import { RESOLVED } from '../data/conjunctions';
 import { fmtNorad, fmtUTC } from '../data/format';
@@ -63,7 +63,12 @@ export function Viewer() {
   });
   const [playing, setPlaying] = useState(true);
   const [rate, setRate] = useState<'1' | '60' | '600'>('60');
-  const [offset, setOffset] = useState(0); // simulated seconds from session start
+  /*
+   * Simulated seconds. The ref is the truth and the rAF loop owns it;
+   * displayOffset is a 5 Hz copy that only the text and the scrubber read.
+   */
+  const offsetRef = useRef(0);
+  const [displayOffset, setDisplayOffset] = useState(0);
   const [selected, setSelected] = useState<number>(25544);
   /*
    * Where the camera is, as an angle about the polar axis.
@@ -72,8 +77,17 @@ export function Viewer() {
    * ascending node about that axis, so this is added to it — the same maths in
    * lib/projection, one more term. No second renderer, no 3D engine.
    */
-  const [azimuth, setAzimuth] = useState(0);
+  const azimuthRef = useRef(0);
   const [dragging, setDragging] = useState(false);
+
+  const drawRef = useRef<() => void>(() => {});
+  const needsDraw = useRef(true);
+  const playingRef = useRef(playing);
+  const rateRef = useRef(rate);
+  const draggingRef = useRef(false);
+  playingRef.current = playing;
+  rateRef.current = rate;
+
 
   /** NORADs involved in a CRITICAL or HIGH event — marked with a dot ring. */
   const flagged = useMemo(() => {
@@ -127,48 +141,7 @@ export function Viewer() {
 
   // Screen positions from the last frame, for click hit-testing.
   const hits = useRef<{ norad: number; x: number; y: number }[]>([]);
-  const offsetRef = useRef(offset);
-  offsetRef.current = offset;
 
-  // Advance simulated time.
-  useEffect(() => {
-    if (!playing) return;
-    let raf = 0;
-    let last = performance.now();
-    const step = (t: number) => {
-      const dt = (t - last) / 1000;
-      last = t;
-      setOffset((o) => (o + dt * +rate) % SPAN_SECONDS);
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [playing, rate]);
-
-  /*
-   * Slow drift when idle, and only when idle.
-   *
-   * A full turn takes about two and a half minutes: enough that the geometry
-   * reads as three-dimensional without the scene appearing to move while you
-   * are trying to read it. Stops while the pointer is down, so a drag is not
-   * fighting the clock.
-   *
-   * Same prefers-reduced-motion guard HeroOrbits uses, checked once on mount.
-   */
-  useEffect(() => {
-    if (dragging) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    let raf = 0;
-    let last = performance.now();
-    const step = (t: number) => {
-      const dt = (t - last) / 1000;
-      last = t;
-      setAzimuth((a) => a + dt * AUTO_ROTATE_RAD_S);
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [dragging]);
 
   /*
    * Drag to rotate. Pointer events rather than mouse events so a touchscreen
@@ -183,11 +156,15 @@ export function Viewer() {
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     drag.current = { x: e.clientX, moved: 0 };
+    draggingRef.current = true;
     setDragging(true);
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!dragging) return;
+    // The ref, not the state: setDragging is asynchronous, so the first move
+    // after a press can still see the old value. `dragging` state exists only
+    // to swap the cursor.
+    if (!draggingRef.current) return;
     const dx = e.clientX - drag.current.x;
     drag.current.x = e.clientX;
     drag.current.moved += Math.abs(dx);
@@ -199,8 +176,10 @@ export function Viewer() {
      * vanished mid-drag. Found by counting canvases across a scripted drag.
      */
     const width = e.currentTarget.clientWidth || 1;
-    // A drag across the full width of the canvas is one turn.
-    setAzimuth((a) => a - (dx / width) * Math.PI * 2);
+    // A drag across the full width of the canvas is one turn. Straight into
+    // the ref: the loop paints it on the next frame, React is not involved.
+    azimuthRef.current -= (dx / width) * Math.PI * 2;
+    needsDraw.current = true;
   };
 
   const onPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -215,12 +194,27 @@ export function Viewer() {
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
+    draggingRef.current = false;
     setDragging(false);
     if (drag.current.moved < 4) selectAt(e);
   };
 
-  // Draw.
-  useEffect(() => {
+  /*
+   * One render loop, outside React.
+   *
+   * Both the playback clock and the camera azimuth used to be React state
+   * advanced inside their own requestAnimationFrame callbacks, so every frame
+   * re-rendered the whole route and re-ran a 165-line effect in order to redraw
+   * a canvas. React was being asked to reconcile a component tree sixty times a
+   * second to move a dot. That is what the choppiness was: not the projection
+   * maths, not the frame budget, the reconciliation between frames.
+   *
+   * Now the two values live in refs, one rAF loop mutates them and calls the
+   * draw function directly, and React never sees a frame. `needsDraw` lets a
+   * genuine state change — a layer toggled, a different object selected — ask
+   * for a repaint without the loop having to redraw a still scene forever.
+   */
+  const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -239,7 +233,7 @@ export function Viewer() {
     const scale = Math.min(w, h) * 0.21;
     // Earth's actual rotation rate, plus wherever the camera has been dragged
     // or drifted to. The scene's own motion and the viewer's are the same term.
-    const spin = offset * 7.292e-5 + azimuth;
+    const spin = offsetRef.current * 7.292e-5 + azimuthRef.current;
 
     ctx.clearRect(0, 0, w, h);
     ctx.lineWidth = 1;
@@ -273,7 +267,7 @@ export function Viewer() {
         });
       }
 
-      const pt = projectOrbitPoint(params, params.phase + angularRate(o.period) * offset, cx, cy, scale, spin);
+      const pt = projectOrbitPoint(params, params.phase + angularRate(o.period) * offsetRef.current, cx, cy, scale, spin);
       nextHits.push({ norad: o.norad, x: pt.x, y: pt.y });
       marks.push({
         ...pt,
@@ -298,7 +292,7 @@ export function Viewer() {
     if (layers.debris) {
       for (const o of haze) {
         const params = { alt: o.alt, incl: o.incl, raan: o.raan, phase: (o.ma * Math.PI) / 180 };
-        const pt = projectOrbitPoint(params, params.phase + angularRate(o.period) * offset, cx, cy, scale, spin);
+        const pt = projectOrbitPoint(params, params.phase + angularRate(o.period) * offsetRef.current, cx, cy, scale, spin);
         marks.push({ ...pt, size: 1.6, fill: p.nominal });
       }
     }
@@ -386,7 +380,54 @@ export function Viewer() {
     for (const m of marks) {
       if (m.z >= 0 || Math.hypot(m.x - cx, m.y - cy) > scale) drawMark(m);
     }
-  }, [visible, offset, selected, layers, flagged, critical, pathFor, azimuth, haze]);
+  }, [visible, selected, layers, flagged, critical, pathFor, haze]);
+
+  // Latest closure, and a repaint for whatever changed it.
+  useEffect(() => {
+    drawRef.current = draw;
+    needsDraw.current = true;
+  }, [draw]);
+
+  useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let raf = 0;
+    let last = performance.now();
+    let lastText = 0;
+    const loop = (t: number) => {
+      const dt = Math.min(0.1, (t - last) / 1000);
+      last = t;
+
+      if (playingRef.current) {
+        offsetRef.current = (offsetRef.current + dt * +rateRef.current) % SPAN_SECONDS;
+        needsDraw.current = true;
+      }
+      // Idle drift, and only when idle — same guard as before.
+      if (!draggingRef.current && !reduced) {
+        azimuthRef.current += dt * AUTO_ROTATE_RAD_S;
+        needsDraw.current = true;
+      }
+
+      if (needsDraw.current) {
+        needsDraw.current = false;
+        drawRef.current();
+      }
+
+      /*
+       * The text readouts run at 5 Hz on their own budget. A timestamp and a
+       * scrubber position do not need sixty updates a second, and putting them
+       * on the frame clock is what forced the re-render in the first place.
+       */
+      if (t - lastText > 200) {
+        lastText = t;
+        setDisplayOffset(offsetRef.current);
+      }
+
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
 
   const selectAt = (e: { clientX: number; clientY: number; currentTarget: HTMLCanvasElement }) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -406,7 +447,7 @@ export function Viewer() {
    * reading today's date beside a top bar reading the capture date would be a
    * contradiction the operator has to resolve themselves.
    */
-  const simTime = new Date(Date.now() + EPOCH_OFFSET + offset * 1000);
+  const simTime = new Date(Date.now() + EPOCH_OFFSET + displayOffset * 1000);
 
   return (
     <div className="relative h-full min-h-[640px]">
@@ -530,10 +571,16 @@ export function Viewer() {
               min={0}
               max={SPAN_SECONDS}
               step={60}
-              value={offset}
-              onChange={(e) => setOffset(+e.target.value)}
+              value={displayOffset}
+              onChange={(e) => {
+                // Scrubbing writes the ref the loop reads, and the display copy
+                // so the input stays controlled between 5 Hz ticks.
+                offsetRef.current = +e.target.value;
+                needsDraw.current = true;
+                setDisplayOffset(+e.target.value);
+              }}
               aria-label="Simulated time"
-              style={sliderFill(offset, 0, SPAN_SECONDS)}
+              style={sliderFill(displayOffset, 0, SPAN_SECONDS)}
               className="k-slider"
             />
           </div>
