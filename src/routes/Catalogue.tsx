@@ -21,7 +21,7 @@ const PAGE_SIZE = 38;
  * for, so the fixed columns are a little tighter than the mockup's.
  */
 const COLS =
-  'grid-cols-[minmax(116px,1.2fr)_62px_88px_minmax(84px,1fr)_112px_94px_56px_60px_84px] gap-x-[10px]';
+  'grid-cols-[minmax(108px,1.2fr)_60px_84px_minmax(78px,1fr)_106px_92px_54px_56px_80px] gap-x-[9px]';
 
 const HEADERS: { key: SortKey | null; label: string; align: 'left' | 'right'; pad?: boolean; hint?: string }[] = [
   { key: 'name', label: 'Object', align: 'left' },
@@ -265,10 +265,17 @@ export function Catalogue() {
         <ProvenanceFooter />
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_470px] 2xl:grid-cols-[minmax(0,1fr)_520px]">
+      {/*
+        The drawer docks beside the table from 1420px, the same breakpoint the
+        manoeuvre log uses and for the same reason: 400px reserved plus a 196px
+        shell leaves less than the table needs below it, and a docked panel
+        beside a table you have to scroll sideways is worse than a panel under
+        a table you can read.
+      */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 min-[1420px]:grid-cols-[minmax(0,1fr)_400px] 2xl:grid-cols-[minmax(0,1fr)_500px]">
         <div className="flex min-w-0 flex-col border-r border-hairline-soft">
           <div className="min-h-0 flex-1 overflow-auto">
-            <div className="min-w-[860px]">
+            <div className="min-w-[820px]">
           <div className={`sticky top-0 z-10 grid ${COLS} h-[34px] items-center border-b border-hairline bg-panel-raised px-4`}>
             {HEADERS.map((h) => (
               h.key ? (
