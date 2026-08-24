@@ -3,6 +3,7 @@ import { conjunctionById, SCREENING_THRESHOLD_KM } from '../data/conjunctions';
 import { PROVENANCE, SNAPSHOT_EPOCH, groupOf } from '../data/objects';
 import { OriginBadge } from '../components/Provenance';
 import { ScoreModel } from '../components/ScoreModel';
+import { SigmaSensitivity } from '../components/SigmaSensitivity';
 import { Consequence } from '../components/Consequence';
 import { conjunctionsToCsv, downloadCsv } from '../data/csv';
 import { useAcknowledged } from '../hooks/useAcknowledged';
@@ -14,18 +15,39 @@ import type { SpaceObject } from '../data/types';
 import { Countdown } from '../components/Countdown';
 
 function ObjectSpec({ object, role }: { object: SpaceObject; role: 'Primary' | 'Secondary' }) {
-  const rows: [string, string][] = [
-    ['Type', object.type],
-    ['Operator', object.op],
-    // A TLE's international designator carries the launch year, not the day.
-    ['Launch year', object.launch],
-    ['Mean altitude', `${object.alt} km`],
-    ['Apogee / perigee', `${object.apogee} / ${object.perigee} km`],
-    ['Inclination', `${object.incl.toFixed(4)}°`],
-    ['Period', `${object.period.toFixed(1)} min`],
-    // Assumed from object class — real RCS is in the SATCAT, not in a TLE.
-    ['Radar cross-section', `${object.rcs} (assumed)`],
-    ['TLE epoch age', `${object.age.toFixed(2)} d`],
+  /*
+   * Three clusters rather than nine identical rows, matching the catalogue
+   * drawer. What the object IS, where it is GOING, and how much of either to
+   * trust are three different questions, and rendering them at one weight in
+   * one column made the panel scan as a form rather than a readout.
+   */
+  const groups: { label: string; rows: [string, string][] }[] = [
+    {
+      label: 'Identity',
+      rows: [
+        ['Type', object.type],
+        ['Operator', object.op],
+        // A TLE's international designator carries the launch year, not the day.
+        ['Launch year', object.launch],
+      ],
+    },
+    {
+      label: 'Orbit',
+      rows: [
+        ['Mean altitude', `${object.alt} km`],
+        ['Apogee / perigee', `${object.apogee} / ${object.perigee} km`],
+        ['Inclination', `${object.incl.toFixed(4)}°`],
+        ['Period', `${object.period.toFixed(1)} min`],
+      ],
+    },
+    {
+      label: 'Data quality',
+      rows: [
+        // Assumed from object class — real RCS is in the SATCAT, not in a TLE.
+        ['Radar cross-section', `${object.rcs} (assumed)`],
+        ['TLE epoch age', `${object.age.toFixed(2)} d`],
+      ],
+    },
   ];
 
   return (
@@ -41,14 +63,22 @@ function ObjectSpec({ object, role }: { object: SpaceObject; role: 'Primary' | '
       <div className="mb-[18px] font-mono text-xs text-tertiary">
         NORAD {fmtNorad(object.norad)} · {object.intl}
       </div>
-      <dl className="flex flex-col">
-        {rows.map(([k, v]) => (
-          <div key={k} className="grid grid-cols-[130px_1fr] gap-2 border-t border-hairline-soft py-2">
-            <dt className="font-mono text-xs- uppercase tracking-[0.08em] text-tertiary">{k}</dt>
-            <dd className="num text-sm text-primary">{v}</dd>
-          </div>
-        ))}
-      </dl>
+      {groups.map((g) => (
+        <section key={g.label} className="mb-[14px] last:mb-0">
+          <div className="label mb-[6px]">{g.label}</div>
+          <dl className="flex flex-col rounded border border-hairline-soft bg-deep px-[10px]">
+            {g.rows.map(([k, v]) => (
+              <div
+                key={k}
+                className="grid grid-cols-[128px_1fr] gap-2 py-[7px] [&+&]:border-t [&+&]:border-hairline-soft"
+              >
+                <dt className="font-mono text-xs- uppercase tracking-[0.08em] text-tertiary">{k}</dt>
+                <dd className="num text-sm text-primary">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ))}
     </div>
   );
 }
@@ -200,6 +230,20 @@ export function ConjunctionDetail() {
           </Panel>
 
           <ScoreModel event={event} />
+
+          <Panel
+            title="Sensitivity to the assumed covariance"
+            aside={
+              <Link
+                to="/console/thresholds"
+                className="font-mono text-2xs uppercase tracking-label text-tertiary hover:text-primary"
+              >
+                Adjust σ →
+              </Link>
+            }
+          >
+            <SigmaSensitivity event={event} />
+          </Panel>
 
           {/* Deliberate, prominent disclosure — a feature of the product, not fine print. */}
           <div className="glass lift overflow-hidden rounded-md border border-risk-high bg-panel">

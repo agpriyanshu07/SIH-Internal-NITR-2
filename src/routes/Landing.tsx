@@ -6,7 +6,7 @@ import { LANDING } from '../data/landing';
 import { fmtDur, fmtInt } from '../data/format';
 import { useNow } from '../hooks/useNow';
 import { useCountUp } from '../hooks/useCountUp';
-import { useReveal } from '../hooks/useReveal';
+import { revealProps, useInView } from '../hooks/useReveal';
 
 /**
  * Hero figures, read from the screening run rather than written here.
@@ -73,12 +73,43 @@ function NextApproach() {
   );
 }
 
-/** A section that lifts into place the first time it is scrolled to. */
-function Reveal({ children, ...rest }: { children: ReactNode } & JSX.IntrinsicElements['section']) {
-  const { ref, className } = useReveal<HTMLElement>();
+/** One revealed child, with its stagger delay taken from its index. */
+function RevealItem({
+  inView,
+  index,
+  className = '',
+  children,
+}: {
+  inView: boolean;
+  index: number;
+  className?: string;
+  children: ReactNode;
+}) {
+  const r = revealProps(inView, index);
   return (
-    <section ref={ref} {...rest} className={`${rest.className ?? ''} ${className}`}>
+    <div className={`${className} ${r.className}`} style={r.style}>
       {children}
+    </div>
+  );
+}
+
+/**
+ * A section that lifts into place the first time it is scrolled to, and hands
+ * its children a stagger index so they arrive in sequence rather than together.
+ *
+ * The render-prop is what makes the stagger possible: a child needs to know its
+ * own position to compute a delay, and a plain wrapper cannot tell it.
+ */
+function Reveal({
+  children,
+  ...rest
+}: {
+  children: (inView: boolean) => ReactNode;
+} & Omit<JSX.IntrinsicElements['section'], 'children'>) {
+  const { ref, inView } = useInView<HTMLElement>();
+  return (
+    <section ref={ref} {...rest}>
+      {children(inView)}
     </section>
   );
 }
@@ -252,6 +283,7 @@ export function Landing() {
 
         {/* Problem */}
         <Reveal id="problem" className="border-t border-hairline-soft px-6 py-16 lg:px-10 lg:py-[76px]">
+          {(inView) => (
           <div className="grid items-start gap-14 lg:grid-cols-[400px_1fr]">
             <div className="flex flex-col gap-[14px]">
               <Eyebrow>The problem</Eyebrow>
@@ -267,7 +299,7 @@ export function Landing() {
                 is now something else to screen against.
               </p>
               <div className="grid max-w-[620px] grid-cols-1 gap-px overflow-hidden rounded-md border border-hairline bg-hairline sm:grid-cols-3">
-                {PROBLEM_FIGURES.map(([value, plus, unit, note]) => (
+                {PROBLEM_FIGURES.map(([value, plus, unit, note], i) => (
                   /*
                     bg-deep, not bg-panel.
                     --panel is white at 5%, and .glass is blur + saturate(150%).
@@ -277,36 +309,44 @@ export function Landing() {
                     translucent instead, so the glass reads as glass over a dark
                     scene rather than as fog.
                   */
-                  <div key={note} className="glass bg-deep p-5">
+                  <RevealItem key={note} inView={inView} index={i} className="glass bg-deep p-5">
                     <div className="num text-[26px] text-primary">
                       {value}
                       {plus && <span className="text-[16px] text-secondary">{plus}</span>}
                       {unit && <span className="ml-1 text-md text-secondary">{unit}</span>}
                     </div>
                     <p className="mt-2 text-sm leading-[1.5] text-secondary">{note}</p>
-                  </div>
+                  </RevealItem>
                 ))}
               </div>
             </div>
           </div>
+          )}
         </Reveal>
 
         {/* How it works */}
         <Reveal id="method" className="border-t border-hairline-soft px-6 py-16 lg:px-10 lg:py-[76px]">
+          {(inView) => (
+          <>
           <div className="mb-[34px]"><Eyebrow>How it works</Eyebrow></div>
           <div className="grid gap-10 md:grid-cols-3">
-            {STEPS.map(([n, title, body]) => (
-              <div key={n} className="flex flex-col gap-[14px] border-t border-hairline pt-5">
+            {STEPS.map(([n, title, body], i) => (
+              <RevealItem key={n} inView={inView} index={i}
+                          className="flex flex-col gap-[14px] border-t border-hairline pt-5">
                 <div className="font-mono text-xs tracking-label text-accent">{n}</div>
                 <h3 className="text-2xl font-medium tracking-tight text-primary">{title}</h3>
                 <p className="text-md leading-[1.65] text-secondary [text-wrap:pretty]">{body}</p>
-              </div>
+              </RevealItem>
             ))}
           </div>
+          </>
+          )}
         </Reveal>
 
         {/* Why this exists */}
         <Reveal id="principles" className="grid items-start gap-14 border-t border-hairline-soft px-6 py-16 lg:grid-cols-[400px_1fr] lg:px-10 lg:py-[76px]">
+          {(inView) => (
+          <>
           <div className="flex flex-col gap-[14px]">
             <Eyebrow>Why this exists</Eyebrow>
             <h2 className="text-4xl font-semibold tracking-tighter text-primary">
@@ -315,14 +355,16 @@ export function Landing() {
           </div>
           <dl className="flex flex-col">
             {PRINCIPLES.map(([term, body], i) => (
-              <div key={term}
+              <RevealItem key={term} inView={inView} index={i}
                    className={`grid gap-7 border-t border-hairline py-[22px] sm:grid-cols-[190px_1fr] ${
                      i === PRINCIPLES.length - 1 ? 'border-b' : ''}`}>
                 <dt className="text-md font-medium text-primary">{term}</dt>
                 <dd className="max-w-[560px] text-md leading-[1.65] text-secondary">{body}</dd>
-              </div>
+              </RevealItem>
             ))}
           </dl>
+          </>
+          )}
         </Reveal>
 
         <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-hairline-soft px-6 py-[34px] lg:px-10">
