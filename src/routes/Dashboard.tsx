@@ -22,6 +22,7 @@ import { RegimePlot } from '../components/RegimePlot';
 import { ArrowDown, ArrowUp } from '../components/Icon';
 import type { ObjectType, ResolvedConjunction, Severity } from '../data/types';
 import { passesThresholds, useThresholds } from '../state/thresholds';
+import { Countdown } from '../components/Countdown';
 
 type SortKey = 'score' | 'tca' | 'miss' | 'relv' | 'pc';
 type RiskFilter = 'ALL' | Severity;
@@ -83,8 +84,25 @@ function SortHeader({
   );
 }
 
-export function Dashboard() {
+/**
+ * The next-TCA tile, which is the only thing on this screen besides the row
+ * countdowns that has to know what time it is. It subscribes to the clock
+ * itself so the rest of the dashboard does not have to.
+ */
+function NextTcaTile({ events }: { events: ResolvedConjunction[] }) {
   const now = useNow();
+  const next = events.find((r) => r.tca > now);
+  return (
+    <MetricTile
+      label="Next TCA"
+      valueClass="text-accent"
+      value={next ? fmtDur(next.tca - now) : '—'}
+      foot={next?.id ?? ''}
+    />
+  );
+}
+
+export function Dashboard() {
   const navigate = useNavigate();
   const { thresholds, modified } = useThresholds();
 
@@ -159,10 +177,16 @@ export function Dashboard() {
     [rows, selId],
   );
 
-  const nextTca = useMemo(
-    () => screened.filter((r) => r.tca > now).sort((a, b) => a.tca - b.tca)[0],
-    [screened, now],
-  );
+  /*
+   * Sorted once, not once a second.
+   *
+   * This used to filter and sort all 2,901 screened events on every tick,
+   * because `now` was a dependency. The order does not change with the clock —
+   * only which end of it has passed — so the sort is memoised on the data and
+   * NextTcaTile scans forward from the front for the first event still ahead.
+   * That scan is a handful of comparisons.
+   */
+  const byTca = useMemo(() => [...screened].sort((a, b) => a.tca - b.tca), [screened]);
 
   const highRisk = counts.CRITICAL + counts.HIGH;
 
@@ -262,12 +286,7 @@ export function Dashboard() {
             </span>
           }
         />
-        <MetricTile
-          label="Next TCA"
-          valueClass="text-accent"
-          value={nextTca ? fmtDur(nextTca.tca - now) : '—'}
-          foot={nextTca?.id ?? ''}
-        />
+        <NextTcaTile events={byTca} />
         <MetricTile
           label="Screening latency"
           value={(cascade.elapsedMs / 1000).toFixed(1)}
@@ -409,7 +428,7 @@ export function Dashboard() {
                       </div>
                       <div className="text-right">
                         <div className="num text-sm text-secondary">{fmtUTC(new Date(r.tca))}</div>
-                        <div className="num text-xs- text-tertiary">T− {fmtDur(r.tca - now)}</div>
+                        <Countdown at={r.tca} prefix="T− " className="num text-xs- text-tertiary" />
                       </div>
                       <div className="num text-right text-sm text-primary">{r.miss.toFixed(3)}</div>
                       <div className="num text-right text-sm text-secondary">{r.relv.toFixed(3)}</div>

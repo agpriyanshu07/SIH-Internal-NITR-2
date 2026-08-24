@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BURN_STATUS_SEV, MANOEUVRES, type BurnStatus } from '../data/manoeuvres';
-import { fmtDur, fmtNorad, fmtUTC } from '../data/format';
-import { useNow } from '../hooks/useNow';
+import { fmtNorad, fmtUTC } from '../data/format';
 import { EmptyState, Panel, SeverityChip, Segmented, Button } from '../components/primitives';
 import { BurnAdvisor } from '../components/BurnAdvisor';
 import { RESOLVED, reband } from '../data/conjunctions';
 import { passesThresholds, useThresholds } from '../state/thresholds';
+import { CountdownOrLabel } from '../components/Countdown';
 
 /**
  * Manoeuvre log.
@@ -29,7 +29,6 @@ const COLS =
   'grid-cols-[92px_120px_minmax(150px,1fr)_112px_92px_120px_minmax(120px,1fr)] gap-x-3';
 
 export function ManoeuvreLog() {
-  const now = useNow();
   const { thresholds } = useThresholds();
   const [status, setStatus] = useState<BurnStatus | 'ALL'>('ALL');
   const [linkedOnly, setLinkedOnly] = useState(false);
@@ -136,7 +135,6 @@ export function ManoeuvreLog() {
               ) : (
                 rows.map((m) => {
                   const stale = m.cause && !passesThresholds(m.cause, thresholds);
-                  const future = m.epoch > now;
                   return (
                     <div
                       key={m.id}
@@ -152,9 +150,12 @@ export function ManoeuvreLog() {
                       </div>
                       <div>
                         <div className="num text-xs text-secondary">{fmtUTC(new Date(m.epoch))}</div>
-                        <div className="num text-2xs text-tertiary">
-                          {future ? `T− ${fmtDur(m.epoch - now)}` : 'complete'}
-                        </div>
+                        <CountdownOrLabel
+                          at={m.epoch}
+                          prefix="T− "
+                          past="complete"
+                          className="num text-2xs text-tertiary"
+                        />
                       </div>
                       <div className="num text-right text-sm text-primary">
                         {m.deltaV.toFixed(3)}

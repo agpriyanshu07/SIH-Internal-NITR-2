@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useNow } from '../hooks/useNow';
 import { fmtAge, fmtUTC } from '../data/format';
 import { SearchIcon } from './Icon';
 import { TextField } from './primitives';
@@ -8,6 +7,7 @@ import { useTheme } from '../hooks/useTheme';
 import { initials, useOperator } from '../hooks/useOperator';
 import { FEATURES, STATUS_LABEL, STATUS_SEV, type Feature } from '../data/features';
 import { OBJECTS, SNAPSHOT_EPOCH } from '../data/objects';
+import { ClockUTC } from './Countdown';
 
 /**
  * The console shell: glass sidebar over the drifting field lighting, top bar
@@ -125,7 +125,6 @@ function matchesQuery(to: string, search: string): boolean {
 }
 
 export function Shell() {
-  const now = useNow();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -236,9 +235,7 @@ export function Shell() {
             </div>
 
             <span className="hidden h-[18px] w-px bg-hairline lg:block" />
-            <span className="num hidden text-xs text-secondary lg:block">
-              {fmtUTC(new Date(now))}
-            </span>
+            <ClockUTC className="num hidden text-xs text-secondary lg:block" />
 
             <button
               type="button"

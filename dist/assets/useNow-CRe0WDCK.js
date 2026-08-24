@@ -1,1 +1,0 @@
-import{r as e}from"./index-DkNyjGy3.js";import{S as a}from"./catalogue-CJCja7nW.js";const c=Date.now(),o=a-c;function w(t=1e3){const[r,n]=e.useState(()=>Date.now()+o);return e.useEffect(()=>{const s=setInterval(()=>n(Date.now()+o),t);return()=>clearInterval(s)},[t]),r}export{o as E,w as u};
