@@ -79,7 +79,17 @@ const navClass = (active: boolean) =>
 const StatusChip = ({ status }: { status: Feature['status'] }) => (
   <span
     data-sev={STATUS_SEV[status]}
-    className="flex-none rounded-sm border border-hairline px-[5px] py-px font-mono text-[8.5px] uppercase tracking-[0.08em] text-sev"
+    /*
+     * `not-built` maps to the NOMINAL severity colour, which is deliberately
+     * the quietest thing on the palette — and at 8.5px over the console's
+     * backdrop it measured 3.6:1, below AA. It was ten of the thirteen
+     * remaining failures after the token lift, and they were introduced by
+     * this chip. Tertiary is muted enough to keep NOT BUILT reading as the
+     * least urgent state without printing it in a colour nobody can read.
+     */
+    className={`flex-none rounded-sm border border-hairline px-[5px] py-px font-mono text-[8.5px] uppercase tracking-[0.08em] ${
+      status === 'not-built' ? 'text-tertiary' : 'text-sev'
+    }`}
   >
     {STATUS_LABEL[status]}
   </span>
@@ -136,6 +146,19 @@ function matchesQuery(to: string, search: string): boolean {
 }
 
 export function Shell() {
+  /*
+   * Marks the document while a console route is mounted, so index.css can lift
+   * --t3 here and leave the landing page alone. On the root element rather than
+   * a wrapper because the tokens are declared on :root and a custom property
+   * has to be overridden where it is defined, not below it.
+   */
+  useEffect(() => {
+    document.documentElement.dataset.ksurface = 'console';
+    return () => {
+      delete document.documentElement.dataset.ksurface;
+    };
+  }, []);
+
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);

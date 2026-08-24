@@ -67,7 +67,8 @@ function NextApproach() {
       <span className="num text-md text-accent">
         {remaining > 0 ? fmtDur(remaining) : 'passed'}
       </span>
-      <span className="num text-2xs text-tertiary">{next.id}</span>
+      {/* text-secondary: --t3 measured 4.28:1 here, over the warm blob. */}
+      <span className="num text-2xs text-secondary">{next.id}</span>
     </div>
   );
 }
