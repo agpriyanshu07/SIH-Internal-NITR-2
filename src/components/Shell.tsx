@@ -45,11 +45,22 @@ const NAV_GROUPS: { label: string; ids: string[] }[] = [
   { label: 'Configuration', ids: ['thresholds', 'assets', 'alerts', 'apikeys'] },
 ];
 
+/*
+ * No .glass on nav rows.
+ *
+ * `hover:glass` put a backdrop-filter on whichever row the pointer was over,
+ * which means the browser promotes a new compositing layer and blurs a fresh
+ * region on every row the pointer crosses — the whole sidebar, on any pass
+ * through it. The sidebar itself is glass over the gradient blobs; a 200x36
+ * row sitting on that already-blurred surface has nothing left to blur, so
+ * the effect was invisible and only the cost was real. bg-panel-raised keeps
+ * the active row reading exactly as it did.
+ */
 const navClass = (active: boolean) =>
   `block rounded px-2 py-2 text-base ${
     active
-      ? 'glass lift bg-panel-raised text-primary shadow-[inset_2px_0_0_0_var(--accent)]'
-      : 'text-secondary hover:glass hover:bg-panel hover:text-primary'
+      ? 'lift bg-panel-raised text-primary shadow-[inset_2px_0_0_0_var(--accent)]'
+      : 'text-secondary hover:bg-panel hover:text-primary'
   }`;
 
 /**
@@ -205,7 +216,7 @@ export function Shell() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search objects, NORAD ID, conjunction ID"
               aria-label="Search objects"
-              className="glass lift h-[30px] px-[10px]"
+              className="lift h-[30px] px-[10px]"
               icon={<SearchIcon className="flex-none text-tertiary" />}
               trailing={
                 <kbd className="flex-none rounded-sm border border-hairline px-[5px] py-px font-mono text-xs- text-tertiary">
@@ -241,7 +252,7 @@ export function Shell() {
               type="button"
               onClick={toggle}
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-              className="glass lift rounded border border-hairline bg-panel px-2 py-1 font-mono text-2xs uppercase tracking-label text-tertiary hover:text-primary"
+              className="lift rounded border border-hairline bg-panel px-2 py-1 font-mono text-2xs uppercase tracking-label text-tertiary hover:text-primary"
             >
               {theme === 'dark' ? 'Dark' : 'Light'}
             </button>
@@ -249,7 +260,7 @@ export function Shell() {
             <NavLink
               to="/signin"
               title={operator ? `Signed in as ${who}` : 'Not signed in — nothing is authenticated'}
-              className="glass lift flex h-[26px] w-[26px] flex-none items-center justify-center rounded border border-hairline bg-panel font-mono text-xs- text-secondary hover:text-primary"
+              className="lift flex h-[26px] w-[26px] flex-none items-center justify-center rounded border border-hairline bg-panel font-mono text-xs- text-secondary hover:text-primary"
             >
               {operator ? initials(who) : '—'}
             </NavLink>

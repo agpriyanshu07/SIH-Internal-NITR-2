@@ -242,7 +242,7 @@ export function Catalogue() {
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(o.norad); } }}
                 className={`grid ${COLS} h-[42px] cursor-pointer items-center border-b border-hairline-soft px-4 ${
                   o.norad === selected
-                    ? 'rise glass bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
+                    ? 'rise bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
                     : 'hover:-translate-y-px hover:bg-panel-raised'
                 }`}
               >

@@ -138,7 +138,7 @@ export function SignIn() {
               No authentication happens here
             </span>
           </div>
-          <p className="glass bg-panel p-[14px] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+          <p className="bg-panel p-[14px] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
             Nothing you type is checked, transmitted or stored as a credential. There is no account
             system behind this prototype. Signing in only sets a display name in this browser so the
             console has something to show in the avatar.

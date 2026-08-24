@@ -402,7 +402,7 @@ export function Dashboard() {
                       aria-label={ackd ? `${r.id}, acknowledged` : r.id}
                       className={`grid ${COLS} h-[46px] cursor-pointer items-center gap-x-2 border-b border-hairline-soft px-[14px] ${
                         sel
-                          ? 'rise glass bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
+                          ? 'rise bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
                           : 'hover:-translate-y-px hover:bg-panel-raised'
                       } ${ackd && !sel ? 'opacity-55' : ''}`}
                     >
