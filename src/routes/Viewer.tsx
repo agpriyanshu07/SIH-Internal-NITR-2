@@ -44,11 +44,18 @@ const LAYER_LABELS: { key: keyof Layers; label: string }[] = [
 
 function LayerToggle({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
   return (
+    /*
+     * The one control in the app with no hover state at all. Every other toggle
+     * — the catalogue's ISRO filter, the log's prompted-by chip, Segmented —
+     * lightens its text on hover; this row gave no feedback that it was a
+     * control until you clicked it. `group` so the switch responds with the
+     * label rather than only under the pointer.
+     */
     <button type="button" role="switch" aria-checked={on} onClick={onToggle}
-            className="flex w-full items-center justify-between py-[6px] text-left">
-      <span className="text-sm+ text-secondary">{label}</span>
+            className="group -mx-2 flex w-full items-center justify-between rounded px-2 py-[6px] text-left transition-colors hover:bg-panel-raised">
+      <span className="text-sm+ text-secondary transition-colors group-hover:text-primary">{label}</span>
       <span className={`relative h-[14px] w-[26px] flex-none rounded-sm border transition-colors ${
-        on ? 'border-accent-border bg-panel' : 'border-hairline bg-panel'}`}>
+        on ? 'border-accent-border bg-panel' : 'border-hairline bg-panel group-hover:border-[color:var(--t3)]'}`}>
         <span className={`absolute top-[2px] h-2 w-2 transition-all ${
           on ? 'right-[2px] bg-accent' : 'left-[2px] bg-[color:var(--t3)]'}`} />
       </span>

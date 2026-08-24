@@ -194,7 +194,7 @@ export function Catalogue() {
             onClick={() => setIsroOnly((v) => !v)}
             className={`flex-none rounded border px-[11px] py-[5px] font-mono text-2xs uppercase tracking-data transition-colors ${
               isroOnly
-                ? 'border-accent-border bg-accent-wash text-primary'
+                ? 'border-accent-border bg-accent-wash text-primary hover:border-accent'
                 : 'border-hairline text-tertiary hover:bg-panel-raised hover:text-primary'
             }`}
           >

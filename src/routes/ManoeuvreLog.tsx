@@ -104,9 +104,9 @@ export function ManoeuvreLog() {
               type="button"
               aria-pressed={linkedOnly}
               onClick={() => setLinkedOnly((v) => !v)}
-              className={`rounded border px-[11px] py-1 font-mono text-2xs tracking-[0.08em] ${
+              className={`rounded border px-[11px] py-1 font-mono text-2xs tracking-[0.08em] transition-colors ${
                 linkedOnly
-                  ? 'border-accent-border bg-accent-wash text-primary'
+                  ? 'border-accent-border bg-accent-wash text-primary hover:border-accent'
                   : 'border-hairline text-tertiary hover:bg-panel-raised hover:text-primary'
               }`}
             >
