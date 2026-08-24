@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { OBJECTS, groupOf, isIndianAsset } from '../data/objects';
 import { OriginBadge, ProvenanceFooter } from '../components/Provenance';
-import { TLE_FIELD_NOTES } from '../data/tle';
+import { TLE_FIELD_NOTES, TLE_GROUP_LABEL } from '../data/tle';
 import { fmtInt, fmtNorad } from '../data/format';
 import { Button, EmptyState, TextField } from '../components/primitives';
 import { CloseIcon, SearchIcon } from '../components/Icon';
@@ -48,6 +48,8 @@ function TleDrawer({ object, onClose }: { object: SpaceObject; onClose: () => vo
     // rounded mean altitude, which would disagree with the element set printed
     // three lines below it.
     mm: object.tle[1].slice(52, 63).trim(),
+    launch: object.launch,
+    age: `${object.age.toFixed(2)} d`,
   };
 
   return (
@@ -76,31 +78,48 @@ function TleDrawer({ object, onClose }: { object: SpaceObject; onClose: () => vo
             </div>
           ))}
         </div>
+        {/* The age half of this line moved into the Freshness cluster, where it
+            sits beside the epoch it qualifies instead of above the raw TLE. */}
         <div className="mb-[22px] font-mono text-2xs uppercase tracking-[0.08em] text-tertiary">
-          Real element set as published · this prediction rests on a{' '}
-          {object.age.toFixed(2)}-day-old element set
+          Real element set as published
         </div>
 
-        <div className="mb-[6px] font-mono text-2xs uppercase tracking-[0.12em] text-accent">
-          Field by field
-        </div>
-        <dl className="flex flex-col">
-          {TLE_FIELD_NOTES.map((f) => (
-            <div key={f.key} className="grid grid-cols-[104px_1fr] gap-[14px] border-t border-hairline-soft py-[13px]">
-              <dt className="num text-right text-sm text-primary">{values[f.key]}</dt>
-              <dd>
-                <div className="mb-[3px] font-mono text-xs- uppercase tracking-[0.08em] text-tertiary">
-                  {f.label}
+        {/*
+          Three clusters, not one list of eleven.
+
+          Every field used to render at the same weight with the same spacing,
+          so a catalogue number, an argument of perigee and an element-set age
+          all looked like the same kind of fact. They are not: one identifies
+          the object, six describe where it is, and two say how much to trust
+          the first two. Grouping them is the whole change — no new colour, no
+          new type scale, the existing `.label` for the subheadings and the
+          hairline that was already between rows to separate the clusters.
+        */}
+        {(['identity', 'orbit', 'freshness'] as const).map((group) => (
+          <section key={group} className="mb-5 last:mb-0">
+            <div className="label mb-[6px] text-accent">{TLE_GROUP_LABEL[group]}</div>
+            <dl className="flex flex-col rounded border border-hairline-soft bg-panel px-[14px]">
+              {TLE_FIELD_NOTES.filter((f) => f.group === group).map((f) => (
+                <div
+                  key={f.key}
+                  className="grid grid-cols-[104px_1fr] gap-[14px] py-[13px] first:pt-[11px] last:pb-[11px] [&+&]:border-t [&+&]:border-hairline-soft"
+                >
+                  <dt className="num text-right text-sm text-primary">{values[f.key]}</dt>
+                  <dd>
+                    <div className="mb-[3px] font-mono text-xs- uppercase tracking-[0.08em] text-tertiary">
+                      {f.label}
+                    </div>
+                    <div className="text-sm+ leading-[1.55] text-secondary">
+                      {f.note}
+                      {f.key === 'ecc' && ` This object ranges ${object.perigee}–${object.apogee} km.`}
+                      {f.key === 'mm' && ` Here that is a ${object.period.toFixed(1)} minute period.`}
+                    </div>
+                  </dd>
                 </div>
-                <div className="text-sm+ leading-[1.55] text-secondary">
-                  {f.note}
-                  {f.key === 'ecc' && ` This object ranges ${object.perigee}–${object.apogee} km.`}
-                  {f.key === 'mm' && ` Here that is a ${object.period.toFixed(1)} minute period.`}
-                </div>
-              </dd>
-            </div>
-          ))}
-        </dl>
+              ))}
+            </dl>
+          </section>
+        ))}
       </div>
     </aside>
   );
