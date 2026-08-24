@@ -149,6 +149,29 @@ Three claims that contradicted the console, all predating the real-data swap:
 - **Decorative nav** — inert `<span>`s for pages that do not exist. Every entry
   now resolves; "API" and "Contact" are gone rather than faked.
 
+### Layout and labelling
+
+- **The catalogue's provenance line bled through the table header.** It sat in
+  the toolbar row — a fixed `h-[52px]` already holding a 400px search field and
+  the ISRO toggle — so its source line, capture instant, object count and five
+  group counts wrapped to three lines inside a 52px box and, with nothing
+  clipping the overflow, drew straight through the sticky header below. At a
+  full desktop width, not only when narrow. It has its own row now, the way the
+  dashboard has always laid it out.
+- **The sidebar badge asked the router, not the registry.** `NavItem` rendered
+  "Not built" from `!feature.to` — whether a feature had a route — and never
+  read `feature.status`. The asset register, whose ISRO fleet filter is real and
+  works, wore the same NOT BUILT label as alert routing and API keys. The chip
+  now comes from `STATUS_LABEL` coloured through `STATUS_SEV`, the same pair
+  Status and Thresholds use, and the asset register points at
+  `/console/catalogue?isro=1` so it lands on the fleet it describes.
+- **The dashboard's severity filter was right and its label was wrong.**
+  `SEVERITY_RANK[r.sev] >= SEVERITY_RANK[minRisk]` is a floor, so picking MED
+  showed MEDIUM, HIGH and CRITICAL — which under a heading reading "Risk" beside
+  a chip reading "MED" looks like a broken equality filter. Now "Min severity",
+  with `MED+` / `HIGH+` chips and a hint. Counted at each setting: ALL 2,901
+  rows, MED+ 104 (77 MEDIUM + 27 HIGH), HIGH+ 27, CRIT+ 0.
+
 ### Accessibility
 
 Contrast measured on the rendered page, not computed from tokens — screenshot,
@@ -158,16 +181,86 @@ dark theme**, worst case 4.51:1. The washed-out problem-figure card (2.89:1) was
 `--panel` white-at-5% under `saturate(150%)` over the warm gradient blob; it
 uses `--deep` now.
 
+The console had the same defect and worse — the blobs are on `body`, so they sit
+behind `/console` too. Both remedies were measured rather than argued about,
+across five console routes:
+
+| | below AA |
+| --- | --- |
+| baseline | 233 / 668 (34.9%) |
+| blob alpha 0.30 → 0.12 | 187 / 668 (28.0%) |
+| blob alpha 0.30 → 0.06 | 172 / 668 (25.7%) |
+| `--t3 := --t2` | 14 / 668 (2.1%) |
+
+Darkening the blobs is the expensive option and the ineffective one: most of the
+failing backdrop is the panel's own white overlay rather than the blob behind
+it, so an eightfold luminance cut would have cost the wash the design is built
+on and bought six points. The token lift is scoped to the console via
+`:root[data-ksurface='console']`; the blobs are untouched and the landing page
+keeps its quieter tier. **Shipped: 4 / 668 on the console, 0 / 269 on the
+landing page.**
+
+It costs one thing, stated plainly: tertiary and secondary text are the same
+colour inside the console now. Intermediate values were measured (`#8494a6` →
+60 failures, `#8ea0b4` → 23, `#96a7bb` → 19) and the only ones approaching AA
+are already indistinguishable from `--t2`.
+
+### Performance
+
+- **The landing page loaded the whole engine to print three numbers.** It
+  imported `CASCADE` and `OBJECTS`, which reach 632 kB of screening result plus
+  satellite.js parsing every TLE at import time. It now reads a 44 kB summary
+  generated alongside `npm run screen`, and the entire `/console` subtree is
+  lazy. Median of three loads: **JS 1,191.9 → 225.7 kB; first contentful paint
+  776 → 556 ms unthrottled, and 3,232 → 784 ms at 4 Mbps.**
+- **A 1 Hz clock re-rendered whole routes.** `useNow()` at a route's top level
+  reconciled the entire dashboard every second to move a few digits. Countdowns
+  are their own components now, and `useNow` is one module-level ticker behind
+  `useSyncExternalStore` rather than a timer per caller — which matters because
+  the dashboard renders a countdown on every screened event. **Scripting over
+  10 s idle: 856 → 263 ms.**
+- **Six `.glass` uses removed** where the blur could not be seen: nav rows
+  (including a `hover:glass` that allocated a compositing layer per row
+  crossed), the 30px search field, the 26px avatar, the selected table row on
+  two screens. 14 → 10 backdrop-filter surfaces. Not claimed as a measured win —
+  see Known limits.
+
+### Orbital viewer
+
+Auto-rotation when idle and drag-to-rotate, both as one extra term on the
+`spin` that `lib/projection` already takes — no rendering engine, and the label
+still says SCHEMATIC PROJECTION. Two bugs found by probing rather than reading:
+`e.currentTarget` read inside a functional `setState` (React clears it when the
+handler returns, so the canvas vanished on the first pointermove), and
+`releasePointerCapture` throwing on every release because the browser had
+already released it implicitly.
+
+The viewer's debris layer was also fabricated — 260 points from modular
+arithmetic on the loop index, under a toggle labelled "Debris". The same
+generator removed from the landing hero, still running in the console. It draws
+real catalogue objects now.
+
+### Landing page motion
+
+The three hero figures count up from zero on an ease-out cubic, with the last
+frame writing the exact target so what is read is the measured number. Sections
+lift in on scroll using the `.rise` keyframe already in `index.css` and an
+IntersectionObserver — no animation library. A live countdown to the soonest
+screened approach ticks on the console clock, from the same run and the same
+`DEFAULT_THRESHOLDS` the dashboard uses, so the two cannot disagree. Under
+`prefers-reduced-motion` the figures are final on first paint and the sections
+are visible immediately, rather than hidden waiting for an animation that will
+never run.
+
 ### Build
 
-Route-split with `React.lazy`: **1,282 → 1,219 kB (392 → 373 kB gzipped)**.
-`ConjunctionDetail` had to be deferred alongside `Analysis` — it reaches the
-same consequence chain, so splitting Analysis alone would have left the maths in
-the main chunk by the other path.
+Route-split with `React.lazy`. `ConjunctionDetail` had to be deferred alongside
+`Analysis` — it reaches the same consequence chain, so splitting Analysis alone
+would have left the maths in the main chunk by the other path.
 
-`npm run build:single` still emits exactly one file (1,696 kB) with the
-JavaScript, stylesheet, font subsets, TLE snapshot and screening worker all
-inlined, so the console opens by double-clicking with the wifi off.
+`npm run build:single` still emits exactly one file with the JavaScript,
+stylesheet, font subsets, TLE snapshot and screening worker all inlined, so the
+console opens by double-clicking with the wifi off.
 
 ---
 
@@ -187,20 +280,33 @@ inlined, so the console opens by double-clicking with the wifi off.
 
 These are open. None is hidden in the UI.
 
-- **Console contrast.** The gradient blobs live on `body`, so they sit behind
-  `/console` too. Measured: dashboard 86 of 221 text nodes below AA, analysis 51
-  of 89, status 27 of 61, worst 2.45:1 on column headers and NORAD ids. Neither
-  remedy is small — darkening the blobs enough needs their luminance down about
-  eightfold, which removes the wash the design is built on; lifting `--t3` to
-  `--t2` collapses two text tiers. It is a decision about what the app should
-  look like, not a patch.
+- **Four contrast failures remain on the console**, each needing a severity
+  token moved rather than a legibility fix: `"0 CRIT"` at 3.35:1 and the status
+  page's not-built count at 2.79:1 are semantic colours doing their job, and the
+  `"Primary"` / `"Secondary"` column headers sit at 4.40:1 and 4.42:1, close
+  enough to threshold to be inside the measurement's own error. Changing a
+  severity colour changes what it means, which is a larger decision than making
+  it readable.
+- **Tertiary and secondary text are the same colour inside the console.** The
+  price of the fix above, and a real loss of one level of hierarchy.
 - **Light theme** fails independently of any gradient: `--accent` on a light
   panel is about 3.0:1, and `--accent-ink` white on `--accent` is 3.77:1 on every
-  primary button.
-- **Bundle floor.** The remaining 1.2 MB is mostly not application code —
-  `precomputed.json` is 632 kB and satellite.js plus the TLE parse is most of the
-  rest, and the landing page pulls both. Getting it under a megabyte means giving
-  the landing page a small precomputed summary: a data change, not a routing one.
+  primary button. Flat-surface token failures, untouched.
+- **The dashboard renders all 2,901 screened events at once**, each with a live
+  countdown, so 2,901 text nodes change every second and the browser lays them
+  out: about 1.1 s of layout per 10 s idle, unchanged by isolating the clock.
+  Fixing it means pagination or virtualisation — a change to how the table
+  works, not to how the clock works.
+- **The `.glass` reduction is not a measured win.** Chrome's Performance metrics
+  expose script, layout and style time but not compositing or GPU time, which is
+  where `backdrop-filter` actually costs; and what they do expose is swamped by
+  the layout above. Four paired hover-sweep runs came back inside the
+  run-to-run drift, in both directions. Fewer compositing surfaces is less work
+  by construction, and the blur was invisible at those sizes, so the change is
+  kept on that argument rather than on a number.
+- **First console entry still costs 1,187 kB.** The landing route is down to
+  225.7 kB, but `precomputed.json` is 632 kB and satellite.js plus the TLE parse
+  is most of the rest, and the console genuinely needs both.
 - **Thermal demise altitudes are not calibrated.** They run above the 65–80 km
   ORSAT and SCARAB report. The A/m dependence and the survive/demise boundary are
   the meaningful outputs; the altitude is not, and the model was not tuned to hit
