@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { OBJECTS } from '../data/objects';
+import { HERO_OBJECTS } from '../data/landing';
 import { angularRate, palette, projectGlobe, projectOrbitPoint } from '../lib/projection';
 
 /**
@@ -32,15 +32,15 @@ export function HeroOrbits() {
 
     // Nine traced orbits, spread across the catalogue rather than taken from
     // its head, so they are not all fragments of one launch.
-    const orbits = OBJECTS.filter((_, i) => i % 37 === 0).slice(0, 9);
+    const orbits = HERO_OBJECTS.filter((_, i) => i % 37 === 0).slice(0, 9);
     // Everything else, as points. Real objects, real elements.
-    const field = OBJECTS.map((o) => ({
-      alt: o.alt,
-      incl: o.incl,
-      raan: o.raan,
-      phase: (o.ma * Math.PI) / 180,
-      rate: angularRate(o.period),
-      debris: o.type === 'DEBRIS',
+    const field = HERO_OBJECTS.map((o) => ({
+      alt: o.a,
+      incl: o.i,
+      raan: o.r,
+      phase: (o.m * Math.PI) / 180,
+      rate: angularRate(o.p),
+      debris: o.d === 1,
     }));
 
     let raf = 0;
@@ -90,7 +90,7 @@ export function HeroOrbits() {
       ctx.stroke();
 
       orbits.forEach((o, index) => {
-        const params = { alt: o.alt, incl: o.incl, raan: o.raan, phase: (o.ma * Math.PI) / 180 };
+        const params = { alt: o.a, incl: o.i, raan: o.r, phase: (o.m * Math.PI) / 180 };
         ctx.beginPath();
         ctx.strokeStyle = index === 0 ? p.accent : p.soft;
         for (let i = 0; i <= 160; i++) {
@@ -100,8 +100,8 @@ export function HeroOrbits() {
         ctx.stroke();
 
         // Time is compressed heavily so the dots visibly move.
-        const pt = projectOrbitPoint(params, params.phase + angularRate(o.period) * t * 220, cx, cy, scale, spin);
-        ctx.fillStyle = index === 0 ? p.accent : o.type === 'DEBRIS' ? p.t3 : p.t2;
+        const pt = projectOrbitPoint(params, params.phase + angularRate(o.p) * t * 220, cx, cy, scale, spin);
+        ctx.fillStyle = index === 0 ? p.accent : o.d === 1 ? p.t3 : p.t2;
         ctx.fillRect(pt.x - 1.6, pt.y - 1.6, 3.2, 3.2);
       });
 

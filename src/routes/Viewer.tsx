@@ -23,6 +23,9 @@ const RATES = [
 ];
 
 /** How far the scrubber can travel, in simulated seconds. */
+/** Idle drift rate: a full turn in about 2.5 minutes. */
+const AUTO_ROTATE_RAD_S = 0.042;
+
 const SPAN_SECONDS = 6 * 3600;
 
 interface Layers {
@@ -62,6 +65,15 @@ export function Viewer() {
   const [rate, setRate] = useState<'1' | '60' | '600'>('60');
   const [offset, setOffset] = useState(0); // simulated seconds from session start
   const [selected, setSelected] = useState<number>(25544);
+  /*
+   * Where the camera is, as an angle about the polar axis.
+   *
+   * projectOrbitPoint and projectGlobe already take a `spin` that rotates the
+   * ascending node about that axis, so this is added to it — the same maths in
+   * lib/projection, one more term. No second renderer, no 3D engine.
+   */
+  const [azimuth, setAzimuth] = useState(0);
+  const [dragging, setDragging] = useState(false);
 
   /** NORADs involved in a CRITICAL or HIGH event — marked with a dot ring. */
   const flagged = useMemo(() => {
@@ -107,6 +119,12 @@ export function Viewer() {
 
   const selectedObject = OBJECTS.find((o) => o.norad === selected) ?? OBJECTS[0];
 
+  /** Everything the traced set does not cover, drawn as points. Real objects. */
+  const haze = useMemo(() => {
+    const traced = new Set(tracked.map((o) => o.norad));
+    return OBJECTS.filter((o) => !traced.has(o.norad));
+  }, [tracked]);
+
   // Screen positions from the last frame, for click hit-testing.
   const hits = useRef<{ norad: number; x: number; y: number }[]>([]);
   const offsetRef = useRef(offset);
@@ -127,6 +145,80 @@ export function Viewer() {
     return () => cancelAnimationFrame(raf);
   }, [playing, rate]);
 
+  /*
+   * Slow drift when idle, and only when idle.
+   *
+   * A full turn takes about two and a half minutes: enough that the geometry
+   * reads as three-dimensional without the scene appearing to move while you
+   * are trying to read it. Stops while the pointer is down, so a drag is not
+   * fighting the clock.
+   *
+   * Same prefers-reduced-motion guard HeroOrbits uses, checked once on mount.
+   */
+  useEffect(() => {
+    if (dragging) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let raf = 0;
+    let last = performance.now();
+    const step = (t: number) => {
+      const dt = (t - last) / 1000;
+      last = t;
+      setAzimuth((a) => a + dt * AUTO_ROTATE_RAD_S);
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [dragging]);
+
+  /*
+   * Drag to rotate. Pointer events rather than mouse events so a touchscreen
+   * works, and pointer capture so a drag that leaves the canvas still tracks.
+   *
+   * `moved` is what separates a drag from a click: the canvas has always
+   * selected the object under the cursor, and releasing after a three-pixel
+   * wobble should still count as a click on it.
+   */
+  const drag = useRef({ x: 0, moved: 0 });
+
+  const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { x: e.clientX, moved: 0 };
+    setDragging(true);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!dragging) return;
+    const dx = e.clientX - drag.current.x;
+    drag.current.x = e.clientX;
+    drag.current.moved += Math.abs(dx);
+    /*
+     * Width read here, not inside the updater. React clears currentTarget when
+     * the handler returns, and a functional setState runs after that — so
+     * `e.currentTarget.clientWidth` in there is a read of null, which threw on
+     * the first pointermove and took the whole route down with it. The canvas
+     * vanished mid-drag. Found by counting canvases across a scripted drag.
+     */
+    const width = e.currentTarget.clientWidth || 1;
+    // A drag across the full width of the canvas is one turn.
+    setAzimuth((a) => a - (dx / width) * Math.PI * 2);
+  };
+
+  const onPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    /*
+     * Guarded, because releasePointerCapture throws NotFoundError if the
+     * element does not currently have capture — and the browser releases it
+     * implicitly on pointerup, so the unguarded call threw on every single
+     * release. Inside a React handler that unmounts the route: the canvas
+     * disappeared the moment you let go of a drag. Caught by a probe reading
+     * the canvas after mouse-up, not by looking at the code.
+     */
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    setDragging(false);
+    if (drag.current.moved < 4) selectAt(e);
+  };
+
   // Draw.
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -145,7 +237,9 @@ export function Viewer() {
     const cx = w / 2;
     const cy = h / 2;
     const scale = Math.min(w, h) * 0.21;
-    const spin = offset * 7.292e-5; // Earth's actual rotation rate, rad/s
+    // Earth's actual rotation rate, plus wherever the camera has been dragged
+    // or drifted to. The scene's own motion and the viewer's are the same term.
+    const spin = offset * 7.292e-5 + azimuth;
 
     ctx.clearRect(0, 0, w, h);
     ctx.lineWidth = 1;
@@ -190,16 +284,21 @@ export function Viewer() {
     }
     hits.current = nextHits;
 
-    // Debris haze, procedural and cheap.
+    /*
+     * The rest of the catalogue, behind the 64 objects that get traced orbits.
+     *
+     * This was 260 points invented from modular arithmetic on the loop index —
+     * `alt: 300 + ((i * 137) % 1500)`, inclination `(i * 47) % 100` — drawn
+     * under a layer toggle labelled "Debris". The same fabrication that was
+     * removed from the landing hero, still here, in the console. Real objects
+     * now, with their real altitude, inclination, RAAN and mean anomaly, moving
+     * at their own rates. It reads better too: a real catalogue clusters into
+     * shells and planes where the generated one smeared evenly.
+     */
     if (layers.debris) {
-      for (let i = 0; i < 260; i++) {
-        const params = {
-          alt: 300 + ((i * 137) % 1500),
-          incl: (i * 47) % 100,
-          raan: (i * 71) % 360,
-          phase: ((i * 91) % 360) * (Math.PI / 180),
-        };
-        const pt = projectOrbitPoint(params, params.phase + angularRate(95 + ((i * 13) % 40)) * offset, cx, cy, scale, spin);
+      for (const o of haze) {
+        const params = { alt: o.alt, incl: o.incl, raan: o.raan, phase: (o.ma * Math.PI) / 180 };
+        const pt = projectOrbitPoint(params, params.phase + angularRate(o.period) * offset, cx, cy, scale, spin);
         marks.push({ ...pt, size: 1.6, fill: p.nominal });
       }
     }
@@ -287,9 +386,9 @@ export function Viewer() {
     for (const m of marks) {
       if (m.z >= 0 || Math.hypot(m.x - cx, m.y - cy) > scale) drawMark(m);
     }
-  }, [visible, offset, selected, layers, flagged, critical, pathFor]);
+  }, [visible, offset, selected, layers, flagged, critical, pathFor, azimuth, haze]);
 
-  const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const selectAt = (e: { clientX: number; clientY: number; currentTarget: HTMLCanvasElement }) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -313,8 +412,14 @@ export function Viewer() {
     <div className="relative h-full min-h-[640px]">
       <canvas
         ref={canvasRef}
-        onClick={onCanvasClick}
-        className="absolute inset-0 h-full w-full cursor-crosshair"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        aria-label="Orbital viewer. Drag to rotate the view."
+        className={`absolute inset-0 h-full w-full touch-none ${
+          dragging ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
       />
 
       <div className="pointer-events-none absolute left-6 top-6 flex flex-col gap-[6px]">

@@ -116,17 +116,20 @@ export interface Segment<T extends string> {
 
 export function Segmented<T extends string>({
   label,
+  hint,
   segments,
   value,
   onChange,
 }: {
   label?: string;
+  /** One line explaining what picking a segment does, if it is not obvious. */
+  hint?: string;
   segments: readonly Segment<T>[];
   value: T;
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex items-center gap-[7px]">
+    <div className="flex items-center gap-[7px]" title={hint}>
       {label && <div className="label whitespace-nowrap">{label}</div>}
       <div className="flex overflow-hidden rounded border border-hairline">
         {segments.map((s, i) => {

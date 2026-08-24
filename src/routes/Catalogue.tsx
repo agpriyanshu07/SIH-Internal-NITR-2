@@ -109,7 +109,12 @@ function TleDrawer({ object, onClose }: { object: SpaceObject; onClose: () => vo
 export function Catalogue() {
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(() => params.get('q') ?? '');
-  const [isroOnly, setIsroOnly] = useState(false);
+  /*
+   * Seeded from the URL so the sidebar's Asset register entry lands here with
+   * the fleet already filtered. That entry is the register: it cannot be
+   * edited, but ?isro=1 is what "show me my assets" actually means here.
+   */
+  const [isroOnly, setIsroOnly] = useState(() => params.get('isro') === '1');
   const [sortKey, setSortKey] = useState<SortKey>('norad');
   const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [page, setPage] = useState(0);
@@ -119,10 +124,11 @@ export function Catalogue() {
   useEffect(() => {
     const next = new URLSearchParams(params);
     if (q) next.set('q', q); else next.delete('q');
+    if (isroOnly) next.set('isro', '1'); else next.delete('isro');
     setParams(next, { replace: true });
     setPage(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
+  }, [q, isroOnly]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -175,8 +181,25 @@ export function Catalogue() {
           >
             ISRO assets
           </button>
-          <ProvenanceFooter className="hidden lg:flex" />
         </div>
+      </div>
+
+      {/*
+        Provenance gets its own row, the way the dashboard already gives it one.
+        It used to sit inside the toolbar above, which is a fixed h-[52px] with
+        flex-wrap on: the source line, capture instant, object count and all
+        five group counts are far too long for the space left beside a 400px
+        search field, so it wrapped to three lines inside a 52px box and — with
+        nothing clipping the overflow — spilled straight through the table
+        header below it, which is sticky and therefore painted underneath.
+        Two rows of text on top of each other, at a full 1440px desktop width.
+
+        The fix is not overflow-hidden. Hiding it would trade unreadable text
+        for absent text, and the capture instant is the one thing an operator
+        has to see before trusting a miss distance.
+      */}
+      <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-b border-hairline-soft px-6 py-2">
+        <ProvenanceFooter />
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_470px] 2xl:grid-cols-[minmax(0,1fr)_520px]">
@@ -219,7 +242,7 @@ export function Catalogue() {
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(o.norad); } }}
                 className={`grid ${COLS} h-[42px] cursor-pointer items-center border-b border-hairline-soft px-4 ${
                   o.norad === selected
-                    ? 'rise glass bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
+                    ? 'rise bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
                     : 'hover:-translate-y-px hover:bg-panel-raised'
                 }`}
               >

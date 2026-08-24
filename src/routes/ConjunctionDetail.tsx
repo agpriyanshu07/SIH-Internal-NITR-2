@@ -6,12 +6,12 @@ import { ScoreModel } from '../components/ScoreModel';
 import { Consequence } from '../components/Consequence';
 import { conjunctionsToCsv, downloadCsv } from '../data/csv';
 import { useAcknowledged } from '../hooks/useAcknowledged';
-import { fmtDur, fmtNorad, fmtPc, fmtUTC } from '../data/format';
-import { useNow } from '../hooks/useNow';
+import { fmtNorad, fmtPc, fmtUTC } from '../data/format';
 import { Button, Panel, SeverityChip } from '../components/primitives';
 import { SeparationChart } from '../components/SeparationChart';
 import { EncounterGeometry } from '../components/EncounterGeometry';
 import type { SpaceObject } from '../data/types';
+import { Countdown } from '../components/Countdown';
 
 function ObjectSpec({ object, role }: { object: SpaceObject; role: 'Primary' | 'Secondary' }) {
   const rows: [string, string][] = [
@@ -55,7 +55,6 @@ function ObjectSpec({ object, role }: { object: SpaceObject; role: 'Primary' | '
 
 export function ConjunctionDetail() {
   const { id = '' } = useParams();
-  const now = useNow();
   const { toggle: toggleAck, isAcknowledged } = useAcknowledged();
   const event = conjunctionById(id);
   const ackd = event ? isAcknowledged(event.id) : false;
@@ -125,7 +124,7 @@ export function ConjunctionDetail() {
         <div className="flex flex-wrap items-start gap-[26px]">
           <div className="flex flex-col items-end gap-[6px]">
             <div className="label">Time to TCA</div>
-            <div className="num text-[27px] tracking-tight text-accent">{fmtDur(event.tca - now)}</div>
+            <Countdown at={event.tca} className="num text-[27px] tracking-tight text-accent" />
             <div className="num text-xs text-tertiary">{fmtUTC(new Date(event.tca))}</div>
           </div>
           <div className="flex gap-2 pt-4">

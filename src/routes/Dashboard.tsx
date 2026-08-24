@@ -22,17 +22,29 @@ import { RegimePlot } from '../components/RegimePlot';
 import { ArrowDown, ArrowUp } from '../components/Icon';
 import type { ObjectType, ResolvedConjunction, Severity } from '../data/types';
 import { passesThresholds, useThresholds } from '../state/thresholds';
+import { Countdown } from '../components/Countdown';
 
 type SortKey = 'score' | 'tca' | 'miss' | 'relv' | 'pc';
 type RiskFilter = 'ALL' | Severity;
 type ClassFilter = 'ALL' | ObjectType;
 
+/*
+ * A floor, not a band picker, and now labelled as one.
+ *
+ * The filter has always been `SEVERITY_RANK[r.sev] >= SEVERITY_RANK[minRisk]`
+ * — the same minimum-severity semantics the Thresholds screen applies — so
+ * picking MED correctly shows MEDIUM, HIGH and CRITICAL. Under the old heading
+ * "Risk" with a chip reading "MED", that looks like a broken equality filter:
+ * you ask for medium and get a table full of HIGH. The behaviour was right and
+ * the words were wrong, so the words changed. The trailing + carries it at a
+ * glance and the hint carries it in full.
+ */
 const RISKS = [
   { label: 'ALL', value: 'ALL' as const },
-  { label: 'CRIT', value: 'CRITICAL' as const },
-  { label: 'HIGH', value: 'HIGH' as const },
-  { label: 'MED', value: 'MEDIUM' as const },
-  { label: 'LOW', value: 'LOW' as const },
+  { label: 'CRIT+', value: 'CRITICAL' as const },
+  { label: 'HIGH+', value: 'HIGH' as const },
+  { label: 'MED+', value: 'MEDIUM' as const },
+  { label: 'LOW+', value: 'LOW' as const },
 ];
 
 const WINDOWS = [
@@ -72,8 +84,25 @@ function SortHeader({
   );
 }
 
-export function Dashboard() {
+/**
+ * The next-TCA tile, which is the only thing on this screen besides the row
+ * countdowns that has to know what time it is. It subscribes to the clock
+ * itself so the rest of the dashboard does not have to.
+ */
+function NextTcaTile({ events }: { events: ResolvedConjunction[] }) {
   const now = useNow();
+  const next = events.find((r) => r.tca > now);
+  return (
+    <MetricTile
+      label="Next TCA"
+      valueClass="text-accent"
+      value={next ? fmtDur(next.tca - now) : '—'}
+      foot={next?.id ?? ''}
+    />
+  );
+}
+
+export function Dashboard() {
   const navigate = useNavigate();
   const { thresholds, modified } = useThresholds();
 
@@ -148,10 +177,16 @@ export function Dashboard() {
     [rows, selId],
   );
 
-  const nextTca = useMemo(
-    () => screened.filter((r) => r.tca > now).sort((a, b) => a.tca - b.tca)[0],
-    [screened, now],
-  );
+  /*
+   * Sorted once, not once a second.
+   *
+   * This used to filter and sort all 2,901 screened events on every tick,
+   * because `now` was a dependency. The order does not change with the clock —
+   * only which end of it has passed — so the sort is memoised on the data and
+   * NextTcaTile scans forward from the front for the first event still ahead.
+   * That scan is a handful of comparisons.
+   */
+  const byTca = useMemo(() => [...screened].sort((a, b) => a.tca - b.tca), [screened]);
 
   const highRisk = counts.CRITICAL + counts.HIGH;
 
@@ -251,12 +286,7 @@ export function Dashboard() {
             </span>
           }
         />
-        <MetricTile
-          label="Next TCA"
-          valueClass="text-accent"
-          value={nextTca ? fmtDur(nextTca.tca - now) : '—'}
-          foot={nextTca?.id ?? ''}
-        />
+        <NextTcaTile events={byTca} />
         <MetricTile
           label="Screening latency"
           value={(cascade.elapsedMs / 1000).toFixed(1)}
@@ -280,7 +310,13 @@ export function Dashboard() {
         <Panel className="min-h-[520px]" title={undefined}>
           <div className="flex h-full flex-col">
             <div className="flex flex-wrap items-center gap-x-[18px] gap-y-2 border-b border-hairline px-[14px] py-[9px]">
-              <Segmented label="Risk" segments={RISKS} value={minRisk} onChange={setMinRisk} />
+              <Segmented
+                label="Min severity"
+                hint="A floor: shows this severity and everything worse. Same rule as the Thresholds screen."
+                segments={RISKS}
+                value={minRisk}
+                onChange={setMinRisk}
+              />
               <Segmented label="Window" segments={WINDOWS} value={win} onChange={setWin} />
               <Segmented label="Class" segments={CLASSES} value={cls} onChange={setCls} />
               {/* Matches on ingest group, not a name string, so it cannot drift
@@ -366,7 +402,7 @@ export function Dashboard() {
                       aria-label={ackd ? `${r.id}, acknowledged` : r.id}
                       className={`grid ${COLS} h-[46px] cursor-pointer items-center gap-x-2 border-b border-hairline-soft px-[14px] ${
                         sel
-                          ? 'rise glass bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
+                          ? 'rise bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
                           : 'hover:-translate-y-px hover:bg-panel-raised'
                       } ${ackd && !sel ? 'opacity-55' : ''}`}
                     >
@@ -392,7 +428,7 @@ export function Dashboard() {
                       </div>
                       <div className="text-right">
                         <div className="num text-sm text-secondary">{fmtUTC(new Date(r.tca))}</div>
-                        <div className="num text-xs- text-tertiary">T− {fmtDur(r.tca - now)}</div>
+                        <Countdown at={r.tca} prefix="T− " className="num text-xs- text-tertiary" />
                       </div>
                       <div className="num text-right text-sm text-primary">{r.miss.toFixed(3)}</div>
                       <div className="num text-right text-sm text-secondary">{r.relv.toFixed(3)}</div>

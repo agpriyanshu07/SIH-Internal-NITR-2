@@ -170,6 +170,44 @@
     background: radial-gradient(circle at 50% 50%, rgba(58, 124, 196, 0.28), rgba(58, 124, 196, 0) 68%);
   }
 
+  /*
+   * Inside the console, the tertiary text tier is the secondary one.
+   *
+   * The two gradient blobs are on `body`, so they sit behind /console as well
+   * as behind the landing page, and --t3 over them fails WCAG AA across the
+   * whole app: 233 of 668 text nodes below 4.5:1, measured on the rendered
+   * page across five console routes. Two remedies were on the table and both
+   * were tested rather than argued about:
+   *
+   *     baseline                    233 / 668   34.9%
+   *     blob alpha 0.30 -> 0.12     187 / 668   28.0%
+   *     blob alpha 0.30 -> 0.06     172 / 668   25.7%
+   *     --t3 := --t2                 14 / 668    2.1%
+   *     both together                12 / 668    1.8%
+   *
+   * Darkening the blobs barely helps, because most of the failing backdrop is
+   * the panel's own white overlay rather than the blob behind it — so it would
+   * have cost the wash the whole design is built on and bought six points.
+   * Lifting the token clears 94% of the failures and costs the blobs nothing.
+   *
+   * What it does cost is honest: tertiary and secondary text are now the same
+   * colour inside the console, so that one distinction is gone. Intermediate
+   * values were measured too (#8494a6 -> 60 fails, #8ea0b4 -> 23, #96a7bb ->
+   * 19) and the only ones that get close to AA are already indistinguishable
+   * from --t2, so a hierarchy kept at those values would be a hierarchy on
+   * paper.
+   *
+   * Scoped to the console because the landing page does not need it — it
+   * measures zero failures already — and because a marketing page has room for
+   * a quieter tier that a dense table does not.
+   *
+   * The attribute is set by components/Shell on mount. Two selectors' worth of
+   * specificity so it wins against both :root and [data-ktheme='light'].
+   */
+  :root[data-ksurface='console'] {
+    --t3: var(--t2);
+  }
+
   #root {
     min-height: 100%;
   }

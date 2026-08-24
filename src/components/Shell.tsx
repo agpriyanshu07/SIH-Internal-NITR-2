@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useNow } from '../hooks/useNow';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { fmtAge, fmtUTC } from '../data/format';
 import { SearchIcon } from './Icon';
 import { TextField } from './primitives';
 import { useTheme } from '../hooks/useTheme';
 import { initials, useOperator } from '../hooks/useOperator';
-import { FEATURES, type Feature } from '../data/features';
+import { FEATURES, STATUS_LABEL, STATUS_SEV, type Feature } from '../data/features';
 import { OBJECTS, SNAPSHOT_EPOCH } from '../data/objects';
+import { ClockUTC } from './Countdown';
 
 /**
  * The console shell: glass sidebar over the drifting field lighting, top bar
@@ -45,14 +45,63 @@ const NAV_GROUPS: { label: string; ids: string[] }[] = [
   { label: 'Configuration', ids: ['thresholds', 'assets', 'alerts', 'apikeys'] },
 ];
 
+/*
+ * No .glass on nav rows.
+ *
+ * `hover:glass` put a backdrop-filter on whichever row the pointer was over,
+ * which means the browser promotes a new compositing layer and blurs a fresh
+ * region on every row the pointer crosses — the whole sidebar, on any pass
+ * through it. The sidebar itself is glass over the gradient blobs; a 200x36
+ * row sitting on that already-blurred surface has nothing left to blur, so
+ * the effect was invisible and only the cost was real. bg-panel-raised keeps
+ * the active row reading exactly as it did.
+ */
 const navClass = (active: boolean) =>
   `block rounded px-2 py-2 text-base ${
     active
-      ? 'glass lift bg-panel-raised text-primary shadow-[inset_2px_0_0_0_var(--accent)]'
-      : 'text-secondary hover:glass hover:bg-panel hover:text-primary'
+      ? 'lift bg-panel-raised text-primary shadow-[inset_2px_0_0_0_var(--accent)]'
+      : 'text-secondary hover:bg-panel hover:text-primary'
   }`;
 
+/**
+ * Status chip, from the registry rather than from the routing table.
+ *
+ * This used to read `Not built` whenever a feature had no `to`, which is a
+ * question about the router, not about the capability. The asset register is
+ * `partial` — its ISRO fleet filter is real and works — and it was labelled
+ * NOT BUILT in the sidebar, identically to alert routing and API keys, which
+ * genuinely are not built. The registry says one thing and the sidebar said
+ * another, on the one project whose argument is that it does not do that.
+ *
+ * Same `data-sev` + `text-sev` chip Status.tsx and Thresholds.tsx already use,
+ * so all three read the same colour for the same status.
+ */
+const StatusChip = ({ status }: { status: Feature['status'] }) => (
+  <span
+    data-sev={STATUS_SEV[status]}
+    /*
+     * `not-built` maps to the NOMINAL severity colour, which is deliberately
+     * the quietest thing on the palette — and at 8.5px over the console's
+     * backdrop it measured 3.6:1, below AA. It was ten of the thirteen
+     * remaining failures after the token lift, and they were introduced by
+     * this chip. Tertiary is muted enough to keep NOT BUILT reading as the
+     * least urgent state without printing it in a colour nobody can read.
+     */
+    className={`flex-none rounded-sm border border-hairline px-[5px] py-px font-mono text-[8.5px] uppercase tracking-[0.08em] ${
+      status === 'not-built' ? 'text-tertiary' : 'text-sev'
+    }`}
+  >
+    {STATUS_LABEL[status]}
+  </span>
+);
+
 function NavItem({ feature }: { feature: Feature }) {
+  // Router location, not window.location: under a hash router the query string
+  // lives inside the fragment, and useLocation is what parses it out.
+  const { search } = useLocation();
+  // A chip on every row would be noise: `live` is the default and says nothing.
+  const chip = feature.status === 'live' ? null : <StatusChip status={feature.status} />;
+
   if (!feature.to) {
     return (
       <div
@@ -60,9 +109,7 @@ function NavItem({ feature }: { feature: Feature }) {
         className="flex cursor-default items-center justify-between gap-2 rounded px-2 py-2 text-base text-tertiary"
       >
         <span className="truncate opacity-70">{feature.label}</span>
-        <span className="flex-none rounded-sm border border-hairline px-[5px] py-px font-mono text-[8.5px] uppercase tracking-[0.08em] text-tertiary">
-          Not built
-        </span>
+        {chip}
       </div>
     );
   }
@@ -71,15 +118,47 @@ function NavItem({ feature }: { feature: Feature }) {
     <NavLink
       to={feature.to}
       end={feature.to === '/console'}
-      className={({ isActive }) => navClass(isActive)}
+      title={feature.note}
+      className={({ isActive }) =>
+        `${navClass(isActive && matchesQuery(feature.to!, search))} flex items-center justify-between gap-2`
+      }
     >
-      {feature.label}
+      <span className="truncate">{feature.label}</span>
+      {chip}
     </NavLink>
   );
 }
 
+/**
+ * NavLink decides active on pathname alone, and two entries now share a path:
+ * the catalogue, and the asset register that is the catalogue with ?isro=1.
+ * Without this both highlight at once, which reads as a bug even though both
+ * genuinely point at the same screen. So the query string is compared too —
+ * an entry that names a parameter is active only when it is set, and an entry
+ * that names none is active only when it is not.
+ */
+function matchesQuery(to: string, search: string): boolean {
+  const want = new URLSearchParams(to.split('?')[1] ?? '');
+  const have = new URLSearchParams(search);
+  for (const [k, v] of want) if (have.get(k) !== v) return false;
+  for (const k of have.keys()) if (k !== 'q' && !want.has(k)) return false;
+  return true;
+}
+
 export function Shell() {
-  const now = useNow();
+  /*
+   * Marks the document while a console route is mounted, so index.css can lift
+   * --t3 here and leave the landing page alone. On the root element rather than
+   * a wrapper because the tokens are declared on :root and a custom property
+   * has to be overridden where it is defined, not below it.
+   */
+  useEffect(() => {
+    document.documentElement.dataset.ksurface = 'console';
+    return () => {
+      delete document.documentElement.dataset.ksurface;
+    };
+  }, []);
+
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -160,7 +239,7 @@ export function Shell() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search objects, NORAD ID, conjunction ID"
               aria-label="Search objects"
-              className="glass lift h-[30px] px-[10px]"
+              className="lift h-[30px] px-[10px]"
               icon={<SearchIcon className="flex-none text-tertiary" />}
               trailing={
                 <kbd className="flex-none rounded-sm border border-hairline px-[5px] py-px font-mono text-xs- text-tertiary">
@@ -190,15 +269,13 @@ export function Shell() {
             </div>
 
             <span className="hidden h-[18px] w-px bg-hairline lg:block" />
-            <span className="num hidden text-xs text-secondary lg:block">
-              {fmtUTC(new Date(now))}
-            </span>
+            <ClockUTC className="num hidden text-xs text-secondary lg:block" />
 
             <button
               type="button"
               onClick={toggle}
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-              className="glass lift rounded border border-hairline bg-panel px-2 py-1 font-mono text-2xs uppercase tracking-label text-tertiary hover:text-primary"
+              className="lift rounded border border-hairline bg-panel px-2 py-1 font-mono text-2xs uppercase tracking-label text-tertiary hover:text-primary"
             >
               {theme === 'dark' ? 'Dark' : 'Light'}
             </button>
@@ -206,7 +283,7 @@ export function Shell() {
             <NavLink
               to="/signin"
               title={operator ? `Signed in as ${who}` : 'Not signed in — nothing is authenticated'}
-              className="glass lift flex h-[26px] w-[26px] flex-none items-center justify-center rounded border border-hairline bg-panel font-mono text-xs- text-secondary hover:text-primary"
+              className="lift flex h-[26px] w-[26px] flex-none items-center justify-center rounded border border-hairline bg-panel font-mono text-xs- text-secondary hover:text-primary"
             >
               {operator ? initials(who) : '—'}
             </NavLink>

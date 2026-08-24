@@ -136,10 +136,17 @@ export const FEATURES: Feature[] = [
   },
   {
     id: 'assets',
+    /*
+     * Routed at the catalogue, because that is where the real half of this
+     * capability is. The register cannot be edited, but the ISRO fleet filter
+     * behind it works, and a sidebar entry that goes nowhere is a worse
+     * description of "partial" than one that goes to the working part.
+     */
     label: 'Asset register',
+    to: '/console/catalogue?isro=1',
     status: 'partial',
     group: 'Configuration',
-    note: 'You cannot yet declare an arbitrary set of objects as yours. One fixed register does exist and is real: the ISRO-operated LEO fleet ingested as its own snapshot group, filterable on both the dashboard and the catalogue, and matched on ingest group rather than on a name string so it cannot drift if an object is renamed in a later capture. 77 of the screened events involve one of those assets.',
+    note: 'You cannot yet declare an arbitrary set of objects as yours. One fixed register does exist and is real: the ISRO-operated LEO fleet ingested as its own snapshot group, filterable on both the dashboard and the catalogue, and matched on ingest group rather than on a name string so it cannot drift if an object is renamed in a later capture. The sidebar entry opens the catalogue with that filter already applied. 77 events in the committed run involve one of those assets; 72 of them survive the default thresholds and appear on the dashboard.',
   },
   {
     id: 'alerts',
