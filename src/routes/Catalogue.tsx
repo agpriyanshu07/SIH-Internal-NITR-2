@@ -175,8 +175,25 @@ export function Catalogue() {
           >
             ISRO assets
           </button>
-          <ProvenanceFooter className="hidden lg:flex" />
         </div>
+      </div>
+
+      {/*
+        Provenance gets its own row, the way the dashboard already gives it one.
+        It used to sit inside the toolbar above, which is a fixed h-[52px] with
+        flex-wrap on: the source line, capture instant, object count and all
+        five group counts are far too long for the space left beside a 400px
+        search field, so it wrapped to three lines inside a 52px box and — with
+        nothing clipping the overflow — spilled straight through the table
+        header below it, which is sticky and therefore painted underneath.
+        Two rows of text on top of each other, at a full 1440px desktop width.
+
+        The fix is not overflow-hidden. Hiding it would trade unreadable text
+        for absent text, and the capture instant is the one thing an operator
+        has to see before trusting a miss distance.
+      */}
+      <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-b border-hairline-soft px-6 py-2">
+        <ProvenanceFooter />
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_470px] 2xl:grid-cols-[minmax(0,1fr)_520px]">
