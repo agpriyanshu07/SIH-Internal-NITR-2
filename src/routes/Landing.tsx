@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 import { HeroOrbits } from '../components/HeroOrbits';
 import { Button } from '../components/primitives';
-import { CASCADE } from '../data/conjunctions';
-import { OBJECTS } from '../data/objects';
+import { LANDING } from '../data/landing';
 import { fmtInt } from '../data/format';
 
 /**
@@ -15,9 +14,9 @@ import { fmtInt } from '../data/format';
  * and change automatically when it does.
  */
 const HERO_STATS = [
-  [fmtInt(OBJECTS.length), 'Objects screened'],
-  [fmtInt(CASCADE.totalPairs), `Pairs screened / ${CASCADE.horizonHours} h`],
-  [`${(CASCADE.elapsedMs / 1000).toFixed(0)} s`, 'Full screening run'],
+  [fmtInt(LANDING.objectCount), 'Objects screened'],
+  [fmtInt(LANDING.totalPairs), `Pairs screened / ${LANDING.horizonHours} h`],
+  [`${(LANDING.elapsedMs / 1000).toFixed(0)} s`, 'Full screening run'],
 ] as const;
 
 const PROBLEM_FIGURES = [
@@ -181,7 +180,7 @@ export function Landing() {
               className="absolute left-4 top-[14px] label"
               title="Orbits are drawn as circles from each object's real altitude, inclination, RAAN and mean anomaly, at compressed time. Conjunction geometry comes from the SGP4 screening run, not from this canvas."
             >
-              Schematic · {fmtInt(OBJECTS.length)} real element sets
+              Schematic · {fmtInt(LANDING.objectCount)} real element sets
             </div>
             <div className="absolute bottom-[14px] left-4 flex gap-[18px] font-mono text-2xs text-secondary">
               <span>PAYLOAD</span><span>ROCKET BODY</span><span>DEBRIS</span>
