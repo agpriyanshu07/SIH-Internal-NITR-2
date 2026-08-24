@@ -3,6 +3,7 @@ import { conjunctionById, SCREENING_THRESHOLD_KM } from '../data/conjunctions';
 import { PROVENANCE, SNAPSHOT_EPOCH, groupOf } from '../data/objects';
 import { OriginBadge } from '../components/Provenance';
 import { ScoreModel } from '../components/ScoreModel';
+import { SigmaSensitivity } from '../components/SigmaSensitivity';
 import { Consequence } from '../components/Consequence';
 import { conjunctionsToCsv, downloadCsv } from '../data/csv';
 import { useAcknowledged } from '../hooks/useAcknowledged';
@@ -229,6 +230,20 @@ export function ConjunctionDetail() {
           </Panel>
 
           <ScoreModel event={event} />
+
+          <Panel
+            title="Sensitivity to the assumed covariance"
+            aside={
+              <Link
+                to="/console/thresholds"
+                className="font-mono text-2xs uppercase tracking-label text-tertiary hover:text-primary"
+              >
+                Adjust σ →
+              </Link>
+            }
+          >
+            <SigmaSensitivity event={event} />
+          </Panel>
 
           {/* Deliberate, prominent disclosure — a feature of the product, not fine print. */}
           <div className="glass lift overflow-hidden rounded-md border border-risk-high bg-panel">
