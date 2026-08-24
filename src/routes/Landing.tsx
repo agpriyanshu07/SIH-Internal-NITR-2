@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom';
 import { HeroOrbits } from '../components/HeroOrbits';
 import { Button } from '../components/primitives';
+import type { ReactNode } from 'react';
 import { LANDING } from '../data/landing';
-import { fmtInt } from '../data/format';
+import { fmtDur, fmtInt } from '../data/format';
+import { useNow } from '../hooks/useNow';
+import { useCountUp } from '../hooks/useCountUp';
+import { useReveal } from '../hooks/useReveal';
 
 /**
  * Hero figures, read from the screening run rather than written here.
@@ -14,10 +18,69 @@ import { fmtInt } from '../data/format';
  * and change automatically when it does.
  */
 const HERO_STATS = [
-  [fmtInt(LANDING.objectCount), 'Objects screened'],
-  [fmtInt(LANDING.totalPairs), `Pairs screened / ${LANDING.horizonHours} h`],
-  [`${(LANDING.elapsedMs / 1000).toFixed(0)} s`, 'Full screening run'],
+  { to: LANDING.objectCount, fmt: (n: number) => fmtInt(Math.round(n)), label: 'Objects screened' },
+  {
+    to: LANDING.totalPairs,
+    fmt: (n: number) => fmtInt(Math.round(n)),
+    label: `Pairs screened / ${LANDING.horizonHours} h`,
+  },
+  {
+    to: LANDING.elapsedMs / 1000,
+    fmt: (n: number) => `${n.toFixed(0)} s`,
+    label: 'Full screening run',
+  },
 ] as const;
+
+/**
+ * A measured figure, counted up on arrival.
+ *
+ * The animation adds nothing to the number and cannot change it: the last
+ * frame writes the exact target. It buys a few hundred milliseconds of
+ * attention on three figures that are the whole argument of the page.
+ */
+function HeroStat({ to, fmt, label }: { to: number; fmt: (n: number) => string; label: string }) {
+  const n = useCountUp(to);
+  return (
+    <div className="flex flex-col gap-[5px]">
+      <dt className="num text-[21px] text-primary">{fmt(n)}</dt>
+      <dd className="label-strong">{label}</dd>
+    </div>
+  );
+}
+
+/**
+ * The soonest close approach in the committed run, ticking down live.
+ *
+ * Same event the console's Next TCA tile names, taken from the same run and
+ * filtered by the same default thresholds — the summary is generated with the
+ * console's own DEFAULT_THRESHOLDS, so the two cannot disagree. On the console
+ * clock, which is anchored to the snapshot capture instant rather than to now.
+ */
+function NextApproach() {
+  const now = useNow();
+  const next = LANDING.nextTca;
+  if (!next) return null;
+  const remaining = next.tca - now;
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <span className="label-strong">Next screened approach</span>
+      <span className="num text-md text-accent">
+        {remaining > 0 ? fmtDur(remaining) : 'passed'}
+      </span>
+      <span className="num text-2xs text-tertiary">{next.id}</span>
+    </div>
+  );
+}
+
+/** A section that lifts into place the first time it is scrolled to. */
+function Reveal({ children, ...rest }: { children: ReactNode } & JSX.IntrinsicElements['section']) {
+  const { ref, className } = useReveal<HTMLElement>();
+  return (
+    <section ref={ref} {...rest} className={`${rest.className ?? ''} ${className}`}>
+      {children}
+    </section>
+  );
+}
 
 const PROBLEM_FIGURES = [
   ['30,000', '+', '', 'Objects large enough to be tracked from the ground.'],
@@ -160,13 +223,11 @@ export function Landing() {
               </Button>
             </div>
             <dl className="mt-[14px] flex flex-wrap gap-8 border-t border-hairline-soft pt-[22px]">
-              {HERO_STATS.map(([value, label]) => (
-                <div key={label} className="flex flex-col gap-[5px]">
-                  <dt className="num text-[21px] text-primary">{value}</dt>
-                  <dd className="label-strong">{label}</dd>
-                </div>
+              {HERO_STATS.map((s) => (
+                <HeroStat key={s.label} to={s.to} fmt={s.fmt} label={s.label} />
               ))}
             </dl>
+            <NextApproach />
           </div>
 
           <div className="glass lift relative h-[380px] overflow-hidden rounded-md border border-hairline-soft bg-deep lg:h-[520px]">
@@ -189,7 +250,7 @@ export function Landing() {
         </section>
 
         {/* Problem */}
-        <section id="problem" className="border-t border-hairline-soft px-6 py-16 lg:px-10 lg:py-[76px]">
+        <Reveal id="problem" className="border-t border-hairline-soft px-6 py-16 lg:px-10 lg:py-[76px]">
           <div className="grid items-start gap-14 lg:grid-cols-[400px_1fr]">
             <div className="flex flex-col gap-[14px]">
               <Eyebrow>The problem</Eyebrow>
@@ -227,10 +288,10 @@ export function Landing() {
               </div>
             </div>
           </div>
-        </section>
+        </Reveal>
 
         {/* How it works */}
-        <section id="method" className="border-t border-hairline-soft px-6 py-16 lg:px-10 lg:py-[76px]">
+        <Reveal id="method" className="border-t border-hairline-soft px-6 py-16 lg:px-10 lg:py-[76px]">
           <div className="mb-[34px]"><Eyebrow>How it works</Eyebrow></div>
           <div className="grid gap-10 md:grid-cols-3">
             {STEPS.map(([n, title, body]) => (
@@ -241,10 +302,10 @@ export function Landing() {
               </div>
             ))}
           </div>
-        </section>
+        </Reveal>
 
         {/* Why this exists */}
-        <section id="principles" className="grid items-start gap-14 border-t border-hairline-soft px-6 py-16 lg:grid-cols-[400px_1fr] lg:px-10 lg:py-[76px]">
+        <Reveal id="principles" className="grid items-start gap-14 border-t border-hairline-soft px-6 py-16 lg:grid-cols-[400px_1fr] lg:px-10 lg:py-[76px]">
           <div className="flex flex-col gap-[14px]">
             <Eyebrow>Why this exists</Eyebrow>
             <h2 className="text-4xl font-semibold tracking-tighter text-primary">
@@ -261,7 +322,7 @@ export function Landing() {
               </div>
             ))}
           </dl>
-        </section>
+        </Reveal>
 
         <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-hairline-soft px-6 py-[34px] lg:px-10">
           <div className="flex items-center gap-5">

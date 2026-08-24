@@ -1,5 +1,16 @@
 import { useCallback, useSyncExternalStore } from 'react';
-import { SNAPSHOT_EPOCH } from '../data/engine/catalogue';
+/*
+ * The epoch from the manifest directly, not via engine/catalogue.
+ *
+ * engine/catalogue parses every TLE in the snapshot at import time and pulls
+ * satellite.js with it. The clock needs one timestamp. Reaching it through the
+ * engine meant any component wanting a countdown dragged the whole parser in —
+ * which is exactly the cost the landing page was just freed from, so the
+ * landing countdown would have quietly undone it.
+ */
+import manifest from '../data/snapshot/manifest.json';
+
+const SNAPSHOT_EPOCH = Date.parse(manifest.capturedAtUtc);
 
 /**
  * The console clock.
