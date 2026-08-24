@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { OBJECTS, groupOf, isIndianAsset } from '../data/objects';
 import { OriginBadge, ProvenanceFooter } from '../components/Provenance';
+import { AgePip, ClassMark, ShellBar, SHELL_MIN_KM, SHELL_MAX_KM } from '../components/TableViz';
+import { ShellHistogram } from '../components/ShellHistogram';
 import { TLE_FIELD_NOTES, TLE_GROUP_LABEL } from '../data/tle';
 import { fmtInt, fmtNorad } from '../data/format';
 import { Button, EmptyState, TextField } from '../components/primitives';
@@ -10,7 +12,8 @@ import type { SpaceObject } from '../data/types';
 
 type SortKey = 'name' | 'norad' | 'alt' | 'apogee' | 'perigee' | 'incl' | 'ecc' | 'period' | 'age';
 
-const PAGE_SIZE = 25;
+/* 36px rows fit half again as many as the 42px ones this was tuned for. */
+const PAGE_SIZE = 38;
 
 /**
  * Column template shared by the header and every row. The console shell takes
@@ -18,19 +21,19 @@ const PAGE_SIZE = 25;
  * for, so the fixed columns are a little tighter than the mockup's.
  */
 const COLS =
-  'grid-cols-[minmax(120px,1.3fr)_66px_92px_minmax(90px,1fr)_66px_66px_64px_78px_74px_54px] gap-x-[6px]';
+  'grid-cols-[minmax(108px,1.2fr)_60px_84px_minmax(78px,1fr)_106px_92px_54px_56px_80px] gap-x-[9px]';
 
-const HEADERS: { key: SortKey | null; label: string; align: 'left' | 'right'; pad?: boolean }[] = [
+const HEADERS: { key: SortKey | null; label: string; align: 'left' | 'right'; pad?: boolean; hint?: string }[] = [
   { key: 'name', label: 'Object', align: 'left' },
   { key: 'norad', label: 'NORAD', align: 'right' },
-  { key: null, label: 'Class', align: 'left', pad: true },
+  { key: null, label: 'Class', align: 'left' },
   { key: null, label: 'Operator', align: 'left' },
-  { key: 'apogee', label: 'Apo km', align: 'right' },
-  { key: 'perigee', label: 'Peri km', align: 'right' },
+  // The bullet chart. Sorting by perigee is what turns it into a shell map.
+  { key: 'perigee', label: 'Shell', align: 'left', hint: `Perigee to apogee on a fixed ${SHELL_MIN_KM}–${SHELL_MAX_KM} km scale, so every row is comparable. Sort by it to see the debris shells stack up.` },
+  { key: 'apogee', label: 'Peri–apo km', align: 'right' },
   { key: 'incl', label: 'Incl °', align: 'right' },
-  { key: 'ecc', label: 'Ecc', align: 'right' },
-  { key: 'period', label: 'Period min', align: 'right' },
-  { key: 'age', label: 'Age d', align: 'right' },
+  { key: 'period', label: 'Period', align: 'right' },
+  { key: 'age', label: 'Elset age d', align: 'right' },
 ];
 
 /** The annotated element-set drawer. */
@@ -53,7 +56,7 @@ function TleDrawer({ object, onClose }: { object: SpaceObject; onClose: () => vo
   };
 
   return (
-    <aside className="glass flex min-h-0 flex-col border-l border-hairline bg-panel">
+    <aside className="slide-in glass flex min-h-0 flex-col border-l border-hairline bg-panel">
       <div className="flex h-11 flex-none items-center justify-between border-b border-hairline px-5">
         <div className="label">Element set — {fmtNorad(object.norad)}</div>
         <button type="button" onClick={onClose} aria-label="Close drawer"
@@ -133,6 +136,8 @@ export function Catalogue() {
    * the fleet already filtered. That entry is the register: it cannot be
    * edited, but ?isro=1 is what "show me my assets" actually means here.
    */
+  /** Altitude band picked off the histogram, or null for the whole catalogue. */
+  const [band, setBand] = useState<[number, number] | null>(null);
   const [isroOnly, setIsroOnly] = useState(() => params.get('isro') === '1');
   const [sortKey, setSortKey] = useState<SortKey>('norad');
   const [sortDir, setSortDir] = useState<1 | -1>(1);
@@ -149,9 +154,25 @@ export function Catalogue() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, isroOnly]);
 
+  /*
+   * The histogram is drawn from the catalogue BEFORE the band filter, so
+   * choosing a band does not collapse the chart you chose it from. It does
+   * respect the text and ISRO filters, because those are what "the population
+   * I am looking at" means.
+   */
+  const histogramPool = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const byAsset = isroOnly ? OBJECTS.filter((o) => isIndianAsset(o.norad)) : OBJECTS;
+    if (!needle) return byAsset;
+    return byAsset.filter((o) =>
+      `${o.name} ${o.norad} ${o.op} ${o.type}`.toLowerCase().includes(needle),
+    );
+  }, [q, isroOnly]);
+
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const pool = isroOnly ? OBJECTS.filter((o) => isIndianAsset(o.norad)) : OBJECTS;
+    const byAsset = isroOnly ? OBJECTS.filter((o) => isIndianAsset(o.norad)) : OBJECTS;
+    const pool = band ? byAsset.filter((o) => o.alt >= band[0] && o.alt < band[1]) : byAsset;
     const matched = needle
       ? pool.filter((o) =>
           `${o.name} ${o.norad} ${o.type} ${o.op} ${o.intl}`.toLowerCase().includes(needle))
@@ -164,12 +185,15 @@ export function Catalogue() {
       const cmp = typeof x === 'string' ? x.localeCompare(y as string) : (x as number) - (y as number);
       return cmp * sortDir;
     });
-  }, [q, isroOnly, sortKey, sortDir]);
+  }, [q, isroOnly, band, sortKey, sortDir]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, pageCount - 1);
   const rows = filtered.slice(current * PAGE_SIZE, current * PAGE_SIZE + PAGE_SIZE);
   const object = selected != null ? OBJECTS.find((o) => o.norad === selected) : undefined;
+
+  /** Changes whenever the population changes, to replay the row entrance. */
+  const listKey = `${q}|${isroOnly}|${band?.[0] ?? ''}|${sortKey}|${sortDir}|${current}`;
 
   const sortBy = (k: SortKey) => {
     if (k === sortKey) setSortDir((d) => (d === 1 ? -1 : 1));
@@ -178,29 +202,49 @@ export function Catalogue() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-[52px] flex-none flex-wrap items-center justify-between gap-4 border-b border-hairline-soft px-6">
+      {/*
+        The toolbar row used to hold a 400px field and one button in a 52px bar
+        the full width of the console, which is a lot of nothing to look at on
+        the screen this app opens on. The space now carries the population the
+        table is a list of.
+      */}
+      <div className="flex flex-none flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline-soft px-6 py-[10px]">
         <TextField
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Filter by name, NORAD ID, operator or class"
+          placeholder="Filter name, NORAD, operator, class"
           aria-label="Filter catalogue"
-          className="h-[30px] w-full max-w-[400px] px-[10px]"
+          className="h-[30px] w-full max-w-[320px] px-[10px]"
           icon={<SearchIcon className="flex-none text-tertiary" />}
         />
-        <div className="flex items-center gap-[18px]">
+        <button
+          type="button"
+          aria-pressed={isroOnly}
+          onClick={() => setIsroOnly((v) => !v)}
+          className={`flex-none rounded border px-[11px] py-[5px] font-mono text-2xs uppercase tracking-data transition-colors ${
+            isroOnly
+              ? 'border-accent-border bg-accent-wash text-primary hover:border-accent'
+              : 'border-hairline text-tertiary hover:bg-panel-raised hover:text-primary'
+          }`}
+        >
+          ISRO assets
+        </button>
+        {band && (
           <button
             type="button"
-            aria-pressed={isroOnly}
-            onClick={() => setIsroOnly((v) => !v)}
-            className={`flex-none rounded border px-[11px] py-[5px] font-mono text-2xs uppercase tracking-data transition-colors ${
-              isroOnly
-                ? 'border-accent-border bg-accent-wash text-primary hover:border-accent'
-                : 'border-hairline text-tertiary hover:bg-panel-raised hover:text-primary'
-            }`}
+            onClick={() => setBand(null)}
+            className="flex-none rounded border border-accent-border bg-accent-wash px-[11px] py-[5px] font-mono text-2xs uppercase tracking-data text-primary transition-colors hover:border-accent"
           >
-            ISRO assets
+            {Math.round(band[0])}–{Math.round(band[1])} km ✕
           </button>
+        )}
+        <div className="num ml-auto flex-none text-xs- text-tertiary">
+          {fmtInt(filtered.length)} of {fmtInt(OBJECTS.length)}
         </div>
+      </div>
+
+      <div className="flex-none border-b border-hairline-soft px-6 py-[10px]">
+        <ShellHistogram objects={histogramPool} band={band} onPick={setBand} />
       </div>
 
       {/*
@@ -221,14 +265,21 @@ export function Catalogue() {
         <ProvenanceFooter />
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_470px] 2xl:grid-cols-[minmax(0,1fr)_520px]">
+      {/*
+        The drawer docks beside the table from 1420px, the same breakpoint the
+        manoeuvre log uses and for the same reason: 400px reserved plus a 196px
+        shell leaves less than the table needs below it, and a docked panel
+        beside a table you have to scroll sideways is worse than a panel under
+        a table you can read.
+      */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 min-[1420px]:grid-cols-[minmax(0,1fr)_400px] 2xl:grid-cols-[minmax(0,1fr)_500px]">
         <div className="flex min-w-0 flex-col border-r border-hairline-soft">
           <div className="min-h-0 flex-1 overflow-auto">
-            <div className="min-w-[880px]">
+            <div className="min-w-[820px]">
           <div className={`sticky top-0 z-10 grid ${COLS} h-[34px] items-center border-b border-hairline bg-panel-raised px-4`}>
             {HEADERS.map((h) => (
               h.key ? (
-                <button key={h.label} type="button" onClick={() => sortBy(h.key!)}
+                <button key={h.label} type="button" onClick={() => sortBy(h.key!)} title={h.hint}
                         className={`font-mono text-xs- uppercase tracking-[0.08em] transition-colors ${
                           h.align === 'right' ? 'text-right' : 'text-left'
                         } ${h.pad ? 'pl-[14px]' : ''} ${
@@ -252,34 +303,45 @@ export function Catalogue() {
                 body="Nothing in the screened catalogue matches. Try a NORAD ID, an operator, or a partial object name."
                 action={<Button className="mt-2 px-[13px] py-[7px] text-sm text-secondary" onClick={() => setQ('')}>Clear filter</Button>}
               />
-            ) : rows.map((o) => (
+            ) : rows.map((o, i) => (
+              /*
+               * 36px rows, not 42px, and every other one tinted.
+               *
+               * A console this dense should show thirty rows where it was
+               * showing twenty, and a wall of identically weighted rows is the
+               * hardest thing there is to keep your place in. The zebra is two
+               * per cent of white; it does nothing but stop the eye sliding.
+               */
               <div
-                key={o.norad}
+                /*
+                 * Keyed on the filter as well as the object, so changing the
+                 * filter remounts the rows and replays the entrance. Keyed on
+                 * the NORAD alone, React reuses the DOM and a new population
+                 * appears with no transition at all.
+                 */
+                key={`${listKey}-${o.norad}`}
                 role="button"
                 tabIndex={0}
                 onClick={() => setSelected(o.norad)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(o.norad); } }}
-                className={`grid ${COLS} h-[42px] cursor-pointer items-center border-b border-hairline-soft px-4 ${
+                style={{ animationDelay: `${Math.min(i, 14) * 11}ms` }}
+                className={`row-in grid ${COLS} h-9 cursor-pointer items-center border-b border-hairline-soft px-4 transition-colors ${
                   o.norad === selected
-                    ? 'rise bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
-                    : 'hover:-translate-y-px hover:bg-panel-raised'
+                    ? 'bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
+                    : `${i % 2 ? 'bg-[rgba(255,255,255,0.014)]' : ''} hover:bg-panel-raised`
                 }`}
               >
                 <div className="truncate text-sm+ text-primary">{o.name}</div>
                 <div className="num text-right text-sm text-secondary">{fmtNorad(o.norad)}</div>
-                <div className="truncate pl-[14px] font-mono text-xs- tracking-data text-tertiary">{o.type}</div>
+                <ClassMark type={o.type} />
                 <div className="truncate text-sm text-secondary">{o.op}</div>
-                <div className="num text-right text-sm text-primary">{o.apogee}</div>
-                <div className="num text-right text-sm text-primary">{o.perigee}</div>
-                <div className="num text-right text-sm text-primary">{o.incl.toFixed(2)}</div>
-                <div className="num text-right text-sm text-secondary">{o.ecc.toFixed(7)}</div>
-                <div className="num text-right text-sm text-primary">{o.period.toFixed(1)}</div>
-                <div
-                  className={`num text-right text-xs ${o.age > 3 ? 'text-risk-high' : 'text-tertiary'}`}
-                  title={`Element set is ${o.age.toFixed(2)} days old${o.age > 3 ? ' — stale enough that the propagated position has drifted' : ''}`}
-                >
-                  {o.age.toFixed(2)}
+                <ShellBar perigee={o.perigee} apogee={o.apogee} type={o.type} />
+                <div className="num text-right text-sm text-primary">
+                  {o.perigee}<span className="text-tertiary">–</span>{o.apogee}
                 </div>
+                <div className="num text-right text-sm text-primary">{o.incl.toFixed(2)}</div>
+                <div className="num text-right text-sm text-primary">{o.period.toFixed(1)}</div>
+                <AgePip days={o.age} />
               </div>
             ))}
             </div>

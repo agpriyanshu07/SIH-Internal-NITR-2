@@ -235,6 +235,20 @@
     to { opacity: 1; transform: none; }
   }
   /*
+   * A table row arriving. Shorter and shallower than krise, because it plays
+   * on up to thirty rows at once and anything with real travel in it turns a
+   * filter change into a wave.
+   */
+  @keyframes krowin {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+  }
+  /* A side panel arriving from the edge it is docked to. */
+  @keyframes kslidein {
+    from { opacity: 0; transform: translateX(14px); }
+    to { opacity: 1; transform: none; }
+  }
+  /*
    * The design transitions surfaces globally rather than per-component, so
    * hover lifts and the selected-row rise share one easing everywhere.
    */
@@ -293,6 +307,10 @@
       transition-duration: 0.01ms !important;
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
+      /* Delay too, or a staggered list still arrives late without animating —
+         the delay is not the animation and is not covered by zeroing it. */
+      animation-delay: 0ms !important;
+      transition-delay: 0ms !important;
     }
   }
 }
@@ -553,6 +571,18 @@
     .k-control {
       transition: none;
     }
+  }
+
+  /*
+   * Row entrance. The delay is set inline from the row index, capped by the
+   * caller — a stagger that runs to the bottom of a long list is a page that
+   * takes a second to settle, which is worse than no stagger at all.
+   */
+  .row-in {
+    animation: krowin 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .slide-in {
+    animation: kslidein 260ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .label {
