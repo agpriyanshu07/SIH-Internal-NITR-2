@@ -25,8 +25,18 @@ const STATUSES = [
   { label: 'CANCELLED', value: 'CANCELLED' as const },
 ];
 
+/*
+ * Six columns, not seven, and narrower.
+ *
+ * The table demanded 900px inside a column squeezed against a fixed 400px
+ * advisor panel, so at any normal laptop width the last two columns were behind
+ * a horizontal scroll — you had to scroll a table to see why a burn happened.
+ * Δv and axis are one quantity written two ways and now share a cell, the way
+ * asset name and NORAD already do; "prompted by" carries the event reference
+ * and puts the miss-distance change in its title. 900px -> 748px, which fits.
+ */
 const COLS =
-  'grid-cols-[92px_120px_minmax(150px,1fr)_112px_92px_120px_minmax(120px,1fr)] gap-x-3';
+  'grid-cols-[84px_104px_minmax(140px,1fr)_108px_112px_minmax(132px,1fr)] gap-x-3';
 
 export function ManoeuvreLog() {
   const { thresholds } = useThresholds();
@@ -77,7 +87,15 @@ export function ManoeuvreLog() {
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+      {/*
+        The side-by-side split starts at 1420px, not Tailwind's xl (1280px).
+        The advisor reserves a fixed 400px, and below that it leaves the table
+        less than it needs even after trimming it to 748px — 1280px was still
+        132px short. Above the breakpoint they sit side by side; below it the
+        advisor stacks under a full-width table, which is better than a panel
+        beside a table you have to scroll.
+      */}
+      <div className="grid gap-5 min-[1420px]:grid-cols-[minmax(0,1fr)_400px]">
         <Panel className="min-h-[520px]">
           <div className="flex h-full flex-col">
           <div className="flex flex-wrap items-center gap-x-[18px] gap-y-2 border-b border-hairline px-[14px] py-[9px]">
@@ -100,11 +118,11 @@ export function ManoeuvreLog() {
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto">
-            <div className="min-w-[900px]">
+            <div className="min-w-[748px]">
               <div
                 className={`sticky top-0 z-10 grid ${COLS} h-[34px] items-center border-b border-hairline bg-panel-raised px-[14px]`}
               >
-                {['Burn', 'Status', 'Asset', 'Epoch', 'Δv m/s', 'Axis', 'Prompted by'].map((h, i) => (
+                {['Burn', 'Status', 'Asset', 'Epoch', 'Δv · axis', 'Prompted by'].map((h, i) => (
                   <div
                     key={h}
                     className={`font-mono text-xs- uppercase tracking-[0.08em] text-tertiary ${
@@ -157,25 +175,33 @@ export function ManoeuvreLog() {
                           className="num text-2xs text-tertiary"
                         />
                       </div>
-                      <div className="num text-right text-sm text-primary">
-                        {m.deltaV.toFixed(3)}
+                      <div className="text-right">
+                        <div className="num text-sm text-primary">
+                          {m.deltaV.toFixed(3)} <span className="text-2xs text-tertiary">m/s</span>
+                        </div>
+                        <div className="font-mono text-2xs tracking-data text-tertiary">
+                          {m.axis}
+                        </div>
                       </div>
-                      <div className="font-mono text-xs- tracking-data text-secondary">{m.axis}</div>
                       <div className="min-w-0">
                         {m.cause ? (
-                          <>
-                            <Link
-                              to={`/console/conjunction/${m.cause.id}`}
-                              className="num text-sm text-accent hover:text-primary"
-                            >
-                              {m.cause.id}
-                            </Link>
-                            <div className="num text-2xs text-tertiary">
-                              {m.preMissKm?.toFixed(3)} km
-                              {m.postMissKm != null && ` → ${m.postMissKm.toFixed(3)} km`}
-                              {stale && ' · below floor'}
-                            </div>
-                          </>
+                          /*
+                           * One line. The miss-distance change moves into the
+                           * title rather than a second row — it is the reason a
+                           * reader opens the event, not something they scan the
+                           * column for, and the second row was half the width
+                           * this column was asking for.
+                           */
+                          <Link
+                            to={`/console/conjunction/${m.cause.id}`}
+                            title={`Prompted by ${m.cause.id}. Miss ${m.preMissKm?.toFixed(3)} km${
+                              m.postMissKm != null ? ` → ${m.postMissKm.toFixed(3)} km after the burn` : ''
+                            }${stale ? '. Below the current severity floor.' : ''}`}
+                            className="num inline-flex max-w-full items-center gap-[6px] truncate rounded-sm border border-hairline px-[6px] py-[3px] text-xs- text-accent transition-colors hover:border-accent-border hover:bg-accent-wash hover:text-primary"
+                          >
+                            {m.cause.id}
+                            {stale && <span className="text-2xs text-tertiary">↓</span>}
+                          </Link>
                         ) : (
                           <span className="text-sm text-tertiary">Station-keeping</span>
                         )}

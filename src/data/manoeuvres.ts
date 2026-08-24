@@ -61,6 +61,16 @@ const NOTES: Record<BurnStatus, string[]> = {
   ],
 };
 
+/*
+ * Snapshot groups whose objects have an operator who could fly a burn.
+ *
+ * Type alone is not enough, for the same reason it was not enough for the
+ * station-keeping tail below: COSMOS 2251 is a payload by class and has been
+ * derelict since 2009, so filtering on PAYLOAD put burns in the mouths of dead
+ * satellites.
+ */
+const OPERABLE = new Set(['stations', 'indian-assets']);
+
 function build(): Manoeuvre[] {
   const rng = makeRng(MANOEUVRE_SEED);
 
@@ -79,18 +89,40 @@ function build(): Manoeuvre[] {
   );
   const out: Manoeuvre[] = [];
 
-  // Upcoming events worth a burn, most severe first.
+  /*
+   * Events worth a burn, most severe first — which the comment here always
+   * claimed and the code never did. RESOLVED is ordered by time of closest
+   * approach, so `.slice(0, 26)` took the twenty-six SOONEST events rather than
+   * the worst, and in this catalogue all twenty-six were debris against debris.
+   * Nothing had a controllable side, the loop below pushed nothing, and the
+   * log's "prompted by an event" filter matched 0 of 16 burns — a chip that
+   * could never light up.
+   */
+  const operableSide = (e: ResolvedConjunction) =>
+    OPERABLE.has(groupOf(e.a) ?? '')
+      ? objectById(e.a)
+      : OPERABLE.has(groupOf(e.b) ?? '')
+        ? objectById(e.b)
+        : null;
+
+  /*
+   * The cap applies to events that could produce a burn, not to events in
+   * general. Slicing first threw away the one MEDIUM event with a flyable
+   * asset because twenty-six HIGH debris-on-debris passes outranked it — and
+   * those twenty-six can never produce a burn, so they were spending the budget
+   * without being able to use it.
+   */
   const prompting = RESOLVED
     .filter((e) => e.sev === 'CRITICAL' || e.sev === 'HIGH' || e.sev === 'MEDIUM')
+    .filter((e) => operableSide(e) !== null)
+    .sort((a, b) => b.score - a.score)
     .slice(0, 26);
 
   let id = 1180;
 
   for (const event of prompting) {
     // Whichever side of the pair is actually controllable.
-    const A = objectById(event.a);
-    const B = objectById(event.b);
-    const asset = A.type === 'PAYLOAD' ? A : B.type === 'PAYLOAD' ? B : null;
+    const asset = operableSide(event);
     if (!asset) continue;
 
     const status = weighted(rng, [
