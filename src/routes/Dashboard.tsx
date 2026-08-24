@@ -27,12 +27,23 @@ type SortKey = 'score' | 'tca' | 'miss' | 'relv' | 'pc';
 type RiskFilter = 'ALL' | Severity;
 type ClassFilter = 'ALL' | ObjectType;
 
+/*
+ * A floor, not a band picker, and now labelled as one.
+ *
+ * The filter has always been `SEVERITY_RANK[r.sev] >= SEVERITY_RANK[minRisk]`
+ * — the same minimum-severity semantics the Thresholds screen applies — so
+ * picking MED correctly shows MEDIUM, HIGH and CRITICAL. Under the old heading
+ * "Risk" with a chip reading "MED", that looks like a broken equality filter:
+ * you ask for medium and get a table full of HIGH. The behaviour was right and
+ * the words were wrong, so the words changed. The trailing + carries it at a
+ * glance and the hint carries it in full.
+ */
 const RISKS = [
   { label: 'ALL', value: 'ALL' as const },
-  { label: 'CRIT', value: 'CRITICAL' as const },
-  { label: 'HIGH', value: 'HIGH' as const },
-  { label: 'MED', value: 'MEDIUM' as const },
-  { label: 'LOW', value: 'LOW' as const },
+  { label: 'CRIT+', value: 'CRITICAL' as const },
+  { label: 'HIGH+', value: 'HIGH' as const },
+  { label: 'MED+', value: 'MEDIUM' as const },
+  { label: 'LOW+', value: 'LOW' as const },
 ];
 
 const WINDOWS = [
@@ -280,7 +291,13 @@ export function Dashboard() {
         <Panel className="min-h-[520px]" title={undefined}>
           <div className="flex h-full flex-col">
             <div className="flex flex-wrap items-center gap-x-[18px] gap-y-2 border-b border-hairline px-[14px] py-[9px]">
-              <Segmented label="Risk" segments={RISKS} value={minRisk} onChange={setMinRisk} />
+              <Segmented
+                label="Min severity"
+                hint="A floor: shows this severity and everything worse. Same rule as the Thresholds screen."
+                segments={RISKS}
+                value={minRisk}
+                onChange={setMinRisk}
+              />
               <Segmented label="Window" segments={WINDOWS} value={win} onChange={setWin} />
               <Segmented label="Class" segments={CLASSES} value={cls} onChange={setCls} />
               {/* Matches on ingest group, not a name string, so it cannot drift
