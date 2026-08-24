@@ -1,33 +1,37 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Adds `.rise` to a section the first time it scrolls into view.
+ * True once the element has been scrolled into view, and true forever after.
  *
- * The animation already exists in index.css — the selected-row rise uses it —
- * and it is under-used. No library: an IntersectionObserver and a boolean.
+ * An IntersectionObserver and a boolean — no animation library for an effect
+ * at this tier. The observer disconnects on the first intersection, because a
+ * reveal that re-runs when you scroll back up is a page that will not settle.
  *
- * Under prefers-reduced-motion the element is simply marked revealed at once,
- * so nothing animates and nothing is hidden waiting for an animation that will
- * never run. That second half matters more than the first: a reveal that gates
- * visibility on motion is a blank page for anyone who has motion turned off.
+ * The trigger is 12% up from the bottom edge: the section starts moving as it
+ * comes in rather than after it has arrived, which is what separates a reveal
+ * from a thing that pops.
+ *
+ * Under prefers-reduced-motion it starts true. That half matters more than the
+ * animation: a reveal that gates visibility on motion leaves a blank page for
+ * anyone who has motion turned off, and an observer that never fires would be
+ * exactly that.
  */
-export function useReveal<T extends HTMLElement>() {
+export function useInView<T extends HTMLElement>() {
   const ref = useRef<T>(null);
-  const [shown, setShown] = useState(
+  const [inView, setInView] = useState(
     () =>
       typeof window === 'undefined' ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
 
   useEffect(() => {
-    if (shown) return;
+    if (inView) return;
     const el = ref.current;
     if (!el) return;
-    // Also covers the case where the section is already on screen at load.
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setShown(true);
+          setInView(true);
           io.disconnect();
         }
       },
@@ -35,7 +39,26 @@ export function useReveal<T extends HTMLElement>() {
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [shown]);
+  }, [inView]);
 
-  return { ref, className: shown ? 'rise' : 'opacity-0' };
+  return { ref, inView };
+}
+
+/**
+ * The classes and inline delay for one revealed thing.
+ *
+ * A transition rather than the `.rise` keyframe, because a keyframe cannot be
+ * staggered per child — `transition-delay` can, and staggering is most of what
+ * makes a group of cards read as arriving rather than blinking on.
+ *
+ * 40 ms per index, capped: past about six items the last one is waiting long
+ * enough to feel broken rather than choreographed.
+ */
+export function revealProps(inView: boolean, index = 0) {
+  return {
+    className: `transition-[opacity,transform] duration-300 ease-out ${
+      inView ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
+    }`,
+    style: { transitionDelay: inView ? `${Math.min(index, 6) * 40}ms` : '0ms' },
+  };
 }
