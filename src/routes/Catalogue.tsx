@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { OBJECTS, groupOf, isIndianAsset } from '../data/objects';
 import { OriginBadge, ProvenanceFooter } from '../components/Provenance';
 import { AgePip, ClassMark, ShellBar, SHELL_MIN_KM, SHELL_MAX_KM } from '../components/TableViz';
+import { ShellHistogram } from '../components/ShellHistogram';
 import { TLE_FIELD_NOTES, TLE_GROUP_LABEL } from '../data/tle';
 import { fmtInt, fmtNorad } from '../data/format';
 import { Button, EmptyState, TextField } from '../components/primitives';
@@ -135,6 +136,8 @@ export function Catalogue() {
    * the fleet already filtered. That entry is the register: it cannot be
    * edited, but ?isro=1 is what "show me my assets" actually means here.
    */
+  /** Altitude band picked off the histogram, or null for the whole catalogue. */
+  const [band, setBand] = useState<[number, number] | null>(null);
   const [isroOnly, setIsroOnly] = useState(() => params.get('isro') === '1');
   const [sortKey, setSortKey] = useState<SortKey>('norad');
   const [sortDir, setSortDir] = useState<1 | -1>(1);
@@ -151,9 +154,25 @@ export function Catalogue() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, isroOnly]);
 
+  /*
+   * The histogram is drawn from the catalogue BEFORE the band filter, so
+   * choosing a band does not collapse the chart you chose it from. It does
+   * respect the text and ISRO filters, because those are what "the population
+   * I am looking at" means.
+   */
+  const histogramPool = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const byAsset = isroOnly ? OBJECTS.filter((o) => isIndianAsset(o.norad)) : OBJECTS;
+    if (!needle) return byAsset;
+    return byAsset.filter((o) =>
+      `${o.name} ${o.norad} ${o.op} ${o.type}`.toLowerCase().includes(needle),
+    );
+  }, [q, isroOnly]);
+
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const pool = isroOnly ? OBJECTS.filter((o) => isIndianAsset(o.norad)) : OBJECTS;
+    const byAsset = isroOnly ? OBJECTS.filter((o) => isIndianAsset(o.norad)) : OBJECTS;
+    const pool = band ? byAsset.filter((o) => o.alt >= band[0] && o.alt < band[1]) : byAsset;
     const matched = needle
       ? pool.filter((o) =>
           `${o.name} ${o.norad} ${o.type} ${o.op} ${o.intl}`.toLowerCase().includes(needle))
@@ -166,7 +185,7 @@ export function Catalogue() {
       const cmp = typeof x === 'string' ? x.localeCompare(y as string) : (x as number) - (y as number);
       return cmp * sortDir;
     });
-  }, [q, isroOnly, sortKey, sortDir]);
+  }, [q, isroOnly, band, sortKey, sortDir]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, pageCount - 1);
@@ -180,29 +199,49 @@ export function Catalogue() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-[52px] flex-none flex-wrap items-center justify-between gap-4 border-b border-hairline-soft px-6">
+      {/*
+        The toolbar row used to hold a 400px field and one button in a 52px bar
+        the full width of the console, which is a lot of nothing to look at on
+        the screen this app opens on. The space now carries the population the
+        table is a list of.
+      */}
+      <div className="flex flex-none flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline-soft px-6 py-[10px]">
         <TextField
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Filter by name, NORAD ID, operator or class"
+          placeholder="Filter name, NORAD, operator, class"
           aria-label="Filter catalogue"
-          className="h-[30px] w-full max-w-[400px] px-[10px]"
+          className="h-[30px] w-full max-w-[320px] px-[10px]"
           icon={<SearchIcon className="flex-none text-tertiary" />}
         />
-        <div className="flex items-center gap-[18px]">
+        <button
+          type="button"
+          aria-pressed={isroOnly}
+          onClick={() => setIsroOnly((v) => !v)}
+          className={`flex-none rounded border px-[11px] py-[5px] font-mono text-2xs uppercase tracking-data transition-colors ${
+            isroOnly
+              ? 'border-accent-border bg-accent-wash text-primary hover:border-accent'
+              : 'border-hairline text-tertiary hover:bg-panel-raised hover:text-primary'
+          }`}
+        >
+          ISRO assets
+        </button>
+        {band && (
           <button
             type="button"
-            aria-pressed={isroOnly}
-            onClick={() => setIsroOnly((v) => !v)}
-            className={`flex-none rounded border px-[11px] py-[5px] font-mono text-2xs uppercase tracking-data transition-colors ${
-              isroOnly
-                ? 'border-accent-border bg-accent-wash text-primary hover:border-accent'
-                : 'border-hairline text-tertiary hover:bg-panel-raised hover:text-primary'
-            }`}
+            onClick={() => setBand(null)}
+            className="flex-none rounded border border-accent-border bg-accent-wash px-[11px] py-[5px] font-mono text-2xs uppercase tracking-data text-primary transition-colors hover:border-accent"
           >
-            ISRO assets
+            {Math.round(band[0])}–{Math.round(band[1])} km ✕
           </button>
+        )}
+        <div className="num ml-auto flex-none text-xs- text-tertiary">
+          {fmtInt(filtered.length)} of {fmtInt(OBJECTS.length)}
         </div>
+      </div>
+
+      <div className="flex-none border-b border-hairline-soft px-6 py-[10px]">
+        <ShellHistogram objects={histogramPool} band={band} onPick={setBand} />
       </div>
 
       {/*
