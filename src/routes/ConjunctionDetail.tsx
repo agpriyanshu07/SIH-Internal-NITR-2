@@ -148,15 +148,39 @@ export function ConjunctionDetail() {
         <div className="mb-1 flex flex-wrap items-center gap-[6px]">
           <OriginBadge group={groupOf(event.A.norad)} />
           <OriginBadge group={groupOf(event.B.norad)} />
-          {ackd && (
-            <span
-              title="Acknowledged in this browser. There is no backend, so this was not recorded against an operator or sent anywhere."
-              className="inline-flex items-center gap-[6px] rounded border border-hairline px-[7px] py-[2px] font-mono text-2xs uppercase tracking-[0.08em] text-tertiary"
-            >
-              <span className="h-[5px] w-[5px] rounded-full bg-[color:var(--t3)]" />
-              Acknowledged
-            </span>
-          )}
+          {/*
+           * Rendered in both states, hidden rather than absent when it does not
+           * apply — because ADDING it on click was relaying out the whole page.
+           *
+           * This chip is 101px wide. It sits in a badge row that is a sibling of
+           * the title block and the button group inside a `flex-wrap` header, so
+           * between 1460px and 1540px those 101px were exactly enough to push
+           * the header from one line to two: 142px tall to 245px, and every
+           * panel on the screen jumped 104px down at the instant of the click.
+           * Measured at 20px increments from 1240 to 1620px — it reproduces on
+           * that band and nowhere else, which is why it reads as intermittent.
+           *
+           * `invisible` is visibility:hidden, which keeps the box in layout and
+           * takes the element out of the accessibility tree, so the row is the
+           * same width in both states and a screen reader is not told about an
+           * acknowledgement that has not happened. `display:none` — which is
+           * what a conditional render compiles to — is the thing that cannot
+           * work here, because reserving the space is the entire fix.
+           */}
+          <span
+            aria-hidden={!ackd}
+            title={
+              ackd
+                ? 'Acknowledged in this browser. There is no backend, so this was not recorded against an operator or sent anywhere.'
+                : undefined
+            }
+            className={`inline-flex items-center gap-[6px] rounded border border-hairline px-[7px] py-[2px] font-mono text-2xs uppercase tracking-[0.08em] text-tertiary ${
+              ackd ? '' : 'invisible'
+            }`}
+          >
+            <span className="h-[5px] w-[5px] rounded-full bg-[color:var(--t3)]" />
+            Acknowledged
+          </span>
         </div>
 
         <div className="flex flex-wrap items-start gap-[26px]">
@@ -179,7 +203,16 @@ export function ConjunctionDetail() {
             </Button>
             <Button
               variant={ackd ? 'secondary' : 'primary'}
-              className="px-[14px] py-2 text-sm"
+              /*
+               * min-w sized to the longer of the two labels. "Acknowledge event"
+               * is 141px and "Acknowledged" is 112px, and a control that changes
+               * size when you press it is unpleasant on its own account — the
+               * button moves out from under the cursor. This is not what caused
+               * the page-wide jump; that was the chip above. Both are fixed, and
+               * both are the same rule: a state change must not resize a box
+               * that something else is laid out against.
+               */
+              className="min-w-[152px] px-[14px] py-2 text-sm"
               onClick={() => toggleAck(event.id)}
               aria-pressed={ackd}
             >
@@ -189,8 +222,19 @@ export function ConjunctionDetail() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 p-6 xl:grid-cols-[minmax(0,1fr)_452px]">
-        <div className="flex min-w-0 flex-col gap-6">
+      <div className="grid grid-cols-1 items-start gap-6 p-6 xl:grid-cols-[minmax(0,1fr)_452px]">
+        {/*
+         * Same defect as the analysis workbench, same fix. This column holds the
+         * separation chart and the two object specs and ends around 800px; the
+         * column beside it — score model, sigma sensitivity, data quality — runs
+         * past 1,700px. Everything below the fold was a wall of prose in a
+         * 452px gutter with 900px of empty page to its left.
+         *
+         * The chart is exactly what you want pinned while you read that prose:
+         * the sigma-sensitivity panel talks about where this event sits against
+         * the threshold, and the threshold is the dashed line on the chart.
+         */}
+        <div className="flex min-w-0 flex-col gap-6 xl:sticky xl:top-0 xl:max-h-[calc(100vh-100px)] xl:overflow-y-auto xl:pr-1">
           <Panel
             title={`Separation versus time — ±${40} min about TCA`}
             aside={

@@ -195,9 +195,31 @@ export function Analysis() {
         </Button>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
-        {/* ── Inputs ── */}
-        <div className="flex flex-col gap-5">
+      <div className="grid items-start gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
+        {/*
+         * The controls follow you down the page.
+         *
+         * This column is ~700px of sliders; the results column beside it runs
+         * to about 4,000px. So for five sixths of the scroll there was nothing
+         * at all on the left of the screen and every word of the analysis was
+         * crammed into the right-hand two thirds — the reading column narrow,
+         * a third of a 1600px display blank.
+         *
+         * Sticky fixes the dead space and is the better interaction anyway.
+         * This is a workbench: the entire argument of the screen is that you
+         * change an assumption and watch the consequence move. Having to scroll
+         * 3,000px back to the drag coefficient, change it, and scroll down again
+         * to see what it did is the workbench failing at its one job.
+         *
+         * items-start on the grid is what allows it: a grid item stretches to
+         * the row height by default, which makes the column as tall as the
+         * results and leaves sticky with nothing to stick within.
+         *
+         * max-h/overflow-y for the case where the controls are taller than the
+         * window — they scroll inside themselves rather than becoming
+         * unreachable. top-0 is against <main>, which is the scroll container.
+         */}
+        <div className="flex flex-col gap-5 xl:sticky xl:top-0 xl:max-h-[calc(100vh-92px)] xl:overflow-y-auto xl:pr-1">
           <Panel title="Scenario" bodyClassName="px-[14px] pb-[14px] pt-1">
             <div className="flex flex-col gap-[7px] pt-3">
               <label htmlFor="ev" className="label">Event</label>
