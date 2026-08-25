@@ -13,6 +13,7 @@ import { SeparationChart } from '../components/SeparationChart';
 import { EncounterGeometry } from '../components/EncounterGeometry';
 import type { SpaceObject } from '../data/types';
 import { Countdown } from '../components/Countdown';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 function ObjectSpec({ object, role }: { object: SpaceObject; role: 'Primary' | 'Secondary' }) {
   /*
@@ -87,6 +88,13 @@ export function ConjunctionDetail() {
   const { id = '' } = useParams();
   const { toggle: toggleAck, isAcknowledged } = useAcknowledged();
   const event = conjunctionById(id);
+  /*
+   * Named after the pair, not after the ID. Someone comparing two events has
+   * both open, and "CJ-33764-34874" in a truncated tab tells them nothing that
+   * "ISS (ZARYA) x ..." does not tell them better. Called before the missing-
+   * event branch below, because a hook cannot sit behind a return.
+   */
+  useDocumentTitle(event ? `${event.A.name} \u00d7 ${event.B.name}` : 'Event not found');
   const ackd = event ? isAcknowledged(event.id) : false;
 
   if (!event) {

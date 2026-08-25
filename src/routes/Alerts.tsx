@@ -10,6 +10,7 @@ import { Button, EmptyState, Panel, Segmented, SeverityChip } from '../component
 import { Countdown } from '../components/Countdown';
 import { sliderFill } from '../lib/slider';
 import type { ResolvedConjunction, Severity } from '../data/types';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 /**
  * Standing rules, and what they currently match.
@@ -188,6 +189,7 @@ function RuleCard({
 }
 
 export function Alerts() {
+  useDocumentTitle('Alert routing');
   const { thresholds } = useThresholds();
   const { rules, update, add, remove, reset } = useAlertRules();
 

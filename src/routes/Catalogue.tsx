@@ -9,6 +9,7 @@ import { fmtInt, fmtNorad } from '../data/format';
 import { Button, EmptyState, TextField } from '../components/primitives';
 import { CloseIcon, SearchIcon } from '../components/Icon';
 import type { SpaceObject } from '../data/types';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 type SortKey = 'name' | 'norad' | 'alt' | 'apogee' | 'perigee' | 'incl' | 'ecc' | 'period' | 'age';
 
@@ -139,6 +140,10 @@ export function Catalogue() {
   /** Altitude band picked off the histogram, or null for the whole catalogue. */
   const [band, setBand] = useState<[number, number] | null>(null);
   const [isroOnly, setIsroOnly] = useState(() => params.get('isro') === '1');
+  /* The sidebar has two entries pointing here, so the tab names which one you
+     are on rather than calling both "Object catalogue". */
+  useDocumentTitle(isroOnly ? 'ISRO asset register' : 'Object catalogue');
+
   const [sortKey, setSortKey] = useState<SortKey>('norad');
   const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [page, setPage] = useState(0);
@@ -273,10 +278,15 @@ export function Catalogue() {
         a table you can read.
       */}
       <div className="grid min-h-0 flex-1 grid-cols-1 min-[1420px]:grid-cols-[minmax(0,1fr)_400px] 2xl:grid-cols-[minmax(0,1fr)_500px]">
-        <div className="flex min-w-0 flex-col border-r border-hairline-soft">
+        {/* min-h-0, for the same reason the detail drawer beside it already has
+            it: a grid item's automatic minimum size is its content, so without
+            this the column grew to all 859 rows, the `flex-1 overflow-auto`
+            below never became an overflow container, and the whole console
+            scrolled instead of the table. */}
+        <div className="flex min-h-0 min-w-0 flex-col border-r border-hairline-soft">
           <div className="min-h-0 flex-1 overflow-auto">
             <div className="min-w-[820px]">
-          <div className={`sticky top-0 z-10 grid ${COLS} h-[34px] items-center border-b border-hairline bg-panel-raised px-4`}>
+          <div className={`sticky-head sticky top-0 z-10 grid ${COLS} h-[34px] items-center border-b border-hairline px-4`}>
             {HEADERS.map((h) => (
               h.key ? (
                 <button key={h.label} type="button" onClick={() => sortBy(h.key!)} title={h.hint}

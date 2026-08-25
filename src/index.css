@@ -113,9 +113,23 @@
     --globe: #eef1f6;
   }
 
+  /*
+   * color-scheme is the one line that tells the browser to render its OWN
+   * surfaces dark: the scrollbar gutter, the select popup, the date picker, the
+   * spinner buttons on a number input, the flash of canvas before first paint.
+   * Without it the default is light, so a console that is otherwise #0b0d10 was
+   * dropping a white select menu on top of itself whenever one was opened, and
+   * repainting white on every hard reload. It is declared here rather than in
+   * the token blocks because it is not a colour, it is a mode.
+   */
   html {
     height: 100%;
     background: var(--base);
+    color-scheme: dark;
+  }
+
+  [data-ktheme='light'] {
+    color-scheme: light;
   }
 
   body {
@@ -276,6 +290,21 @@
       opacity 0.26s ease;
   }
 
+  /*
+   * A pinned table header has to be OPAQUE, and every panel colour in this app
+   * is not: --panel-raised is rgba(255,255,255,0.078). So the header pinned
+   * correctly and rows slid underneath it in plain sight — two rows of numbers
+   * occupying the same 34px, which reads as a rendering fault rather than as a
+   * table. The fix keeps the exact same tint: an opaque --base underneath, and
+   * the translucent panel colour composited over it as a flat gradient image,
+   * so the header matches an unpinned one pixel for pixel and still hides what
+   * passes below.
+   */
+  .sticky-head {
+    background-color: var(--base);
+    background-image: linear-gradient(var(--panel-raised), var(--panel-raised));
+  }
+
   ::selection {
     background: var(--accent);
     color: var(--accent-ink);
@@ -299,6 +328,37 @@
   }
 
   input::placeholder { color: var(--t3); }
+
+  /*
+   * The caret follows the accent rather than the text colour. In a field of
+   * monospaced grey a grey caret is genuinely hard to find, and this is the one
+   * place where the accent marks "you are here" instead of "this is important".
+   */
+  input,
+  textarea { caret-color: var(--accent); }
+
+  /*
+   * Chrome paints autofilled fields with a hard-coded pale yellow that ignores
+   * every colour on this page — one autofilled sign-in field and the panel it
+   * sits in stops looking like the same application. There is no property that
+   * turns it off; the standing trick is an inset shadow large enough to cover
+   * the field, plus -webkit-text-fill-color for the text, and a long transition
+   * so the browser's own paint never wins the frame it fires on.
+   */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--t1);
+    /* Two inset fills, not one: --panel-raised is translucent white, so on its
+       own it tints the browser's yellow rather than replacing it. --base is the
+       opaque ground the whole glass stack composites over, and it goes
+       underneath — later shadows in the list paint lower. */
+    -webkit-box-shadow:
+      0 0 0 40px var(--panel-raised) inset,
+      0 0 0 40px var(--base) inset;
+    caret-color: var(--accent);
+    transition: background-color 6000s ease-in-out 0s;
+  }
   /* A select does not inherit font-family, so it has to be named alongside
      input or its closed state renders in the platform UI font. */
   input,

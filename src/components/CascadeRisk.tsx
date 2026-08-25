@@ -121,7 +121,7 @@ export function CascadeRisk({
         <div className="label">Added risk per asset</div>
         <div className="max-h-[280px] overflow-auto">
           <table className="w-full border-collapse text-left">
-            <thead className="sticky top-0 bg-panel-raised">
+            <thead className="sticky-head sticky top-0">
               <tr>
                 {['Asset', 'Alt km', 'Closing km/s', 'Added /yr', 'P over 10 y'].map((h) => (
                   <th

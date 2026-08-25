@@ -11,6 +11,7 @@ import { LatitudePlot } from '../components/LatitudePlot';
 import { GabbardPlot } from '../components/GabbardPlot';
 import { CascadeRisk } from '../components/CascadeRisk';
 import { sliderFill } from '../lib/slider';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 /**
  * Consequence analysis workbench.
@@ -77,6 +78,7 @@ function Stat({
 }
 
 export function Analysis() {
+  useDocumentTitle('Consequence analysis');
   // Default to the highest-scoring event that has both element sets available.
   const candidates = useMemo(
     () => [...RESOLVED].sort((a, b) => b.score - a.score).slice(0, 40),
@@ -425,7 +427,7 @@ export function Analysis() {
           >
             <div className="max-h-[340px] overflow-auto">
               <table className="w-full border-collapse text-left">
-                <thead className="sticky top-0 bg-panel-raised">
+                <thead className="sticky-head sticky top-0">
                   <tr>
                     {['Lc m', 'Mass kg', 'A/m', 'Δv m/s', 'Material', 'Perigee', 'Apogee', 'Lifetime', 'Entry'].map((h) => (
                       <th key={h} className="border-b border-hairline px-3 py-2 font-mono text-2xs uppercase tracking-[0.08em] text-tertiary">

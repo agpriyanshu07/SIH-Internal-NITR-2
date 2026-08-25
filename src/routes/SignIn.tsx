@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button, Panel, TextField } from '../components/primitives';
 import { DEMO_OPERATOR, useOperator } from '../hooks/useOperator';
 import { HeroOrbits } from '../components/HeroOrbits';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 /**
  * Sign in.
@@ -17,6 +18,7 @@ import { HeroOrbits } from '../components/HeroOrbits';
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function SignIn() {
+  useDocumentTitle('Sign in');
   const navigate = useNavigate();
   const { signIn } = useOperator();
   const [email, setEmail] = useState('');
@@ -40,7 +42,7 @@ export function SignIn() {
           <Link to="/" className="text-lg font-semibold tracking-[0.04em] text-primary">
             KESSLER
           </Link>
-          <div className="label">Orbital conjunction screening</div>
+          <div className="label-strong">Orbital conjunction screening</div>
         </div>
         <div className="absolute bottom-10 left-10 max-w-[420px]">
           <p className="text-xl leading-[1.6] text-secondary [text-wrap:pretty]">
@@ -74,7 +76,7 @@ export function SignIn() {
             }}
           >
             <label className="flex flex-col gap-2">
-              <span className="label">Work email</span>
+              <span className="label-strong">Work email</span>
               <TextField
                 type="email"
                 value={email}
@@ -92,7 +94,7 @@ export function SignIn() {
             </label>
 
             <label className="flex flex-col gap-2">
-              <span className="label">Workspace (optional)</span>
+              <span className="label-strong">Workspace (optional)</span>
               <TextField
                 value={workspace}
                 onChange={(e) => setWorkspace(e.target.value)}

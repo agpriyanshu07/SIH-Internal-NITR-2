@@ -6,6 +6,7 @@ import { Button, Panel, SeverityChip } from '../components/primitives';
 import { FEATURES, STATUS_LABEL } from '../data/features';
 import type { Severity } from '../data/types';
 import { sliderFill } from '../lib/slider';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 /**
  * Screening thresholds.
@@ -57,6 +58,7 @@ function Row({
 }
 
 export function Thresholds() {
+  useDocumentTitle('Screening thresholds');
   const { thresholds, set, reset, modified } = useThresholds();
 
   // Sigma is applied before the floor, so the counts below reflect the same

@@ -23,6 +23,7 @@ import { ArrowDown, ArrowUp } from '../components/Icon';
 import type { ObjectType, ResolvedConjunction, Severity } from '../data/types';
 import { passesThresholds, useThresholds } from '../state/thresholds';
 import { Countdown } from '../components/Countdown';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 type SortKey = 'score' | 'tca' | 'miss' | 'relv' | 'pc';
 type RiskFilter = 'ALL' | Severity;
@@ -62,7 +63,18 @@ const CLASSES = [
 
 /** Grid template shared by the table header and every row, so they stay locked. */
 const COLS =
-  'grid-cols-[100px_52px_minmax(130px,1fr)_minmax(130px,1fr)_168px_76px_86px_100px]';
+  /*
+   * Retuned to FIT rather than to breathe. The previous template had a
+   * min-content width of 926px inside a 792px column — the console reserves
+   * 196px for the sidebar and 392px for the right rail — so at 1440px, the
+   * width most of the judging will happen at, the two rightmost columns were
+   * scrolled out of sight: relative velocity cut through its digits and
+   * collision probability, the number the whole screen exists to produce, not
+   * on screen at all. Nothing here is below its measured content: the TCA
+   * stamp renders at 140px, severity's longest word is MEDIUM. The rail came
+   * down 44px to meet it.
+   */
+  'grid-cols-[80px_58px_minmax(116px,1fr)_minmax(110px,1fr)_148px_70px_76px_86px]';
 
 function SortHeader({
   label, active, dir, onClick, className = '',
@@ -103,6 +115,7 @@ function NextTcaTile({ events }: { events: ResolvedConjunction[] }) {
 }
 
 export function Dashboard() {
+  useDocumentTitle('Conjunction screening');
   const navigate = useNavigate();
   const { thresholds, modified } = useThresholds();
 
@@ -215,7 +228,18 @@ export function Dashboard() {
   );
 
   return (
-    <div className="flex min-h-full flex-col">
+    /*
+     * h-full, not min-h-full — the same distinction the catalogue already makes.
+     * Everything below this is built for a fixed-height screen: the table panel
+     * is `min-h-0 flex-1`, its scroll container is `min-h-0 flex-1 overflow-auto`
+     * and its column header is `sticky top-0`. None of that can engage against a
+     * MINIMUM height, because the box is then free to grow to its content and
+     * there is no overflow left for the inner container to own. Which is why the
+     * sticky header never stuck: it was pinned to the top of a box 133,000px
+     * tall. min-h-[560px] keeps the table from being crushed on a short window;
+     * below that the page scrolls as a page, which is the right trade.
+     */
+    <div className="flex h-full min-h-[560px] flex-col">
       <div className="flex flex-wrap items-end justify-between gap-4 px-5 pt-[22px]">
         <div className="flex flex-col gap-[5px]">
           <h1 className="text-2xl font-medium tracking-tight text-primary">Conjunction screening</h1>
@@ -281,9 +305,24 @@ export function Dashboard() {
             </span>
           }
           foot={
-            <span className="flex gap-[10px]">
-              <span data-sev="CRITICAL" className="text-sev">{counts.CRITICAL} CRIT</span>
-              <span data-sev="HIGH" className="text-sev">{counts.HIGH} HIGH</span>
+            /*
+             * Swatch carries the severity, text carries the number. Printed in
+             * the severity colour itself this line measured 3.2:1 at 10px over
+             * the metric tile — the palette is tuned for 8px fills and chips,
+             * and it does not survive being used as caption type on a lit
+             * backdrop. This is the same swatch-plus-label construction the
+             * table's severity column already uses, so nothing new is invented
+             * and the colour still says which row is which.
+             */
+            <span className="flex items-center gap-[10px]">
+              <span data-sev="CRITICAL" className="flex items-center gap-[5px] text-secondary">
+                <span className="sev-swatch h-2 w-2 flex-none rounded-xs bg-sev" />
+                {counts.CRITICAL} CRIT
+              </span>
+              <span data-sev="HIGH" className="flex items-center gap-[5px] text-secondary">
+                <span className="sev-swatch h-2 w-2 flex-none rounded-xs bg-sev" />
+                {counts.HIGH} HIGH
+              </span>
             </span>
           }
         />
@@ -362,7 +401,7 @@ export function Dashboard() {
       </div>
 
       {/* Table + side panels */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_392px]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_348px]">
         <Panel className="min-h-[520px]" title={undefined}>
           <div className="flex h-full flex-col">
             <div className="flex flex-wrap items-center gap-x-[18px] gap-y-2 border-b border-hairline px-[14px] py-[9px]">
@@ -399,11 +438,11 @@ export function Dashboard() {
                 rows scroll, and below ~1280px the whole table scrolls sideways
                 rather than clipping its numeric columns. */}
             <div className="min-h-0 flex-1 overflow-auto">
-              <div className="min-w-[912px]">
-            <div className={`sticky top-0 z-10 grid ${COLS} h-[34px] flex-none items-center gap-x-2 border-b border-hairline bg-panel-raised px-[14px]`}>
+              <div className="min-w-[808px]">
+            <div className={`sticky-head sticky top-0 z-10 grid ${COLS} h-[34px] flex-none items-center gap-x-2 border-b border-hairline px-[14px]`}>
               <div className="font-mono text-xs- uppercase tracking-[0.08em] text-tertiary">Severity</div>
               <SortHeader label="Score" active={sortKey === 'score'} dir={sortDir} onClick={() => sortBy('score')} className="justify-end" />
-              <div className="pl-[14px] font-mono text-xs- uppercase tracking-[0.08em] text-tertiary">Primary</div>
+              <div className="font-mono text-xs- uppercase tracking-[0.08em] text-tertiary">Primary</div>
               <div className="font-mono text-xs- uppercase tracking-[0.08em] text-tertiary">Secondary</div>
               <SortHeader label="TCA · T-minus" active={sortKey === 'tca'} dir={sortDir} onClick={() => sortBy('tca')} className="justify-end" />
               <SortHeader label="Miss km" active={sortKey === 'miss'} dir={sortDir} onClick={() => sortBy('miss')} className="justify-end" />
@@ -474,7 +513,7 @@ export function Dashboard() {
                         )}
                       </span>
                       <div className="num text-right text-base text-primary">{r.score}</div>
-                      <div className="min-w-0 pl-[14px]">
+                      <div className="min-w-0">
                         <div className="truncate text-sm+ text-primary">{r.A.name}</div>
                         <div className="num text-xs- text-tertiary">{fmtNorad(r.A.norad)}</div>
                       </div>
@@ -498,7 +537,18 @@ export function Dashboard() {
           </div>
         </Panel>
 
-        <div className="flex min-w-0 flex-col gap-5">
+        {/*
+         * The right rail owns its own overflow.
+         *
+         * Regime plot, cascade panel and the selected-event card together run
+         * past 950px, and as the tallest thing in the row they set the grid
+         * track height — which the table panel then has to match, which is what
+         * pushed the whole screen past the viewport again even after it was
+         * given a definite height. Scrolling it independently is also just
+         * better: reading down the funnel does not drag the event table with it.
+         * -mr-2 pr-2 keeps the scrollbar off the panel edges.
+         */}
+        <div className="-mr-2 flex min-h-0 min-w-0 flex-col gap-5 overflow-y-auto pr-2">
           <Panel
             title="Regime plot — altitude × inclination"
             aside={<span className="font-mono text-2xs text-tertiary">KM × DEG</span>}

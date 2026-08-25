@@ -190,6 +190,17 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
       >
         {icon}
         <input
+          /*
+           * Spellcheck off by default, and before the spread so a field that
+           * genuinely wants it can say so. Everything typed into this app is a
+           * NORAD ID, a designator, or a name like "COSMOS 1408 DEB" — the
+           * dictionary has an opinion about all of them, and a red squiggle
+           * under an object name in an operations console reads as an error
+           * state the app is reporting, not as a browser feature.
+           */
+          spellCheck={false}
+          autoCorrect="off"
+          autoCapitalize="off"
           {...rest}
           ref={ref}
           className={`min-w-0 flex-1 border-0 bg-transparent text-sm text-primary outline-none ${inputClassName}`}
@@ -248,6 +259,10 @@ export function MetricTile({
         {value}
         {unit && <span className="ml-1 text-md text-tertiary">{unit}</span>}
       </div>
+      {/* text-tertiary, which inside the console IS --t2: the shell sets
+          data-ksurface and index.css lifts --t3 to --t2 there. Worth knowing
+          before "fixing" this line — MetricTile renders nowhere else, so
+          naming secondary here changes precisely nothing. */}
       <div className="num text-xs- text-tertiary">{foot ?? ' '}</div>
     </div>
   );

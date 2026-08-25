@@ -8,6 +8,7 @@ import { PauseIcon, PlayIcon } from '../components/Icon';
 import { EPOCH_OFFSET } from '../hooks/useNow';
 import type { SpaceObject } from '../data/types';
 import { sliderFill } from '../lib/slider';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 /**
  * 2D orbital viewer.
@@ -64,6 +65,7 @@ function LayerToggle({ label, on, onToggle }: { label: string; on: boolean; onTo
 }
 
 export function Viewer() {
+  useDocumentTitle('Orbital viewer');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [layers, setLayers] = useState<Layers>({
     payload: true, rocket: true, debris: true, flagged: true,

@@ -162,6 +162,44 @@ export function Shell() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const { pathname } = useLocation();
+
+  /*
+   * Scroll position on navigation.
+   *
+   * <main> is the scroll container, not the window, so nothing resets it: page
+   * down to row 200 of the catalogue, open an event, and the detail page opens
+   * eight screens down showing whitespace. It reads as a broken route.
+   *
+   * Keyed on pathname alone, deliberately. The catalogue writes its filter and
+   * its ISRO toggle into the query string on every keystroke; resetting on the
+   * full location would yank the table to the top as you type.
+   *
+   * Focus moves with it. A keyboard user who follows a link is otherwise left
+   * with focus on an element that no longer exists, and the next Tab restarts
+   * from the top of the sidebar — every route change costing a walk back
+   * through the whole nav. Moving it to the region and marking that region
+   * tabindex=-1 also gives a screen reader something to announce on arrival.
+   * preventScroll, or the browser undoes the line above it.
+   *
+   * Not on first mount, though — and this is the part that is easy to get
+   * wrong. Focusing the content region on arrival puts the skip link BEHIND
+   * the caret, so the first Tab of the session lands somewhere in the page and
+   * the skip link can never be reached at all. On a fresh load focus belongs
+   * where the browser put it, at the top of the document; the move is only
+   * worth making when focus would otherwise be stranded on a link that the
+   * navigation just unmounted.
+   */
+  const firstRender = useRef(true);
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 });
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    mainRef.current?.focus({ preventScroll: true });
+  }, [pathname]);
   const { theme, toggle } = useTheme();
   const { operator } = useOperator();
 
@@ -183,6 +221,24 @@ export function Shell() {
 
   return (
     <div className="grid h-screen grid-cols-1 md:grid-cols-[196px_minmax(0,1fr)]">
+      {/*
+       * Every keyboard session on this console starts with eleven Tab presses
+       * through the sidebar before reaching anything on the page. This is the
+       * standard escape: invisible until focused, first in the tab order, and
+       * it moves focus into the content region rather than only scrolling to
+       * it. sr-only rather than display:none — a hidden element cannot receive
+       * focus, so the usual mistake here is one that removes the feature.
+       */}
+      <a
+        href="#console-main"
+        onClick={(e) => {
+          e.preventDefault();
+          mainRef.current?.focus();
+        }}
+        className="sr-only z-50 focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:rounded focus:border focus:border-accent-border focus:bg-panel-raised focus:px-3 focus:py-2 focus:text-sm focus:text-primary"
+      >
+        Skip to content
+      </a>
       <aside className="glass hidden flex-col border-r border-hairline-soft bg-deep md:flex">
         <div className="flex h-[52px] flex-none items-center border-b border-hairline-soft px-[18px]">
           <NavLink to="/" className="text-base font-semibold tracking-[0.06em] text-primary">
@@ -224,7 +280,20 @@ export function Shell() {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-col">
+      {/*
+       * min-h-0 alongside min-w-0, and it is not decoration.
+       *
+       * This column is a grid item, and a grid item's automatic minimum size is
+       * its CONTENT, not its track. So this div was 133,910px tall inside an
+       * h-screen grid, <main>'s `flex-1 overflow-auto` had a 133,858px box to
+       * be an overflow container for, and it therefore never scrolled: the
+       * document did. Which meant that scrolling the conjunction table scrolled
+       * the sidebar, the top bar and the table's own sticky header off the top
+       * of the window, and left the operator looking at unlabelled rows with no
+       * navigation. min-w-0 was already here for the same reason on the other
+       * axis — the row of numbers that refused to shrink.
+       */}
+      <div className="flex min-h-0 min-w-0 flex-col">
         <header className="sweep flex h-[52px] flex-none items-center justify-between gap-4 border-b border-hairline-soft px-5">
           <form
             className="relative z-10 w-full max-w-[340px]"
@@ -291,7 +360,15 @@ export function Shell() {
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-auto">
+        <main
+          ref={mainRef}
+          id="console-main"
+          /* -1, not 0: this is a focus TARGET for the skip link and the
+             route-change move above, and it must not become a tab stop of its
+             own on the way through the page. */
+          tabIndex={-1}
+          className="min-h-0 flex-1 overflow-auto outline-none"
+        >
           <Outlet />
         </main>
       </div>
