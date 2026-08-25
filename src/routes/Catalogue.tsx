@@ -139,7 +139,31 @@ export function Catalogue() {
    */
   /** Altitude band picked off the histogram, or null for the whole catalogue. */
   const [band, setBand] = useState<[number, number] | null>(null);
-  const [isroOnly, setIsroOnly] = useState(() => params.get('isro') === '1');
+  /*
+   * READ FROM THE URL, not copied into state.
+   *
+   * This was `useState(() => params.get('isro') === '1')`, and a useState
+   * initialiser runs once per mount. The sidebar has two entries pointing at
+   * this screen — Object catalogue and Asset register — and moving between
+   * them is a query-string change on the same route, so the component never
+   * remounts and the initialiser never re-ran. Clicking Asset register from
+   * the catalogue put ?isro=1 in the address bar, lit the Asset register row
+   * in the sidebar, and left all 859 objects in the table: the navigation
+   * said "your fleet" and the screen showed the whole catalogue. On a project
+   * whose entire argument is that the interface does not claim things that
+   * are not true, that is the worst possible place for a stale copy.
+   *
+   * The URL is now the only holder of this flag, so there is nothing left to
+   * fall out of step with it. The text filter still needs local state — it has
+   * to stay responsive per keystroke — which is why only this one moved.
+   */
+  const isroOnly = params.get('isro') === '1';
+  const setIsroOnly = (next: boolean) => {
+    const p = new URLSearchParams(params);
+    if (next) p.set('isro', '1');
+    else p.delete('isro');
+    setParams(p, { replace: true });
+  };
   /* The sidebar has two entries pointing here, so the tab names which one you
      are on rather than calling both "Object catalogue". */
   useDocumentTitle(isroOnly ? 'ISRO asset register' : 'Object catalogue');
@@ -153,7 +177,6 @@ export function Catalogue() {
   useEffect(() => {
     const next = new URLSearchParams(params);
     if (q) next.set('q', q); else next.delete('q');
-    if (isroOnly) next.set('isro', '1'); else next.delete('isro');
     setParams(next, { replace: true });
     setPage(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -225,7 +248,7 @@ export function Catalogue() {
         <button
           type="button"
           aria-pressed={isroOnly}
-          onClick={() => setIsroOnly((v) => !v)}
+          onClick={() => setIsroOnly(!isroOnly)}
           className={`flex-none rounded border px-[11px] py-[5px] font-mono text-2xs uppercase tracking-data transition-colors ${
             isroOnly
               ? 'border-accent-border bg-accent-wash text-primary hover:border-accent'

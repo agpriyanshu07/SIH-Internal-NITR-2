@@ -190,14 +190,20 @@ export function Shell() {
    * where the browser put it, at the top of the document; the move is only
    * worth making when focus would otherwise be stranded on a link that the
    * navigation just unmounted.
+   *
+   * The guard remembers the PATHNAME rather than setting a "have I mounted"
+   * boolean, because a boolean gets consumed: StrictMode mounts, unmounts and
+   * remounts every component in development, so the first effect spent the
+   * flag and the remount's effect stole focus anyway — the skip link was
+   * unreachable under `npm run dev` and reachable in the build, which is the
+   * kind of split no one goes looking for. Comparing values instead of
+   * spending a flag makes the repeat run a no-op, as it should be.
    */
-  const firstRender = useRef(true);
+  const lastPath = useRef(pathname);
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0 });
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
+    if (lastPath.current === pathname) return;
+    lastPath.current = pathname;
     mainRef.current?.focus({ preventScroll: true });
   }, [pathname]);
   const { theme, toggle } = useTheme();
