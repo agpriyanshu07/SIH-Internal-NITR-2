@@ -102,8 +102,13 @@ for the console avatar. There is no backend, so nothing is authenticated: no
 password is requested, no credential is checked, transmitted or stored, and no
 link is sent.
 
-**Not built** — Alert routing and API keys. These are marked
-`NOT BUILT` in the sidebar rather than left looking clickable.
+**Not built** — nothing in the sidebar, which is a claim that needs its own
+sentence rather than a silent absence. Alert *matching* is real and lives at
+`/console/alerts`; alert *delivery* is not built and cannot be without a
+backend, so the page says so in place of a dead "Send test" button. The API
+keys entry was removed outright rather than left as a NOT BUILT badge, because
+there was nothing behind it to describe. See "Still missing" at the end of this
+file for the capabilities that genuinely do not exist.
 
 Screening thresholds are not a dead form: they write to shared state that the
 dashboard and manoeuvre log both read, they persist across reloads, and changing
@@ -185,7 +190,10 @@ this pays for itself on a catalogue spanning LEO to GEO, not on debris clouds
 sharing a band — and reporting the measured number rather than a flattering one
 is the entire point of that panel.
 
-**77 of the events involve an ISRO-operated asset**, the most serious being
+**77 of the 3,032 raw events involve an ISRO-operated asset** — 72 of the 2,901
+that survive the default thresholds, which is the figure the dashboard's ISRO
+chip shows and the one `DEMO.md` quotes. Both are correct on their own basis;
+say which basis you mean. The most serious is
 `CARTOSAT-2C` against a Cosmos 2251 fragment at 1.911 km; both the dashboard and
 the catalogue filter to them. Every high-severity event in the run involves
 debris from one of the two real destruction events in the snapshot.
@@ -468,11 +476,28 @@ else works, and the events on screen are a real screening run either way — the
 were computed at build time by the same engine. Serve the file over http and the
 live re-run works too.
 
-## Not built
+## Still missing
 
-Demo mode (a scripted CRITICAL-event replay) is not implemented. Nor is
-re-propagation after a manoeuvre. See "What actually
-works" above, or `/console/status` in the app, for the full picture.
+Demo mode — a scripted CRITICAL-event replay — is not implemented, and
+deliberately so: the dashboard shows what the propagator found, and a scripted
+event would be the one authored number in a console whose argument is that it
+has none.
+
+Alert **delivery** does not exist. Rules match real events against the current
+thresholds and report what they caught; nothing is sent anywhere, because there
+is no backend to send it from.
+
+A burn is **not re-screened**. The advisor re-propagates the burned state and
+reports a real post-burn miss distance for *that pair* — see "Planning a burn"
+above — but nothing checks whether the burn creates a new conjunction with a
+third object.
+
+There is no **CDM** ingest or export, so this does not interoperate with an
+operator's existing conjunction pipeline, and no **covariance** from a real
+orbit determination — the σ feeding Pc is assumed and disclosed wherever used.
+
+See "What actually works" above, or `/console/status` in the app, for the
+per-capability breakdown.
 
 ## Structure
 
