@@ -108,9 +108,26 @@ async function saveThroughHost(filename: string, csv: string): Promise<boolean> 
 
 /** Hand the file to the browser. No network involved. */
 export async function downloadCsv(filename: string, csv: string): Promise<void> {
-  if (await saveThroughHost(filename, csv)) return;
+  return downloadText(filename, csv, 'text/csv');
+}
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+/**
+ * The same save path for any text payload.
+ *
+ * CDM export needs this: a Conjunction Data Message is plain text in KVN form
+ * and JSON in the other, and neither should be handed to the browser labelled
+ * text/csv. The host-download attempt, the declined-versus-failed distinction
+ * and the delayed revoke are all identical, so they live here once rather than
+ * being copied per format.
+ */
+export async function downloadText(
+  filename: string,
+  text: string,
+  mime = 'text/plain',
+): Promise<void> {
+  if (await saveThroughHost(filename, text)) return;
+
+  const blob = new Blob([text], { type: `${mime};charset=utf-8` });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

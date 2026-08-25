@@ -6,6 +6,7 @@ import { periApo, screen, SCREEN_KM, STEP_S, CO_ORBIT_KM } from '../src/data/eng
 import { refine } from '../src/data/engine/refine';
 import { DEFAULT_HORIZON_HOURS, runScreening } from '../src/data/engine/run';
 import { SEVERITY_RANK } from '../src/data/riskScore';
+import { toCdmKvn, splitSigma, intlDesignator } from '../src/data/cdm';
 import { applyAlongTrackDeltaV, propagateState } from '../src/data/engine/twobody';
 import {
   density,
@@ -799,6 +800,110 @@ section('13. Re-entry heating scales the way it must');
       check(`${c.name}: predicted within 3x of the catalogue`, ratio > 1 / 3 && ratio < 3, line);
     }
   }
+}
+
+section('16. Conjunction Data Messages are well formed');
+{
+  /*
+   * The CDM is an interoperability claim: we are asserting that what leaves
+   * this application can be read by tooling we do not control. That claim is
+   * only worth making if it is checked, and the two ways it can quietly break
+   * are both silent — a missing mandatory keyword parses as an absent optional
+   * one, and a covariance that does not recombine to the sigma we ranked on
+   * would make our own messages disagree with our own dashboard.
+   */
+  const precomputed = JSON.parse(
+    readFileSync(join(SNAPSHOT_DIR, '..', 'precomputed.json'), 'utf8'),
+  ) as { conjunctions: { a: number; b: number; miss: number; relv: number; sigma: number }[] };
+
+  const RESOLVED_EVENTS = precomputed.conjunctions
+    .slice(0, 40)
+    .map((c: { a: number; b: number }) => {
+      const A = catalogue.find((e) => e.object.norad === c.a)?.object;
+      const B = catalogue.find((e) => e.object.norad === c.b)?.object;
+      return A && B ? { ...c, A, B } : null;
+    })
+    .filter(Boolean) as Parameters<typeof toCdmKvn>[0][];
+
+  check(
+    'events resolve for the CDM check',
+    RESOLVED_EVENTS.length > 0,
+    `${RESOLVED_EVENTS.length} of the first 40 committed events resolved`,
+  );
+
+  // Mandatory keywords, CCSDS 508.0-B-1. Header, relative metadata, and the
+  // per-object metadata that a reader needs before it can interpret anything.
+  const MANDATORY = [
+    'CCSDS_CDM_VERS', 'CREATION_DATE', 'ORIGINATOR', 'MESSAGE_ID',
+    'TCA', 'MISS_DISTANCE',
+    'OBJECT', 'OBJECT_DESIGNATOR', 'CATALOG_NAME', 'OBJECT_NAME',
+    'INTERNATIONAL_DESIGNATOR', 'EPHEMERIS_NAME', 'COVARIANCE_METHOD',
+    'MANEUVERABLE', 'REF_FRAME',
+  ];
+  const sample = toCdmKvn(RESOLVED_EVENTS[0], {
+    snapshotEpochMs: SNAPSHOT_EPOCH,
+    creationMs: Date.UTC(2024, 10, 17, 23, 5, 0),
+  });
+  const missing = MANDATORY.filter(
+    (k) => !new RegExp(`^${k}\\s*=`, 'm').test(sample),
+  );
+  check(
+    'every mandatory CCSDS keyword is present',
+    missing.length === 0,
+    missing.length ? `missing ${missing.join(', ')}` : `${MANDATORY.length} keywords`,
+  );
+
+  // Both objects, and both declared DEFAULT. If a future change ever emits
+  // CALCULATED it would be claiming an orbit determination we did not do.
+  const objects = (sample.match(/^OBJECT\s*=\s*OBJECT[12]$/gm) ?? []).length;
+  const calculated = /COVARIANCE_METHOD\s*=\s*CALCULATED/.test(sample);
+  check(
+    'both objects present, neither claiming a determined covariance',
+    objects === 2 && !calculated,
+    `${objects} object blocks, COVARIANCE_METHOD=DEFAULT throughout`,
+  );
+
+  // CRLF, per the standard. A lone LF is the classic way a KVN file fails on
+  // a strict reader while looking perfect in an editor.
+  check(
+    'line endings are CRLF',
+    sample.includes('\r\n') && !/[^\r]\n/.test(sample),
+    `${sample.split('\r\n').length} lines, no bare LF`,
+  );
+
+  // The identity that makes the messages agree with the ranking.
+  let worstRss = 0;
+  for (const e of RESOLVED_EVENTS) {
+    const s = splitSigma(e);
+    const rss = Math.hypot(s.a, s.b);
+    worstRss = Math.max(worstRss, Math.abs(rss - e.sigma) / e.sigma);
+  }
+  check(
+    'per-object sigmas recombine to the pair sigma Pc was computed from',
+    worstRss < 1e-12,
+    `worst relative error ${worstRss.toExponential(2)} over ${RESOLVED_EVENTS.length} events`,
+  );
+
+  // Miss distance and relative speed are metres in a CDM and km here. A factor
+  // of 1000 in either direction is the easiest possible mistake to make and the
+  // hardest to notice, because both numbers stay plausible.
+  const missM = Number(/^MISS_DISTANCE\s*=\s*([\d.]+)/m.exec(sample)?.[1]);
+  const speedM = Number(/^RELATIVE_SPEED\s*=\s*([\d.]+)/m.exec(sample)?.[1]);
+  const e0 = RESOLVED_EVENTS[0];
+  check(
+    'distances and speeds are emitted in metres',
+    Math.abs(missM - e0.miss * 1000) < 1e-6 &&
+      Math.abs(speedM - e0.relv * 1000) < 1e-6,
+    `${missM} m vs ${e0.miss} km, ${speedM} m/s vs ${e0.relv} km/s`,
+  );
+
+  check(
+    'international designators expand to the CDM form',
+    intlDesignator('16040A') === '2016-040A' &&
+      intlDesignator('98067A') === '1998-067A' &&
+      intlDesignator('93036UL') === '1993-036UL',
+    'two-digit year expanded on the 1957 rollover',
+  );
 }
 
 section('Result');

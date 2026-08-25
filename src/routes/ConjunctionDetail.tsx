@@ -5,7 +5,8 @@ import { OriginBadge } from '../components/Provenance';
 import { ScoreModel } from '../components/ScoreModel';
 import { SigmaSensitivity } from '../components/SigmaSensitivity';
 import { Consequence } from '../components/Consequence';
-import { conjunctionsToCsv, downloadCsv } from '../data/csv';
+import { conjunctionsToCsv, downloadCsv, downloadText } from '../data/csv';
+import { toCdmKvn } from '../data/cdm';
 import { useAcknowledged } from '../hooks/useAcknowledged';
 import { fmtNorad, fmtPc, fmtUTC } from '../data/format';
 import { Button, Panel, SeverityChip } from '../components/primitives';
@@ -199,7 +200,27 @@ export function ConjunctionDetail() {
                 )
               }
             >
-              Export report
+              Export CSV
+            </Button>
+            {/*
+             * The format the field actually exchanges. Everything a CDM
+             * requires was already computed here; this hands it over in the
+             * form an operator's existing tooling can read, with
+             * COVARIANCE_METHOD = DEFAULT on both objects so the assumption
+             * survives the trip out of this application.
+             */}
+            <Button
+              className="px-[14px] py-2 text-sm text-secondary"
+              title="CCSDS 508.0-B-1 Conjunction Data Message. Covariance is declared DEFAULT, because ours is assumed rather than determined."
+              onClick={() =>
+                void downloadText(
+                  `${event.id}.cdm`,
+                  toCdmKvn(event, { snapshotEpochMs: SNAPSHOT_EPOCH }),
+                  'text/plain',
+                )
+              }
+            >
+              Export CDM
             </Button>
             <Button
               variant={ackd ? 'secondary' : 'primary'}

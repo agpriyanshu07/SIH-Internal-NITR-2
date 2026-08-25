@@ -8,7 +8,9 @@ import {
   groupOf,
   isIndianAsset,
 } from '../data/objects';
-import { conjunctionsToCsv, downloadCsv } from '../data/csv';
+import { conjunctionsToCsv, downloadCsv, downloadText } from '../data/csv';
+import { cdmBundleKvn } from '../data/cdm';
+import { SNAPSHOT_EPOCH } from '../data/objects';
 import { reband } from '../data/conjunctions';
 import { SEVERITY_RANK } from '../data/riskScore';
 import { fmtDur, fmtInt, fmtNorad, fmtPc, fmtUTC } from '../data/format';
@@ -272,6 +274,26 @@ export function Dashboard() {
             disabled={rows.length === 0}
           >
             Export CSV
+          </Button>
+          {/*
+           * The same rows as the CSV, as Conjunction Data Messages. One file,
+           * one message per screened event, in the KVN form Space-Track serves
+           * — so what leaves here enters a conjunction pipeline rather than a
+           * spreadsheet.
+           */}
+          <Button
+            className="px-[13px] py-[7px] text-sm text-secondary"
+            title={`${rows.length} CCSDS 508.0-B-1 Conjunction Data Messages, one per screened event. COVARIANCE_METHOD is DEFAULT on every object — ours is assumed, not determined.`}
+            onClick={() =>
+              void downloadText(
+                `kessler-cdm-${new Date(cascade.startUtc).toISOString().slice(0, 10)}.cdm`,
+                cdmBundleKvn(rows, { snapshotEpochMs: SNAPSHOT_EPOCH }),
+                'text/plain',
+              )
+            }
+            disabled={rows.length === 0}
+          >
+            Export CDM
           </Button>
           <Button
             variant="primary"
