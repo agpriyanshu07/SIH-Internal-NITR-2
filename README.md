@@ -1,7 +1,13 @@
 # KESSLER — front-end prototype
 
-A clickable prototype for an orbital conjunction screening console: it tracks
-satellites and debris in Low Earth Orbit and ranks predicted close approaches.
+**PS-04 · Space Debris Tracking & Satellite Collision Risk Prediction Dashboard**
+· Internal Hackathon 2026 · Space Technology
+
+A conjunction screening console: it tracks satellites and debris in Low Earth
+Orbit and ranks predicted close approaches. `PROBLEM.md` holds the problem
+statement verbatim and maps every requirement in it to the route, the feature-
+registry entry and the status that answers it — including the one requirement
+this deliberately covers only in part, and why.
 
 > **The orbital data and the screening are real. The operational trappings are
 > not.**

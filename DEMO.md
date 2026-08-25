@@ -1,5 +1,14 @@
 # KESSLER — demo, pitch and Q&A
 
+Answering **PS-04, Space Debris Tracking & Satellite Collision Risk Prediction
+Dashboard**. `PROBLEM.md` maps each of its four expected outcomes to where it is
+answered; this file is how to show them in three minutes.
+
+Judging is on Idea/Innovation, Technical Feasibility, Impact, Prototype/MVP
+Quality and Presentation. Deliverables are the prototype, a PPT and a 3-minute
+video — **the PPT and the video do not exist yet**; section 2 below is the script
+for the video.
+
 Everything in this file is a number the repository can produce on demand. Where
 a figure comes from a command, the command is named. Nothing here is rounded up
 for effect, and nothing is a placeholder — if a figure changes because the
