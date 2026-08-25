@@ -280,7 +280,7 @@ export function Alerts() {
           </div>
         )}
 
-        <p className="max-w-[76ch] border-t border-hairline-soft pt-4 text-sm leading-[1.6] text-tertiary [text-wrap:pretty]">
+        <p className="max-w-[76ch] border-t border-hairline-soft pt-4 text-base leading-[1.7] text-tertiary [text-wrap:pretty]">
           What a rule does <span className="text-secondary">not</span> do: reach anybody. Email and
           webhook delivery would need a backend, and this console has none by design — the whole
           screening run is bundled and no network request is made at any point. The

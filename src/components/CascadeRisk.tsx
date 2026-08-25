@@ -52,7 +52,7 @@ export function CascadeRisk({
       aside={<span className="num text-2xs text-tertiary">KESSLER &amp; COUR-PALAIS 1978</span>}
       bodyClassName="flex flex-col gap-5 p-[16px]"
     >
-      <p className="max-w-[72ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+      <p className="max-w-[72ch] text-base leading-[1.7] text-secondary [text-wrap:pretty]">
         A conjunction screen cannot answer this. Days after a breakup a fragment&rsquo;s
         position <em className="not-italic text-primary">around</em> its orbit is no longer
         known — only the orbit&rsquo;s shape is. So the spread cloud is treated as a gas
@@ -64,7 +64,7 @@ export function CascadeRisk({
       {worst ? (
         <div className="rounded-sm border border-accent-border bg-accent-wash p-4">
           <div className="label mb-1">What this one collision does</div>
-          <p className="max-w-[68ch] text-sm leading-[1.6] text-primary [text-wrap:pretty]">
+          <p className="max-w-[68ch] text-base leading-[1.7] text-primary [text-wrap:pretty]">
             Once spread, the cloud raises the collision rate on{' '}
             <span className="num">{exposed.length}</span> tracked{' '}
             {exposed.length === 1 ? 'asset' : 'assets'}. Worst affected is{' '}
@@ -152,7 +152,7 @@ export function CascadeRisk({
         </div>
       </div>
 
-      <p className="max-w-[72ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+      <p className="max-w-[72ch] text-base leading-[1.7] text-secondary [text-wrap:pretty]">
         <span className="text-primary">What bounds these numbers.</span> The gas picture
         needs the cloud spread around the Earth, which differential nodal precession takes{' '}
         <span className="num text-primary">

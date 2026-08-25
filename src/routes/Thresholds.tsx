@@ -337,7 +337,7 @@ export function Thresholds() {
                     {STATUS_LABEL[f.status]}
                   </span>
                 </div>
-                <p className="max-w-[68ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+                <p className="max-w-[68ch] text-base leading-[1.7] text-secondary [text-wrap:pretty]">
                   {f.note}
                 </p>
               </div>

@@ -71,7 +71,7 @@ export function Consequence({ event }: { event: ResolvedConjunction }) {
             <div className="num text-xl text-primary">{fmtInt(bk.predictedCount)}</div>
           </div>
         </div>
-        <p className="max-w-[70ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+        <p className="max-w-[70ch] text-base leading-[1.7] text-secondary [text-wrap:pretty]">
           The model's threshold is {CATASTROPHIC_THRESHOLD_JG} J/g: above it the target
           is fragmented entirely, below it only a crater's worth of mass is liberated.
           This impact is{' '}
@@ -152,7 +152,7 @@ export function Consequence({ event }: { event: ResolvedConjunction }) {
           </span>
         </div>
 
-        <p className="max-w-[70ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+        <p className="max-w-[70ch] text-base leading-[1.7] text-secondary [text-wrap:pretty]">
           Each fragment appears twice at its own orbital period — once at its apogee,
           once at its perigee. The <span className="text-primary">X</span> is the
           signature of a breakup, and it is geometry rather than coincidence: a fragment
@@ -160,7 +160,7 @@ export function Consequence({ event }: { event: ResolvedConjunction }) {
           apogee outwards, while one thrown backwards does the exact opposite. Both arms
           therefore cross at the parent orbit, marked here in the accent colour.
         </p>
-        <p className="max-w-[70ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+        <p className="max-w-[70ch] text-base leading-[1.7] text-secondary [text-wrap:pretty]">
           The fragments on the floor of the plot have had their perigee pushed into the
           atmosphere and are already coming down — they are the same{' '}
           <span className="num text-primary">{fmtInt(result.immediateReentries)}</span>{' '}
@@ -184,14 +184,14 @@ export function Consequence({ event }: { event: ResolvedConjunction }) {
           </span>
         </div>
 
-        <p className="max-w-[70ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+        <p className="max-w-[70ch] text-base leading-[1.7] text-secondary [text-wrap:pretty]">
           <span className="text-primary">The longitude is not predictable, and no
           honest tool will give you one.</span> A re-entry prediction carries roughly
           ±10–20% error on the remaining lifetime; applied to the final orbit that is
           minutes of uncertainty, and an object at 7.7 km/s crosses a quarter of the
           planet in ten. Any map pinning this to a country would be decoration.
         </p>
-        <p className="max-w-[70ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+        <p className="max-w-[70ch] text-base leading-[1.7] text-secondary [text-wrap:pretty]">
           The <span className="text-primary">latitude</span> is a different matter. An
           orbit of inclination {event.A.incl.toFixed(1)}° never crosses{' '}
           ±{result.reachableLatitudeDeg.toFixed(1)}°, and within that band the time spent

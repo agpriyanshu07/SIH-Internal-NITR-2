@@ -91,7 +91,13 @@
     --t2: #3d4e60;
     --t3: #4a5665;
 
-    --accent: #8e4b15;
+    /* 8e4b15 measured 4.49:1 as an inline link on a light panel — one
+       hundredth below AA, which is not a rounding error you get to ignore on
+       the one element type whose whole job is to be distinguishable from the
+       text around it. Two shades darker clears it and, being an accent that
+       only ever carries white ink when it is a background, cannot make any
+       button worse. */
+    --accent: #7f4211;
     --accent-hover: #753d0d;
     --accent-wash: rgba(142, 75, 21, 0.13);
     --accent-border: rgba(142, 75, 21, 0.42);

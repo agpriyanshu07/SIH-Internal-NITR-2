@@ -400,7 +400,7 @@ export function Analysis() {
             aside={<span className="num text-2xs text-tertiary">APOGEE + PERIGEE vs PERIOD</span>}
             bodyClassName="p-[16px]"
           >
-            <p className="mb-4 max-w-[72ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+            <p className="mb-4 max-w-[72ch] text-base leading-[1.7] text-secondary [text-wrap:pretty]">
               The standard picture of a breakup, and the one every published
               reconstruction of Fengyun-1C and Iridium–Kosmos uses. Each fragment is
               plotted twice at its own period — apogee and perigee. Fragments thrown
@@ -432,7 +432,7 @@ export function Analysis() {
                 hard bound — nothing re-enters outside it
               </span>
             </div>
-            <p className="mb-4 max-w-[72ch] text-sm leading-[1.6] text-secondary [text-wrap:pretty]">
+            <p className="mb-4 max-w-[72ch] text-base leading-[1.7] text-secondary [text-wrap:pretty]">
               <span className="text-primary">Longitude is not predictable.</span> A
               re-entry prediction carries ±10–20% error on remaining lifetime; at
               7.7 km/s that is a quarter of the planet. There is no map here on purpose.
