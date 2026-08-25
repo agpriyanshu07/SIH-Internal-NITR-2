@@ -91,6 +91,15 @@ horizon — if they ever diverge, something is wrong with one of them.
 The UI only ever consumes the shapes in `data/types.ts`. Keep those stable and
 the screens do not care where the numbers came from.
 
+Two modules are deliberately PURE — no data imports at all — and must stay that
+way. `data/cdm.ts` takes the snapshot epoch and the group lookup as parameters
+rather than importing them, and `engine/tleUncertainty.ts` imports nothing but
+satellite.js. The reason is mechanical: everything that reads the snapshot does
+it through Vite's `?raw` loader, and importing any of it makes a module
+unloadable in Node — which is where `npm run validate` runs. Add an import of
+`data/objects` or `engine/catalogue` to either file and the whole suite stops
+starting, with an error about a `.txt` extension that names neither module.
+
 ## Things that will bite you
 
 - **The screening radius is derived, not a tuning knob.** 450 km = 15 km/s max
@@ -136,7 +145,7 @@ the screens do not care where the numbers came from.
 npm run dev        # dev server
 npm run build      # tsc -b && vite build — the only CI this repo has
 npm run screen     # re-run screening, rewrite src/data/precomputed.json
-npm run validate   # known-answer tests for the engine (must stay 49/49)
+npm run validate   # known-answer tests for the engine (must stay 62/62)
 npm run build:single  # one self-contained file in dist-single/
 scripts/fetch-snapshot.sh   # refresh the snapshot from CelesTrak, by hand
 ```

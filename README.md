@@ -48,8 +48,17 @@ Three more, all offline:
 
 ```bash
 npm run screen        # re-run the screening engine and commit the result
-npm run validate      # known-answer tests for the engine
+npm run validate      # known-answer tests for the engine — 62/62
+npm run scaling       # measure how the cascade scales, and fit the exponent
 npm run build:single  # one self-contained file — see below
+```
+
+Two more that need the network, and are run by hand:
+
+```bash
+scripts/fetch-snapshot.sh   # refresh the committed snapshot from CelesTrak
+scripts/fetch-history.sh    # collect multi-epoch element sets, for `npm run uncertainty`
+npm run uncertainty         # measure positional uncertainty from that history
 ```
 
 `npm run screen` is deterministic: re-running it reproduces all 3,032 events
@@ -367,6 +376,61 @@ over the equator and *most* likely near its turning latitudes, where its motion
 is momentarily parallel to a line of latitude. For a 97.5° sun-synchronous
 orbit, 17.7% of the re-entry probability sits in each of the two bands around
 ±83°, against about 2% per band through the tropics.
+
+### Interoperating: Conjunction Data Messages
+
+Every screened event exports as a **CCSDS 508.0-B-1 Conjunction Data Message**,
+the format Space-Track issues, ESA's SSA services consume, NASA CARA works in
+and the US TraCSS programme specifies. `Export CDM` sits beside `Export CSV` on
+the dashboard and on every event. Everything a CDM requires was already being
+computed — TCA, miss distance, relative speed, identifiers, Pc — so this is a
+formatter, not a model, and it introduces no new number.
+
+The covariance field is the one place where emitting a standard format could
+turn an assumption into a claim, and the standard already solved it.
+`COVARIANCE_METHOD` takes exactly two values: `CALCULATED`, meaning it came from
+an orbit determination, and `DEFAULT`, meaning a default was substituted. Ours
+is `DEFAULT`, on every object of every message, with a COMMENT above it naming
+the model, the σ, the element-set age and the RCS class behind it. A reader who
+checks that field learns the truth without reading this file.
+
+Per-object σ is the pair σ attributed by each object's own age and size class,
+weighted so `σ₁² + σ₂² = σ_pair²` holds exactly — so combining our two
+covariances the way conjunction assessment actually combines them recovers the
+number Pc was computed from, rather than something near it.
+
+### Measuring the uncertainty instead of assuming it
+
+The σ feeding Pc is assumed, and that is the sharpest question this project
+faces. `src/data/engine/tleUncertainty.ts` implements the published answer:
+**successive TLE differencing**. Two consecutive element sets for one object are
+two independent fits; propagate both to the midpoint of their epochs and
+difference the states, and the residual is a sample of the error the propagation
+carries. RMS a run of them in radial, along-track and cross-track and that is a
+measured uncertainty for that object (Flohrer et al., AMOS 2008; ESA routine
+practice).
+
+It is tested against a known injected perturbation and recovers it to **1.00×**.
+What it lacks is input: the committed snapshot is one instant per object by
+design — that is what makes the screening run meaningful — and this method needs
+several. `scripts/fetch-history.sh` collects the history, `npm run uncertainty`
+measures it. Until then the console ranks on the modelled σ, the measured table
+is empty, and the validation suite fails the build if anything claims otherwise.
+
+### The triage verdict
+
+Every event answers the question a ranking does not: *what would have to be true
+for this to stop mattering?* The miss distance at which it would fall a band is
+a closed-form inversion of the same Foster model that ranked it. The σ
+multiplier that would do the same is found by sweeping rather than solving,
+because Pc is **not** monotonic in σ — it peaks near σ = miss/√2, so a bisection
+would find one root and silently ignore the other. Real events land on both
+sides of that peak, and the panel says so when one does, because a larger σ
+making an event less serious reads as a bug otherwise.
+
+An event whose band survives σ from a quarter to four times the assumed value is
+reported as geometry rather than assumption. That is the strongest statement
+this console can make about a single pass.
 
 ### Probability of collision
 
