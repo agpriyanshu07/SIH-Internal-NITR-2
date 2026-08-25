@@ -88,20 +88,20 @@
     --grid: rgba(20, 40, 70, 0.075);
 
     --t1: #141f2c;
-    --t2: #4c5f72;
-    --t3: #788a9c;
+    --t2: #3d4e60;
+    --t3: #4a5665;
 
-    --accent: #c96a1e;
-    --accent-hover: #b25a15;
-    --accent-wash: rgba(201, 106, 30, 0.12);
-    --accent-border: rgba(201, 106, 30, 0.34);
+    --accent: #8e4b15;
+    --accent-hover: #753d0d;
+    --accent-wash: rgba(142, 75, 21, 0.13);
+    --accent-border: rgba(142, 75, 21, 0.42);
     --accent-ink: #ffffff;
 
     --risk-critical: #b03a2e;
-    --risk-high: #b9651b;
-    --risk-medium: #9c7e17;
-    --risk-low: #357450;
-    --risk-nominal: #78879a;
+    --risk-high: #8a4b14;
+    --risk-medium: #6b5610;
+    --risk-low: #33714e;
+    --risk-nominal: #4a5665;
 
     --glass: blur(22px) saturate(130%);
     --lift: 0 1px 0 0 rgba(255, 255, 255, 0.85) inset,
@@ -241,6 +241,20 @@
    */
   @keyframes krowin {
     from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+  }
+  /*
+   * A headline word rising into its own clipping box. The overflow-hidden
+   * wrapper is what makes it read as revealed rather than as faded in.
+   */
+  @keyframes kwordin {
+    from { opacity: 0; transform: translateY(0.9em); }
+    to { opacity: 1; transform: none; }
+  }
+  /* Hero elements after the headline: further and slower than a section reveal,
+     because nothing is competing with them on first paint. */
+  @keyframes kheroin {
+    from { opacity: 0; transform: translateY(18px); }
     to { opacity: 1; transform: none; }
   }
   /* A side panel arriving from the edge it is docked to. */
@@ -583,6 +597,12 @@
   }
   .slide-in {
     animation: kslidein 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .word-in {
+    animation: kwordin 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .hero-in {
+    animation: kheroin 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .label {

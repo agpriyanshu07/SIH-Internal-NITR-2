@@ -73,6 +73,51 @@ function NextApproach() {
   );
 }
 
+/**
+ * The headline, arriving a word at a time.
+ *
+ * Six words, so this is the one place a per-token reveal is worth the DOM it
+ * costs — the guidance is explicit that split-text belongs on short headlines
+ * and nowhere near body copy. No GSAP: a word is a span with a transition delay,
+ * which is the whole of what SplitText would be doing here for 64 kB.
+ *
+ * The line breaks are structural rather than <br>, so the words can stagger
+ * across them, and the whole heading is one accessible string — a screen reader
+ * gets "Know which close approach matters." and never eleven fragments.
+ */
+const HEADLINE = [['Know', 'which'], ['close', 'approach'], ['matters.']];
+
+function HeroHeadline() {
+  const reduced =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let n = -1;
+  return (
+    <h1
+      aria-label="Know which close approach matters."
+      className="text-[clamp(38px,5.4vw,60px)] font-semibold leading-[1.02] tracking-display text-primary"
+    >
+      {HEADLINE.map((line, li) => (
+        <span key={li} aria-hidden className="block">
+          {line.map((word) => {
+            n += 1;
+            return (
+              <span key={word} className="inline-block overflow-hidden pb-[0.06em] align-bottom">
+                <span
+                  className={reduced ? 'inline-block' : 'word-in inline-block'}
+                  style={reduced ? undefined : { animationDelay: `${120 + n * 85}ms` }}
+                >
+                  {word}
+                </span>
+              </span>
+            );
+          })}{' '}
+        </span>
+      ))}
+    </h1>
+  );
+}
+
 /** One revealed child, with its stagger delay taken from its index. */
 function RevealItem({
   inView,
@@ -234,16 +279,19 @@ export function Landing() {
         {/* Hero */}
         <section className="grid items-center gap-14 px-6 py-16 lg:grid-cols-[1fr_minmax(0,620px)] lg:px-10 lg:py-[88px]">
           <div className="flex flex-col gap-[26px]">
-            <div className="label-strong tracking-eyebrow">Conjunction screening — Low Earth Orbit</div>
-            <h1 className="text-[clamp(38px,5.4vw,60px)] font-semibold leading-[1.02] tracking-display text-primary">
-              Know which<br />close approach<br />matters.
-            </h1>
-            <p className="max-w-[480px] text-xl leading-[1.6] text-secondary [text-wrap:pretty]">
+            <div className="hero-in label-strong tracking-eyebrow" style={{ animationDelay: '40ms' }}>
+              Conjunction screening — Low Earth Orbit
+            </div>
+            <HeroHeadline />
+            <p
+              className="hero-in max-w-[480px] text-xl leading-[1.6] text-secondary [text-wrap:pretty]"
+              style={{ animationDelay: '520ms' }}
+            >
               Orbital conjunction screening, open to everyone. KESSLER ingests public element
               sets, propagates every tracked object in Low Earth Orbit, and ranks the close
               approaches that warrant an operator's attention.
             </p>
-            <div className="flex flex-wrap gap-3 pt-[6px]">
+            <div className="hero-in flex flex-wrap gap-3 pt-[6px]" style={{ animationDelay: '620ms' }}>
               <Link to="/console">
                 <Button variant="primary" className="px-5 py-[11px] text-base">Screen your catalogue</Button>
               </Link>
@@ -254,7 +302,10 @@ export function Landing() {
                 Read the method
               </Button>
             </div>
-            <dl className="mt-[14px] flex flex-wrap gap-8 border-t border-hairline-soft pt-[22px]">
+            <dl
+              className="hero-in mt-[14px] flex flex-wrap gap-8 border-t border-hairline-soft pt-[22px]"
+              style={{ animationDelay: '700ms' }}
+            >
               {HERO_STATS.map((s) => (
                 <HeroStat key={s.label} to={s.to} fmt={s.fmt} label={s.label} />
               ))}
