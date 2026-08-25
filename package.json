@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "screen": "tsx scripts/precompute.ts && tsx scripts/landing-summary.ts",
     "validate": "tsx scripts/validate.ts",
-    "build:single": "tsc -b && KESSLER_SINGLE=1 vite build"
+    "build:single": "tsc -b && KESSLER_SINGLE=1 vite build",
+    "uncertainty": "tsx scripts/uncertainty.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.0.13",

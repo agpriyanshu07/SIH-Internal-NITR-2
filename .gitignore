@@ -3,3 +3,9 @@ tsconfig.tsbuildinfo
 .DS_Store
 *.local
 dist-single/
+
+# Collected by scripts/fetch-history.sh for `npm run uncertainty`. Not committed:
+# the snapshot is deliberately one instant, and a history is per-machine and
+# grows every day it is run.
+src/data/history/
+src/data/measuredSigma.json

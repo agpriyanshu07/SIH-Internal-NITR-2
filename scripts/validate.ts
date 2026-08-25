@@ -7,6 +7,12 @@ import { refine } from '../src/data/engine/refine';
 import { DEFAULT_HORIZON_HOURS, runScreening } from '../src/data/engine/run';
 import { SEVERITY_RANK } from '../src/data/riskScore';
 import { toCdmKvn, splitSigma, intlDesignator } from '../src/data/cdm';
+import {
+  estimateUncertainty,
+  toRic,
+  MEASURED_SIGMA,
+  type DatedTle,
+} from '../src/data/engine/tleUncertainty';
 import { applyAlongTrackDeltaV, propagateState } from '../src/data/engine/twobody';
 import {
   density,
@@ -57,6 +63,26 @@ function check(name: string, ok: boolean, detail: string): void {
  */
 function note(name: string, detail: string): void {
   console.log(`  NOTE  ${name}\n        ${detail}`);
+}
+
+/**
+ * Rewrite a TLE line 2's mean motion, preserving the checksum.
+ *
+ * Used only by the uncertainty test, to inject an error of known size. Mean
+ * motion is columns 53-63 and the checksum is the last digit — modulo 10 of the
+ * sum of the digits, with a minus sign counting as 1. Getting the checksum
+ * wrong makes satellite.js reject the line, and the test would then be checking
+ * that a rejected TLE produces nothing.
+ */
+function shiftMeanMotion(line2: string, deltaRevsPerDay: number): string {
+  const n = Number(line2.slice(52, 63));
+  const shifted = (n + deltaRevsPerDay).toFixed(8).padStart(11, ' ');
+  const body = line2.slice(0, 52) + shifted + line2.slice(63, 68);
+  const sum = [...body].reduce(
+    (acc, ch) => acc + (ch === '-' ? 1 : /\d/.test(ch) ? Number(ch) : 0),
+    0,
+  );
+  return body + String(sum % 10);
 }
 
 function section(title: string): void {
@@ -903,6 +929,118 @@ section('16. Conjunction Data Messages are well formed');
       intlDesignator('98067A') === '1998-067A' &&
       intlDesignator('93036UL') === '1993-036UL',
     'two-digit year expanded on the 1957 rollover',
+  );
+}
+
+section('17. TLE uncertainty estimator recovers a known offset');
+{
+  /*
+   * The estimator has no real input in this repository — the snapshot is one
+   * epoch per object by design, and successive differencing needs several. So
+   * it is checked the only way it can be: by constructing a case whose answer
+   * is known and requiring the code to recover it.
+   */
+
+  // Frame first. A difference vector of known geometry must decompose the way
+  // the definition says, or every sigma downstream is mislabelled — and a
+  // radial/along-track swap is invisible in the total, which is what makes it
+  // dangerous.
+  const ric = toRic(
+    { x: 0, y: 3, z: 0 },              // 3 km along +y
+    { x: 7000, y: 0, z: 0 },           // position on +x  -> radial is +x
+    { x: 0, y: 7.5, z: 0 },            // velocity on +y  -> along-track is +y
+  );
+  check(
+    'RIC decomposition puts a purely along-track offset in along-track',
+    Math.abs(ric.alongTrack - 3) < 1e-9 &&
+      Math.abs(ric.radial) < 1e-9 &&
+      Math.abs(ric.crossTrack) < 1e-9,
+    `R ${ric.radial.toFixed(6)}, I ${ric.alongTrack.toFixed(6)}, C ${ric.crossTrack.toFixed(6)}`,
+  );
+
+  const issEntry = byName('ISS')!;
+  const [l1, l2] = issEntry.object.tle;
+  const epochMs = SNAPSHOT_EPOCH - issEntry.object.age * 86400000;
+
+  // Identical element sets at different epochs disagree by nothing, so every
+  // component must be zero. If this ever returns a positive sigma the estimator
+  // is measuring its own arithmetic rather than the catalogue.
+  const same: DatedTle[] = [
+    { line1: l1, line2: l2, epochMs },
+    { line1: l1, line2: l2, epochMs: epochMs + 86400000 },
+  ];
+  const zero = estimateUncertainty(issEntry.object.norad, same);
+  check(
+    'two identical element sets measure zero disagreement',
+    zero !== null && zero.total < 1e-9,
+    zero ? `total ${zero.total.toExponential(2)} km over ${zero.samples} pair(s)` : 'null',
+  );
+
+  /*
+   * A known along-track offset, injected the way the real world produces one:
+   * by perturbing mean motion so the object arrives early. A TLE cannot encode
+   * "shift 1 km along track" directly, so the check is that the estimator sees
+   * an offset that is (a) overwhelmingly along-track, which is the signature of
+   * every real TLE error, and (b) the size the perturbation implies.
+   */
+  const nDotShifted = shiftMeanMotion(l2, 2e-6); // revs/day
+  const perturbed: DatedTle[] = [
+    { line1: l1, line2: l2, epochMs },
+    { line1: l1, line2: nDotShifted, epochMs: epochMs + 86400000 },
+  ];
+  const est = estimateUncertainty(issEntry.object.norad, perturbed);
+  check(
+    'a mean-motion perturbation reads as an along-track error',
+    est !== null && est.alongTrack > 10 * Math.max(est.radial, est.crossTrack),
+    est
+      ? `R ${est.radial.toFixed(4)} I ${est.alongTrack.toFixed(4)} C ${est.crossTrack.toFixed(4)} km`
+      : 'null',
+  );
+
+  /*
+   * Closed form for the injected error, so this is a known-answer test rather
+   * than a plausibility check.
+   *
+   * The two element sets are one day apart and are compared at the midpoint, so
+   * each propagates half a day. A mean-motion difference of dn rev/day
+   * accumulates dn * 0.5 revolutions of phase over that half day, and a
+   * revolution of phase is one orbital circumference of along-track distance:
+   *
+   *     ds = 2*pi*(Re + alt) * dn * 0.5
+   *
+   * For the ISS at 2e-6 rev/day that is 42,543 km * 1e-6 = 0.0425 km, which is
+   * what the estimator returns to three figures.
+   *
+   * The first version of this line divided by the mean motion as well, on the
+   * reasoning that dn had to be made fractional first. It does not: dn is
+   * already in revolutions per day, and the revolution is the unit that maps
+   * onto circumference. That put the expectation 15x low and failed a correct
+   * estimator, which is the more expensive of the two ways to get a test wrong.
+   */
+  if (est) {
+    const circumference = 2 * Math.PI * (6371 + issEntry.object.alt);
+    const expected = circumference * 2e-6 * 0.5;
+    const ratio = est.alongTrack / expected;
+    check(
+      'the along-track magnitude matches the injected perturbation',
+      ratio > 0.9 && ratio < 1.1,
+      `measured ${est.alongTrack.toFixed(3)} km vs ${expected.toFixed(3)} km expected (${ratio.toFixed(2)}x)`,
+    );
+  }
+
+  check(
+    'one element set is not enough to measure anything',
+    estimateUncertainty(25544, [{ line1: l1, line2: l2, epochMs }]) === null,
+    'returns null rather than a fabricated sigma',
+  );
+
+  // The registry claim and the data have to agree. An empty table with the UI
+  // claiming measured covariance is the exact failure this project exists to
+  // avoid, so it is asserted rather than trusted.
+  check(
+    'no measured sigma is claimed while the table is empty',
+    Object.keys(MEASURED_SIGMA).length === 0,
+    'estimator implemented, history not committed — console uses the modelled sigma',
   );
 }
 
