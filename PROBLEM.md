@@ -150,7 +150,7 @@ given, and because these are where the marks for Idea/Innovation sit.
 | **Technical Feasibility** | 62 known-answer tests, including brute-force agreement to 1.14 × 10⁻¹³ km and the breakup model checked against three real catalogued events. Runs offline on free data. |
 | **Impact** | ISRO generated over 53,000 close-approach alerts in 2024 and flew ten manoeuvres. The scarce resource is triage, which is what this ranks. 20 of India's 22 active LEO satellites are formally assessed as facing elevated risk. |
 | **Prototype / MVP Quality** | Every requirement addressed; nothing in the interface is a dead control; `npm run build` and `npm run validate` are clean from a fresh clone. |
-| **Presentation** | `DEMO.md` — the 90-second opening, the click path with real event IDs, and prepared answers. **The PPT and the 3-minute video are not in this repository and are still to be produced.** |
+| **Presentation** | `deck/KESSLER-PS04.pptx` for the slides and `DEMO.md` for the spoken path — the 90-second opening, the click path with real event IDs, and prepared answers. **The 3-minute video is still to be recorded**; `DEMO.md` section 2 is its script. |
 
 ---
 
@@ -159,7 +159,7 @@ given, and because these are where the marks for Idea/Innovation sit.
 | Deliverable | Status |
 |---|---|
 | Prototype / MVP | Complete — `npm run dev`, or `npm run build:single` for one offline file |
-| PPT (SIH-style) | **Not started** |
+| PPT (SIH-style) | Complete — `deck/KESSLER-PS04.pptx`, rebuilt by `node deck/build.cjs` |
 | 3-min YouTube demo video | **Not started** — `DEMO.md` section 2 is the script for it |
 
 ---

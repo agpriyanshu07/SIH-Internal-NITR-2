@@ -6,8 +6,8 @@ answered; this file is how to show them in three minutes.
 
 Judging is on Idea/Innovation, Technical Feasibility, Impact, Prototype/MVP
 Quality and Presentation. Deliverables are the prototype, a PPT and a 3-minute
-video — **the PPT and the video do not exist yet**; section 2 below is the script
-for the video.
+video. The prototype is done and the deck is `deck/KESSLER-PS04.pptx`; **the
+video is still to be recorded** and section 2 below is its script.
 
 Everything in this file is a number the repository can produce on demand. Where
 a figure comes from a command, the command is named. Nothing here is rounded up
