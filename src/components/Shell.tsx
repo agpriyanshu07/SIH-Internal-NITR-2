@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { fmtAge, fmtUTC } from '../data/format';
-import { SearchIcon } from './Icon';
+import { MoonIcon, PersonIcon, SearchIcon, SunIcon } from './Icon';
 import { TextField } from './primitives';
 import { useTheme } from '../hooks/useTheme';
 import { initials, useOperator } from '../hooks/useOperator';
@@ -275,9 +275,10 @@ export function Shell() {
               type="button"
               onClick={toggle}
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-              className="lift rounded border border-hairline bg-panel px-2 py-1 font-mono text-2xs uppercase tracking-label text-tertiary hover:text-primary"
+              className="lift flex items-center gap-[6px] rounded border border-hairline bg-panel px-2 py-1 font-mono text-2xs uppercase tracking-label text-tertiary transition-colors hover:border-[color:var(--t3)] hover:text-primary"
             >
-              {theme === 'dark' ? 'Dark' : 'Light'}
+              {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
+              <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
             </button>
 
             <NavLink
@@ -285,7 +286,7 @@ export function Shell() {
               title={operator ? `Signed in as ${who}` : 'Not signed in — nothing is authenticated'}
               className="lift flex h-[26px] w-[26px] flex-none items-center justify-center rounded border border-hairline bg-panel font-mono text-xs- text-secondary hover:text-primary"
             >
-              {operator ? initials(who) : '—'}
+              {operator ? initials(who) : <PersonIcon className="text-tertiary" />}
             </NavLink>
           </div>
         </header>
