@@ -10,7 +10,8 @@
     "screen": "tsx scripts/precompute.ts && tsx scripts/landing-summary.ts",
     "validate": "tsx scripts/validate.ts",
     "build:single": "tsc -b && KESSLER_SINGLE=1 vite build",
-    "uncertainty": "tsx scripts/uncertainty.ts"
+    "uncertainty": "tsx scripts/uncertainty.ts",
+    "scaling": "tsx scripts/scaling.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.0.13",

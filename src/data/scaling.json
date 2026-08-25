@@ -1,0 +1,79 @@
+{
+  "measuredAtUtc": "2026-08-25T16:19:06.853Z",
+  "horizonHours": 72,
+  "note": "Subsets taken by deterministic stride over the real catalogue, so the mix of shells and inclinations stays comparable as n grows. Timings are single-threaded and machine-specific; the exponent is the portable part.",
+  "fittedExponent": 1.7376,
+  "rows": [
+    {
+      "objects": 100,
+      "pairs": 4950,
+      "afterRadialFilter": 4950,
+      "candidates": 3390,
+      "events": 31,
+      "propagations": 432000,
+      "elapsedMs": 523.225551,
+      "pairsPerSecond": 9460.547158944079,
+      "propagationsPerSecond": 825647.7520533013
+    },
+    {
+      "objects": 200,
+      "pairs": 19900,
+      "afterRadialFilter": 19900,
+      "candidates": 13609,
+      "events": 137,
+      "propagations": 864000,
+      "elapsedMs": 1637.7193109999998,
+      "pairsPerSecond": 12151.044361716024,
+      "propagationsPerSecond": 527562.93108154
+    },
+    {
+      "objects": 350,
+      "pairs": 61075,
+      "afterRadialFilter": 61075,
+      "candidates": 43135,
+      "events": 482,
+      "propagations": 1512000,
+      "elapsedMs": 4335.760791000001,
+      "pairsPerSecond": 14086.339847617299,
+      "propagationsPerSecond": 348727.7257404397
+    },
+    {
+      "objects": 500,
+      "pairs": 124750,
+      "afterRadialFilter": 124738,
+      "candidates": 85796,
+      "events": 1015,
+      "propagations": 2160000,
+      "elapsedMs": 8406.180202,
+      "pairsPerSecond": 14840.271919262384,
+      "propagationsPerSecond": 256953.80637760923
+    },
+    {
+      "objects": 700,
+      "pairs": 244650,
+      "afterRadialFilter": 244635,
+      "candidates": 168963,
+      "events": 1969,
+      "propagations": 3024000,
+      "elapsedMs": 14655.046136,
+      "pairsPerSecond": 16693.90855065405,
+      "propagationsPerSecond": 206345.307407226
+    },
+    {
+      "objects": 859,
+      "pairs": 368511,
+      "afterRadialFilter": 368491,
+      "candidates": 253010,
+      "events": 3032,
+      "propagations": 3710880,
+      "elapsedMs": 21980.186089,
+      "pairsPerSecond": 16765.599640870267,
+      "propagationsPerSecond": 168828.41596400825
+    }
+  ],
+  "extrapolation": {
+    "5000": 453.7,
+    "10000": 1513.1,
+    "30000": 10206.9
+  }
+}
