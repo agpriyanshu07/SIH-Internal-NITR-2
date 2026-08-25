@@ -22,6 +22,16 @@ export interface ScreeningState {
   stage: 'screen' | 'refine' | null;
   /** True once a live run has replaced the committed result. */
   live: boolean;
+  /**
+   * What the last live run produced, for the completion notice.
+   *
+   * A run that finishes and changes nothing on screen looks exactly like a
+   * button that does nothing — which is what it looked like. The interesting
+   * fact is precisely that nothing changed: the live worker and the committed
+   * precompute are the same engine over the same horizon, so reproducing the
+   * number to the event is the claim, not a coincidence.
+   */
+  lastRun: { events: number; elapsedMs: number; matchedCommitted: boolean } | null;
   error: string | null;
 }
 
@@ -32,6 +42,7 @@ export function useScreening() {
     progress: null,
     stage: null,
     live: false,
+    lastRun: null,
     error: null,
   });
 
@@ -79,7 +90,7 @@ export function useScreening() {
       return;
     }
     workerRef.current = worker;
-    setState((s) => ({ ...s, progress: 0, stage: 'screen', error: null }));
+    setState((s) => ({ ...s, progress: 0, stage: 'screen', error: null, lastRun: null }));
 
     worker.onmessage = (e: MessageEvent<ScreenResponse>) => {
       const msg = e.data;
@@ -99,6 +110,15 @@ export function useScreening() {
         progress: null,
         stage: null,
         live: true,
+        lastRun: {
+          events: msg.conjunctions.length,
+          elapsedMs: msg.cascade.elapsedMs,
+          // Same horizon, same engine — so the event count has to match, and
+          // saying whether it did is more useful than assuming it will.
+          matchedCommitted:
+            msg.cascade.horizonHours === CASCADE.horizonHours &&
+            msg.conjunctions.length === CASCADE.events,
+        },
         error: null,
       });
     };
@@ -112,5 +132,10 @@ export function useScreening() {
     worker.postMessage({ hours } satisfies ScreenRequest);
   }, []);
 
-  return { ...state, run, running: state.progress !== null };
+  const dismissLastRun = useCallback(
+    () => setState((s) => ({ ...s, lastRun: null })),
+    [],
+  );
+
+  return { ...state, run, dismissLastRun, running: state.progress !== null };
 }

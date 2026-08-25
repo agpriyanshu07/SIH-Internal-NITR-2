@@ -119,7 +119,8 @@ export function Dashboard() {
    * paints on first frame; "Run screening" replaces it with a live worker run
    * of the same engine over the horizon the operator picked.
    */
-  const { events, cascade, progress, stage, live, running, error, run } = useScreening();
+  const { events, cascade, progress, stage, live, lastRun, dismissLastRun, running, error, run } =
+    useScreening();
   const { toggle: toggleAck, isAcknowledged } = useAcknowledged();
 
   const sortBy = (k: SortKey) => {
@@ -294,6 +295,61 @@ export function Dashboard() {
           foot={`${fmtInt(cascade.propagations)} SGP4 propagations`}
         />
       </div>
+
+      {/*
+        A live run used to finish in silence.
+
+        It takes twenty-six seconds, ticks a progress percentage, and then
+        replaces the table with numbers identical to the ones already there —
+        which, with no completion notice, is indistinguishable from a button
+        that does nothing. That was the report: "run screening just running but
+        showing no output."
+
+        The identical numbers are the point, not an anticlimax. The committed
+        precompute and this worker are the same engine over the same horizon, so
+        reproducing the event count exactly is the claim the README makes, and
+        this is the only place a visitor can watch it be true.
+      */}
+      {lastRun && (
+        <div className="rise px-5 pt-4">
+          <div
+            role="status"
+            className="glass lift flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-hairline bg-panel px-[14px] py-[10px]"
+          >
+            <span
+              data-sev={lastRun.matchedCommitted ? 'LOW' : 'MEDIUM'}
+              className="flex flex-none items-center gap-2"
+            >
+              <span className="sev-swatch h-2 w-2 rounded-xs bg-sev" />
+              <span className="font-mono text-2xs uppercase tracking-label text-sev">
+                Live run complete
+              </span>
+            </span>
+            <span className="min-w-0 text-sm+ leading-[1.55] text-secondary [text-wrap:pretty]">
+              {fmtInt(lastRun.events)} events in{' '}
+              <span className="num text-primary">{(lastRun.elapsedMs / 1000).toFixed(1)} s</span>,
+              re-propagated in this browser.{' '}
+              {lastRun.matchedCommitted ? (
+                <>
+                  Identical to the committed result — same engine, same horizon,
+                  same answer.
+                </>
+              ) : (
+                <>
+                  This differs from the committed result, which should not happen
+                  over the same horizon — worth investigating before trusting either.
+                </>
+              )}
+            </span>
+            <Button
+              className="ml-auto flex-none px-[11px] py-1 text-sm text-secondary"
+              onClick={dismissLastRun}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 px-5 pt-4">
         <ProvenanceFooter />
