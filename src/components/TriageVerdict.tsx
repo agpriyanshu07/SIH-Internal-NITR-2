@@ -143,7 +143,7 @@ export function TriageVerdict({ event }: { event: ResolvedConjunction }) {
           </p>
         </div>
 
-        <p className="border-t border-hairline-soft pt-[12px] text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+        <p className="border-t border-hairline-soft pt-[12px] text-base leading-[1.7] text-tertiary [text-wrap:pretty]">
           Every figure above is the same Foster model the ranking uses, solved
           backwards — the miss distance in closed form, the σ multiplier by
           sweeping, because Pc is not monotonic in σ and a bisection would find

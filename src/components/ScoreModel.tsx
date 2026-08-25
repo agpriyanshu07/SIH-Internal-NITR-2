@@ -65,13 +65,13 @@ export function ScoreModel({ event }: { event: ResolvedConjunction }) {
               style={{ width: `${(r.value * 100).toFixed(1)}%` }}
             />
           </div>
-          <p className="text-xs- leading-[1.5] text-tertiary [text-wrap:pretty]">
+          <p className="text-base leading-[1.7] text-tertiary [text-wrap:pretty]">
             {r.note}
           </p>
         </div>
       ))}
 
-      <p className="border-t border-hairline-soft pt-3 text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+      <p className="border-t border-hairline-soft pt-3 text-base leading-[1.7] text-tertiary [text-wrap:pretty]">
         The three terms only order events <em className="not-italic text-secondary">within</em>{' '}
         a band, so sorting the table by score can never disagree with the severity
         chip beside it. Miss distance is deliberately absent: Pc already folds in

@@ -342,7 +342,7 @@ export function Thresholds() {
                 </p>
               </div>
             ))}
-            <p className="max-w-[68ch] border-t border-hairline-soft pt-4 text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+            <p className="max-w-[68ch] border-t border-hairline-soft pt-4 text-base leading-[1.7] text-tertiary [text-wrap:pretty]">
               Both are absent on purpose rather than pending. A console with no
               backend cannot deliver an alert or authenticate a token, and a form
               that pretended otherwise would be the one dishonest thing on a screen

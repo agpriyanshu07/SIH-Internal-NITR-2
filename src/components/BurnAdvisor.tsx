@@ -194,7 +194,7 @@ export function BurnAdvisor({ events }: { events: ResolvedConjunction[] }) {
               </div>
             </div>
 
-            <p className="text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+            <p className="text-base leading-[1.7] text-tertiary [text-wrap:pretty]">
               The delta-v is applied to the asset&rsquo;s state vector and both the
               burned and unburned states are propagated, so this is a real
               displacement in three dimensions rather than a scalar — there is one
@@ -231,7 +231,7 @@ export function BurnAdvisor({ events }: { events: ResolvedConjunction[] }) {
                 <span className="ml-1 text-xs- text-tertiary">km</span>
               </div>
             </div>
-            <p className="text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+            <p className="text-base leading-[1.7] text-tertiary [text-wrap:pretty]">
               Closed-form estimate only — the element sets for this pair are not
               available to re-propagate, so this is a bound rather than an answer.
             </p>

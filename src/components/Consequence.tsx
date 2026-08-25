@@ -84,7 +84,7 @@ export function Consequence({ event }: { event: ResolvedConjunction }) {
           , from an assumed {fmtInt(bk.massProjectileKg)} kg striking an assumed{' '}
           {fmtInt(bk.massTargetKg)} kg at {event.relv.toFixed(2)} km/s.
         </p>
-        <p className="max-w-[70ch] text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+        <p className="max-w-[70ch] text-base leading-[1.7] text-tertiary [text-wrap:pretty]">
           Those two masses are <span className="text-secondary">assumptions</span>, and
           load-bearing ones — fragment count scales as mass<sup>0.75</sup>. A TLE carries
           no mass and the SATCAT is not in this snapshot, so they are class
@@ -134,7 +134,7 @@ export function Consequence({ event }: { event: ResolvedConjunction }) {
               </div>
             );
           })}
-          <p className="text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+          <p className="text-base leading-[1.7] text-tertiary [text-wrap:pretty]">
             Bands, not dates. Drag depends on atmospheric density, which swings by more
             than a factor of ten over the eleven-year solar cycle — and solar activity is
             not modelled here. Anything finer than an order of magnitude would be

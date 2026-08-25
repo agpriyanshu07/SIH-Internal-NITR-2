@@ -46,7 +46,7 @@ function Field({
       </div>
       {children}
       {hint && (
-        <p className="text-xs- leading-[1.5] text-tertiary [text-wrap:pretty]">{hint}</p>
+        <p className="text-sm leading-[1.6] text-tertiary [text-wrap:pretty]">{hint}</p>
       )}
     </div>
   );
@@ -310,7 +310,7 @@ export function Analysis() {
               hint="of centre-of-mass impact energy"
             />
             {sampleWeak && (
-              <p role="alert" className="text-xs- leading-[1.5] text-risk-high [text-wrap:pretty]">
+              <p role="alert" className="text-base leading-[1.7] text-risk-high [text-wrap:pretty]">
                 The momentum correction is a large fraction of the mean ejection speed.
                 This cloud has too few fragments for its statistics to be reliable —
                 read the aggregate outcome, not any individual orbit.
@@ -340,7 +340,7 @@ export function Analysis() {
               <Stat label="Fragments ≥ 10 cm" value={fmtInt(bk.predictedCount)}
                     hint={`${result.fragments.length} modelled`} />
             </div>
-            <p className="mt-4 max-w-[72ch] text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+            <p className="mt-4 max-w-[72ch] text-base leading-[1.7] text-tertiary [text-wrap:pretty]">
               Energy is taken in the centre-of-mass frame, which is the only frame in
               which it means anything: in Earth-centred coordinates each object carries
               tens of gigajoules simply by being in orbit, and almost none of that is
@@ -365,7 +365,7 @@ export function Analysis() {
               />
               <Stat label="Still up after 10 y" value={fmtInt(result.stillUp[1].count)} />
             </div>
-            <p className="mt-4 max-w-[72ch] text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+            <p className="mt-4 max-w-[72ch] text-base leading-[1.7] text-tertiary [text-wrap:pretty]">
               Fragments from each parent stay near that parent's orbit — a hypervelocity
               breakup is not an inelastic merger — so the cloud is bimodal rather than
               centred on the pair's centre of mass. Each fragment then precesses its
@@ -386,7 +386,7 @@ export function Analysis() {
               <Stat label="Casualty area" value={result.casualtyAreaM2.toFixed(1)} unit="m²"
                     hint="DAS form Σ(√A + 0.3)²" />
             </div>
-            <p className="mt-4 max-w-[72ch] text-xs- leading-[1.55] text-tertiary [text-wrap:pretty]">
+            <p className="mt-4 max-w-[72ch] text-base leading-[1.7] text-tertiary [text-wrap:pretty]">
               Most debris never reaches the ground — it is destroyed by aerodynamic
               heating in the upper atmosphere. Demise altitudes here run higher than the
               65–80 km that ORSAT and SCARAB report; the area-to-mass dependence and the

@@ -59,16 +59,37 @@ export default {
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        // The design works in half-pixel steps below 14px; these are the exact
-        // sizes used across the artboards.
+        /*
+         * Two populations, and they were on one scale.
+         *
+         * The artboards were drawn as a DASHBOARD: dense tables, mono numerals,
+         * eyebrow labels, where 9-12px is correct and anything larger costs a
+         * column. Then the consequence workbench, the cascade-risk panel, the
+         * data-quality disclosures and the triage verdict arrived, and those are
+         * not dashboard chrome — they are several hundred words of technical
+         * argument that somebody has to sit and read. They inherited `base`,
+         * which was 13px.
+         *
+         * 13px is fine for a table cell you glance at and genuinely hard work
+         * for a paragraph you study. Reported exactly that way: having to focus
+         * to read it, which is the wrong kind of effort when the whole point of
+         * the screen is analysis.
+         *
+         * So the scale is split at the seam that was already there. Everything
+         * from `sm+` down is UNCHANGED — those are labels, table cells and
+         * numerals, and the dashboard's column widths are tuned against them to
+         * the pixel. Everything from `base` up is reading type and moves to
+         * sizes meant for reading: 13 -> 15, 14 -> 16, 15 -> 17. Line height
+         * rises with it, because a longer line needs more leading, not less.
+         */
         '2xs': ['9px', { lineHeight: '1.3' }],
         'xs-': ['10px', { lineHeight: '1.3' }],
         xs: ['11px', { lineHeight: '1.4' }],
         sm: ['12px', { lineHeight: '1.5' }],
         'sm+': ['12.5px', { lineHeight: '1.5' }],
-        base: ['13px', { lineHeight: '1.65' }],
-        md: ['14px', { lineHeight: '1.65' }],
-        lg: ['15px', { lineHeight: '1.6' }],
+        base: ['15px', { lineHeight: '1.7' }],
+        md: ['16px', { lineHeight: '1.7' }],
+        lg: ['17px', { lineHeight: '1.62' }],
         xl: ['17px', { lineHeight: '1.5' }],
         '2xl': ['19px', { lineHeight: '1.3' }],
         '3xl': ['25px', { lineHeight: '1.1' }],
