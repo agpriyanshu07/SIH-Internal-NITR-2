@@ -7,6 +7,7 @@ import { BurnAdvisor } from '../components/BurnAdvisor';
 import { RESOLVED, reband } from '../data/conjunctions';
 import { passesThresholds, useThresholds } from '../state/thresholds';
 import { CountdownOrLabel } from '../components/Countdown';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 /**
  * Manoeuvre log.
@@ -39,6 +40,7 @@ const COLS =
   'grid-cols-[84px_104px_minmax(140px,1fr)_108px_112px_minmax(132px,1fr)] gap-x-3';
 
 export function ManoeuvreLog() {
+  useDocumentTitle('Manoeuvre log');
   const { thresholds } = useThresholds();
   const [status, setStatus] = useState<BurnStatus | 'ALL'>('ALL');
   const [linkedOnly, setLinkedOnly] = useState(false);
@@ -120,7 +122,7 @@ export function ManoeuvreLog() {
           <div className="min-h-0 flex-1 overflow-auto">
             <div className="min-w-[748px]">
               <div
-                className={`sticky top-0 z-10 grid ${COLS} h-[34px] items-center border-b border-hairline bg-panel-raised px-[14px]`}
+                className={`sticky-head sticky top-0 z-10 grid ${COLS} h-[34px] items-center border-b border-hairline px-[14px]`}
               >
                 {['Burn', 'Status', 'Asset', 'Epoch', 'Δv · axis', 'Prompted by'].map((h, i) => (
                   <div

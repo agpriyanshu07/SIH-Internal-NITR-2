@@ -51,14 +51,22 @@ export function useInView<T extends HTMLElement>() {
  * staggered per child — `transition-delay` can, and staggering is most of what
  * makes a group of cards read as arriving rather than blinking on.
  *
- * 40 ms per index, capped: past about six items the last one is waiting long
+ * Tuned up from the first pass, which was too quiet to notice: 300ms and 12px
+ * of travel is the "subtle" tier, appropriate for a control changing state and
+ * invisible on a section arriving. This is 560ms over 24px on an expo-style
+ * curve — most of the distance covered early, then a long settle, which is what
+ * reads as weight rather than as a slide. The 1.5% scale is below the threshold
+ * of noticing on its own and is doing the work of making the section feel like
+ * it comes forward rather than up.
+ *
+ * 70 ms per index, capped at six: past that the last card is waiting long
  * enough to feel broken rather than choreographed.
  */
 export function revealProps(inView: boolean, index = 0) {
   return {
-    className: `transition-[opacity,transform] duration-300 ease-out ${
-      inView ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
+    className: `transition-[opacity,transform] duration-[560ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+      inView ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-6 scale-[0.985] opacity-0'
     }`,
-    style: { transitionDelay: inView ? `${Math.min(index, 6) * 40}ms` : '0ms' },
+    style: { transitionDelay: inView ? `${Math.min(index, 6) * 70}ms` : '0ms' },
   };
 }

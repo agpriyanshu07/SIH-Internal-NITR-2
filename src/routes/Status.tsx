@@ -6,6 +6,7 @@ import { OBJECTS, SNAPSHOT_EPOCH } from '../data/objects';
 import { STEP_S } from '../data/engine/screen';
 import { fmtInt, fmtUTC } from '../data/format';
 import { ProvenanceFooter } from '../components/Provenance';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 /**
  * Prototype status.
@@ -51,6 +52,7 @@ function StatusRow({ feature }: { feature: Feature }) {
 }
 
 export function Status() {
+  useDocumentTitle('Prototype status');
   return (
     <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-6 p-6">
       <div className="flex flex-col gap-[5px]">
@@ -64,7 +66,15 @@ export function Status() {
         {(['live', 'partial', 'not-built'] as const).map((s) => (
           <div key={s} className="glass lift flex flex-col gap-[9px] bg-panel px-4 py-[15px]">
             <div className="label">{STATUS_LABEL[s]}</div>
-            <div data-sev={STATUS_SEV[s]} className="num text-3xl text-sev">
+            {/* Same call the sidebar chip already makes: the NOMINAL token is
+                the quietest colour on the palette by design, and at 25px over
+                this panel it measures 2.8:1 — below AA even at large-text's
+                relaxed 3:1. Tertiary keeps not-built reading as the least
+                urgent of the three without printing it illegibly. */}
+            <div
+              data-sev={STATUS_SEV[s]}
+              className={`num text-3xl ${s === 'not-built' ? 'text-tertiary' : 'text-sev'}`}
+            >
               {COUNTS[s]}
             </div>
           </div>

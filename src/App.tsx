@@ -41,6 +41,7 @@ const ManoeuvreLog = lazy(() =>
   import('./routes/ManoeuvreLog').then((m) => ({ default: m.ManoeuvreLog })),
 );
 const Status = lazy(() => import('./routes/Status').then((m) => ({ default: m.Status })));
+const Alerts = lazy(() => import('./routes/Alerts').then((m) => ({ default: m.Alerts })));
 const Analysis = lazy(() =>
   import('./routes/Analysis').then((m) => ({ default: m.Analysis })),
 );
@@ -88,6 +89,7 @@ export function App() {
           <Route path="manoeuvres" element={<ManoeuvreLog />} />
           <Route path="analysis" element={<Analysis />} />
           <Route path="status" element={<Status />} />
+          <Route path="alerts" element={<Alerts />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

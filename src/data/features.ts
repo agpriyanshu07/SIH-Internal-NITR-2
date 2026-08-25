@@ -150,17 +150,11 @@ export const FEATURES: Feature[] = [
   },
   {
     id: 'alerts',
-    label: 'Alert routing',
-    status: 'not-built',
+    label: 'Alert rules',
+    to: '/console/alerts',
+    status: 'partial',
     group: 'Configuration',
-    note: 'Would configure email and webhook delivery. Not built, and there is no network access to deliver anything.',
-  },
-  {
-    id: 'apikeys',
-    label: 'API keys',
-    status: 'not-built',
-    group: 'Configuration',
-    note: 'Would issue and revoke tokens. Not built — there is no API behind this prototype.',
+    note: 'Standing rules that pick events out of the screening run by minimum severity, miss distance, lead time and whether an ISRO-operated asset is involved. The matching is real: it runs against the same rebanded events every other screen shows, under the operator\u2019s own covariance assumption, and updates as the thresholds move. Rules persist in this browser. Partial for one reason, stated on the screen itself rather than in a footnote: DELIVERY is not built and cannot be. Email and webhook routing needs a server, and this console has none by design \u2014 the whole run is bundled and no network request is made at any point. A rule tells you what it caught; it does not tell anyone else.',
   },
   {
     id: 'export',

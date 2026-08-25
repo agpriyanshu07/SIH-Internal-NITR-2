@@ -358,6 +358,86 @@ screened approach ticks on the console clock, from the same run and the same
 are visible immediately, rather than hidden waiting for an animation that will
 never run.
 
+### The console never scrolled the way it was built to
+
+Every table in this app is written for a fixed-height screen: a panel that is
+`min-h-0 flex-1`, a scroll container inside it, and a column header pinned with
+`sticky top-0`. None of it worked. A grid item's automatic minimum size is its
+*content*, and two of the three columns that hold these tables were grid items
+with no `min-h-0` — so the shell's content column measured **133,910px tall
+inside an `h-screen` grid**, `<main>` had nothing left to be an overflow
+container for, and the document scrolled instead.
+
+The visible consequence was not subtle. Scrolling the conjunction table took
+the sidebar, the top bar and the table's own column header off the top of the
+window, and left an operator reading unlabelled rows with no navigation. Three
+classes were added — `min-h-0` on the shell's content column, on the
+catalogue's table column, and `h-full` in place of `min-h-full` on the
+dashboard — and the console now behaves the way its markup always claimed:
+chrome fixed, tables scrolling inside their panels, headers pinned.
+
+Two follow-ons fell out of it:
+
+- **A pinned header has to be opaque.** Every panel colour here is not —
+  `--panel-raised` is `rgba(255,255,255,0.078)` — so once the headers actually
+  pinned, rows slid through them in plain sight. `.sticky-head` composites the
+  same tint over an opaque `--base`, so a pinned header is pixel-identical to
+  an unpinned one and still hides what passes below. Applied to all five.
+- **The dashboard table was clipping its two most important columns.** Its
+  grid template had a min-content width of 926px inside a 792px column, so at
+  1440px relative velocity was cut through its digits and collision
+  probability — the number the screen exists to produce — was off-screen
+  entirely. Columns were retuned to measured content widths (the TCA stamp
+  renders at 140px; severity's longest word is MEDIUM), the right rail came
+  down from 392px to 348px, and a 14px indent that only the primary column
+  carried was removed. All eight columns now fit at 1440px and above; below
+  1280px the table still scrolls sideways rather than clipping.
+
+### Details that are only noticed when they are wrong
+
+- **The browser tab** said "KESSLER — Orbital conjunction screening" on every
+  screen. With four tabs open — an event, the catalogue, the viewer, the
+  thresholds you are about to change — all four were indistinguishable, and
+  browser history was useless. Each route now names itself, the catalogue
+  distinguishes the ISRO register from the full catalogue, and an event names
+  its pair rather than its ID.
+- **`color-scheme`** was never declared, so the browser rendered its own
+  surfaces light: select popups, scrollbar gutters, and the flash of canvas
+  before first paint, all white, on top of a `#04070d` console.
+- **Chrome's autofill yellow** ignores every colour on the page. One autofilled
+  sign-in field and the panel stopped looking like the same application.
+- **Spellcheck** was on. Everything typed into this app is a NORAD ID or a name
+  like `COSMOS 1408 DEB`, and a red squiggle under an object name in an
+  operations console reads as an error the app is reporting.
+- **A skip link.** Every keyboard session started with eleven Tab presses
+  through the sidebar. Focus also now follows navigation into the content
+  region — but *not* on first mount, because focusing it there puts the skip
+  link behind the caret and makes it unreachable.
+- **Three icons that were not doing their job.** Search was a bare circle,
+  which at 11px in a text field is a bullet point rather than a magnifier; the
+  theme toggle named its state without drawing it; the signed-out avatar was an
+  em dash, which in a circular chip reads as a failed render. All three are
+  drawn in the existing 16-unit viewBox at the same 1.25 stroke.
+
+### Contrast, measured again
+
+The audit now covers ten routes and 1,165 rendered text nodes in both themes,
+sampling the median backdrop luminance behind each node from a screenshot taken
+with all text made transparent — the only method that accounts for glass over
+a gradient. **Light: 0 below AA. Dark: 2**, both within 0.08 of the threshold
+(`LIVE` at 9px, 4.42; a tile caption at 10px, 4.45), and both carrying their
+meaning redundantly in a swatch beside them.
+
+Three real failures were fixed on the way: the dashboard's `0 CRIT / 27 HIGH`
+caption printed in the severity colours themselves measured 3.2:1 at 10px — the
+palette is tuned for 8px fills and chips and does not survive being used as
+caption type — so it now uses the swatch-plus-label construction the table
+already uses. The sign-in field labels moved to `.label-strong`, the variant
+that exists for exactly this glass-over-gradient case. And the prototype-status
+`NOT BUILT` count, in the deliberately-quietest colour on the palette at 25px,
+measured 2.8:1 — below AA even at large text's relaxed 3:1 — so it follows the
+rule the sidebar chip already set.
+
 ### Build
 
 Route-split with `React.lazy`. `ConjunctionDetail` had to be deferred alongside
