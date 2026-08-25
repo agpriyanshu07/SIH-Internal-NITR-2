@@ -92,7 +92,7 @@ export const FEATURES: Feature[] = [
     to: '/console',
     status: 'live',
     group: 'Operations',
-    note: 'Separation chart, both object specification panels, encounter geometry, the risk-model breakdown and the data-quality disclosure. The separation curve is propagated on demand from both element sets, not fitted. Export report downloads this single event as CSV. Reached by opening any row.',
+    note: 'Separation chart, both object specification panels, encounter geometry, the risk-model breakdown and the data-quality disclosure. The separation curve is propagated on demand from both element sets, not fitted. Export report downloads this single event as CSV. Reached by opening any row. Every event also carries a triage verdict: what would have to be true for it to stop mattering. The miss distance at which it would fall a band is a closed-form inversion of the same Foster model that ranked it; the sigma multiplier that would do the same is found by sweeping rather than solving, because Pc is not monotonic in sigma and a bisection would find one root and ignore the other. An event whose band survives sigma from a quarter to four times the assumed value is reported as geometry rather than assumption, which is the strongest statement this console can make about a single pass.',
   },
   {
     id: 'viewer',

@@ -4,6 +4,7 @@ import { PROVENANCE, SNAPSHOT_EPOCH, groupOf } from '../data/objects';
 import { OriginBadge } from '../components/Provenance';
 import { ScoreModel } from '../components/ScoreModel';
 import { SigmaSensitivity } from '../components/SigmaSensitivity';
+import { TriageVerdict } from '../components/TriageVerdict';
 import { Consequence } from '../components/Consequence';
 import { conjunctionsToCsv, downloadCsv, downloadText } from '../data/csv';
 import { toCdmKvn } from '../data/cdm';
@@ -315,6 +316,12 @@ export function ConjunctionDetail() {
               </Link>
             }
           >
+            {/*
+              * Above the sigma curve, because it answers the question the curve is
+              * evidence for. The curve shows how Pc moves; this says whether that
+              * movement changes the decision.
+              */}
+            <TriageVerdict event={event} />
             <SigmaSensitivity event={event} />
           </Panel>
 
