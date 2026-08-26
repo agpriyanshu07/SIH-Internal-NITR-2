@@ -117,6 +117,28 @@ function figure(s, x, y, w, val, unit, cap, color) {
   });
 }
 
+/**
+ * One node of a flowchart: numbered badge, stage name, body.
+ *
+ * The badge is a filled circle with the digit centred on it rather than a
+ * pictograph, because Calibri and Arial are the only two fonts this deck can
+ * assume and neither carries the gear/database/arrow glyphs a flow diagram
+ * usually reaches for. A judge opening this on their own laptop gets the same
+ * shapes we drew.
+ */
+function node(s, x, y, w, h, n, title, body, c) {
+  panel(s, x, y, w, h, 'FFFFFF');
+  s.addShape(p.ShapeType.ellipse, { x: x + 0.12, y: y + 0.11, w: 0.24, h: 0.24, fill: { color: c } });
+  s.addText(String(n), { x: x + 0.12, y: y + 0.11, w: 0.24, h: 0.24, fontFace: FH, fontSize: 9.5, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', margin: 0 });
+  s.addText(title, { x: x + 0.44, y: y + 0.11, w: w - 0.56, h: 0.24, fontFace: FH, fontSize: 10.5, bold: true, color: c, charSpacing: 0.4, margin: 0, valign: 'middle' });
+  s.addText(body, { x: x + 0.12, y: y + 0.41, w: w - 0.24, h: h - 0.52, fontFace: F, fontSize: 8.5, color: BODY, margin: 0, valign: 'top', lineSpacing: 10.5 });
+}
+
+/** The connector between two nodes. */
+function arrow(s, x, y, h) {
+  s.addText('\u25b6', { x, y, w: 0.25, h, fontFace: F, fontSize: 10, color: 'A8B2BE', align: 'center', valign: 'middle', margin: 0 });
+}
+
 /* ══════════════ SLIDE 1 · TITLE PAGE ══════════════════════════════════ */
 {
   const s = p.addSlide();
@@ -183,7 +205,7 @@ function figure(s, x, y, w, val, unit, cap, color) {
   s.addText('A conjunction screening console that ranks close approaches AND states what would change the verdict.', {
     x: 0.62, y: 4.98, w: 10.6, h: 0.30, fontFace: FH, fontSize: 13.5, bold: true, color: INK, margin: 0, valign: 'middle',
   });
-  s.addText('Real element sets \u00b7 real SGP4 \u00b7 real times of closest approach. Every capability in the interface declares its own build status, so nothing unfinished can appear as working.', {
+  s.addText('Real element sets \u00b7 real SGP4 \u00b7 real times of closest approach. Every capability in the interface declares its own build status, so nothing unfinished can appear as working. Open source under the MIT licence.', {
     x: 0.62, y: 5.32, w: 10.6, h: 0.30, fontFace: F, fontSize: 10.5, color: BODY, margin: 0, valign: 'middle',
   });
 
@@ -198,55 +220,79 @@ function figure(s, x, y, w, val, unit, cap, color) {
 {
   const s = p.addSlide();
   frame(s, 'KESSLER — Collision Risk Triage Console', 2);
-  heading(s, 'Proposed Solution (Describe your Idea/Solution/Prototype)', 0.98);
+  heading(s, 'Proposed Solution (Describe your Idea/Solution/Prototype)', 0.94);
 
-  /* How it addresses the problem — the ratio, stated first because it IS the
-     problem. Source: ISRO/IS4OM, ISSAR 2024. */
-  panel(s, 0.34, 1.44, 4.42, 1.36, 'FDF3F2');
-  label(s, 0.58, 1.6, 4.0, 'How it addresses the problem', RISK);
+  /* ── Row A: the problem in one ratio, and what we do about it in prose ── */
+  panel(s, 0.34, 1.34, 4.42, 1.02, 'FDF3F2');
+  label(s, 0.56, 1.44, 4.0, 'How it addresses the problem', RISK);
   s.addText(
-    [{ text: '53,000+', options: { fontSize: 22, bold: true, color: RISK } },
-     { text: '  alerts   →   ', options: { fontSize: 12, color: MUTE } },
-     { text: '10', options: { fontSize: 22, bold: true, color: NAVY } },
-     { text: '  manoeuvres', options: { fontSize: 12, color: MUTE } }],
-    { x: 0.58, y: 1.86, w: 4.0, h: 0.42, fontFace: FN, margin: 0, valign: 'middle' },
+    [{ text: '53,000+', options: { fontSize: 21, bold: true, color: RISK } },
+     { text: '  alerts  ', options: { fontSize: 11, color: MUTE } },
+     { text: '→', options: { fontSize: 15, color: MUTE } },
+     { text: '  10', options: { fontSize: 21, bold: true, color: NAVY } },
+     { text: '  manoeuvres flown', options: { fontSize: 11, color: MUTE } }],
+    { x: 0.56, y: 1.66, w: 4.06, h: 0.36, fontFace: FN, margin: 0, valign: 'middle' },
   );
-  s.addText('ISRO, 2024. Detection is not the bottleneck — deciding which 10 of 53,000 matter is. KESSLER ranks and justifies that choice.', {
-    x: 0.58, y: 2.3, w: 3.96, h: 0.44, fontFace: F, fontSize: 10.5, color: BODY, margin: 0, lineSpacing: 12.5,
+  s.addText('ISRO, 2024. Detection is not the bottleneck. Deciding which ten of fifty-three thousand deserve a burn is.', {
+    x: 0.56, y: 2.02, w: 4.06, h: 0.30, fontFace: F, fontSize: 9.5, color: BODY, margin: 0, valign: 'top', lineSpacing: 11,
   });
 
-  /* Detailed explanation — the pipeline, as four steps rather than prose. */
-  label(s, 4.98, 1.5, 6.4, 'Detailed explanation — what the prototype does', NAVY);
-  const steps = [
-    ['1', 'INGEST',  'Public CelesTrak TLEs\n859 real objects', NAVY],
-    ['2', 'SCREEN',  'SGP4 + 3-stage cascade\n368,511 pairs → 3,032', BLUE],
-    ['3', 'RANK',    'Collision probability,\nseverity band, 0–100 score', WARN],
-    ['4', 'DECIDE',  'What would change\nthe verdict + CDM export', OK],
-  ];
-  steps.forEach(([n, t, d, c], i) => {
-    const x = 4.98 + i * 1.66;
-    panel(s, x, 1.78, 1.5, 1.02, 'FFFFFF');
-    s.addShape(p.ShapeType.ellipse, { x: x + 0.12, y: 1.88, w: 0.26, h: 0.26, fill: { color: c } });
-    s.addText(n, { x: x + 0.12, y: 1.88, w: 0.26, h: 0.26, fontFace: FH, fontSize: 10, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', margin: 0 });
-    s.addText(t, { x: x + 0.44, y: 1.88, w: 1.0, h: 0.26, fontFace: FH, fontSize: 10.5, bold: true, color: c, margin: 0, valign: 'middle' });
-    s.addText(d, { x: x + 0.12, y: 2.2, w: 1.28, h: 0.52, fontFace: F, fontSize: 9, color: BODY, margin: 0, lineSpacing: 11 });
-    if (i < 3) s.addText('▶', { x: x + 1.5, y: 2.16, w: 0.16, h: 0.24, fontFace: F, fontSize: 9, color: 'A8B2BE', align: 'center', margin: 0 });
+  s.addText(
+    [{ text: 'KESSLER ranks close approaches, then argues with its own ranking. ', options: { bold: true, color: INK } },
+     { text: 'It loads real element sets, propagates them with SGP4, finds each pair’s exact time of closest approach and scores the event — that much is a conjunction tool. Ours adds the last step: for every event it also computes how far apart the pair would have to pass, and how wrong the uncertainty we had to assume would have to be, before the verdict changes. The operator gets a rank and the reason that rank is trustworthy — or the reason it is not.', options: { color: BODY } }],
+    { x: 4.98, y: 1.32, w: 6.38, h: 1.06, fontFace: F, fontSize: 10.5, margin: 0, valign: 'top', lineSpacing: 12.5 },
+  );
+
+  /* ── Row B: the decision loop, as a flowchart with a real branch ────────
+   *
+   * Drawn rather than listed because the branch IS the pitch: two events with
+   * the same collision probability leave this diagram through different exits
+   * depending on whether their band survives the sigma sweep, and a bulleted
+   * list cannot show a fork. */
+  const FY = 2.46, FBH = 0.94;
+  node(s, 0.34, FY, 1.62, FBH, 1, 'SCREEN', '859 objects, 368,511 pairs over 72 h → 3,032 real close approaches', NAVY);
+  arrow(s, 2.00, FY, FBH);
+  node(s, 2.29, FY, 1.66, FBH, 2, 'RANK', 'Foster collision probability, a severity band and a 0–100 score', BLUE);
+  arrow(s, 3.99, FY, FBH);
+
+  s.addShape(p.ShapeType.diamond, {
+    x: 4.28, y: FY, w: 1.72, h: FBH,
+    fill: { color: 'FFF4E0' }, line: { color: WARN, width: 1 },
   });
+  s.addText('Does the band\nsurvive the σ sweep?', {
+    x: 4.46, y: FY + 0.25, w: 1.36, h: 0.44, fontFace: FH, fontSize: 8,
+    bold: true, color: '7A4300', align: 'center', valign: 'middle', margin: 0, lineSpacing: 9.5,
+  });
+
+  arrow(s, 6.04, FY - 0.01, 0.46);
+  arrow(s, 6.04, FY + 0.49, 0.46);
+  const branch = [
+    ['✓  ESCALATE', 'Band held from 0.25× to 4× the assumed σ — it is geometry, not our assumption.', OK, 'F1F8F3'],
+    ['✕  DISCARD', 'A small revision to σ flips it. Logged with the exact multiplier, so the call is auditable.', MUTE, 'F4F6F8'],
+  ];
+  branch.forEach(([t, d, c, bg], i) => {
+    const y = FY + i * 0.50;
+    panel(s, 6.33, y, 2.62, 0.44, bg);
+    s.addText(t, { x: 6.45, y: y + 0.02, w: 0.90, h: 0.20, fontFace: FH, fontSize: 8.5, bold: true, color: c, margin: 0, valign: 'middle' });
+    s.addText(d, { x: 7.33, y, w: 1.52, h: 0.44, fontFace: F, fontSize: 7, color: BODY, margin: 0, valign: 'middle', lineSpacing: 8.5 });
+  });
+  arrow(s, 8.99, FY, FBH);
+  node(s, 9.28, FY, 2.08, FBH, 3, 'HAND OFF', 'CCSDS 508.0-B-1 Conjunction Data Message, plus CSV — formats an operator already ingests', OK);
 
   /* Innovation and uniqueness — the pointer the template requires. */
-  heading(s, 'Innovation and uniqueness of the solution', 2.98);
+  heading(s, 'Innovation and uniqueness of the solution', 3.50);
   const inno = [
-    ['Answers "would this change your mind?"', 'Every event states the miss distance and the uncertainty multiplier that would drop it a severity band. Published tools give a ranked list and stop there.', NAVY],
-    ['An interface that cannot overstate itself', 'Every capability renders from one registry carrying its own status, so nothing unbuilt can appear as working. Our breakup model prints its own disagreement with the Fengyun-1C catalogue on every test run.', OK],
-    ['Speaks the operator’s format', 'Exports CCSDS 508.0-B-1 Conjunction Data Messages — what Space-Track, ESA and NASA CARA exchange — so output enters a real pipeline, not a spreadsheet.', BLUE],
+    ['Answers "would this change your mind?"', 'Every event states the miss distance and the σ multiplier that would drop it a severity band, and which of the three score terms is carrying it. Published tools give a ranked list and stop. Ours is the same Foster model solved backwards, so no new assumption enters to produce the answer.', NAVY],
+    ['An interface that cannot overstate itself', 'Every capability renders from one registry carrying its own build status, so nothing unfinished can appear as working and the sidebar marks its own gaps. Assumed inputs are controls you can sweep rather than constants — an assumption you can move is a finding; one buried in a constant is a claim.', OK],
+    ['Speaks the operator’s format', 'Exports CCSDS 508.0-B-1 Conjunction Data Messages — the format Space-Track, ESA and NASA CARA already exchange — so the output enters an existing pipeline rather than a spreadsheet, and each message declares COVARIANCE_METHOD = DEFAULT rather than implying a covariance we do not have.', BLUE],
   ];
-  let iy = 3.42;
+  let iy = 3.94;
   inno.forEach(([h, d, c], i) => {
     if (i) s.addShape(p.ShapeType.line, { x: 0.4, y: iy - 0.12, w: 10.94, h: 0, line: { color: 'EAEEF3', width: 0.75 } });
     s.addShape(p.ShapeType.rect, { x: 0.4, y: iy + 0.09, w: 0.1, h: 0.1, fill: { color: c } });
     s.addText(h, { x: 0.62, y: iy, w: 3.5, h: 0.28, fontFace: FH, fontSize: 11.5, bold: true, color: INK, margin: 0, valign: 'middle' });
     s.addText(d, { x: 4.24, y: iy - 0.02, w: 7.1, h: 0.62, fontFace: F, fontSize: 10.5, color: BODY, margin: 0, lineSpacing: 12.5 });
-    iy += 0.92;
+    iy += 0.72;
   });
   s.addNotes('Lead with the ratio. The innovation is epistemic, not algorithmic — say that out loud.');
 }
@@ -255,21 +301,25 @@ function figure(s, x, y, w, val, unit, cap, color) {
 {
   const s = p.addSlide();
   frame(s, 'TECHNICAL APPROACH', 3);
-  heading(s, 'Technologies to be used', 0.98);
+  heading(s, 'Technologies to be used', 0.94);
 
-  const tech = [
-    ['Frontend', 'React 18 · TypeScript · Vite · Tailwind'],
-    ['Orbital engine', 'SGP4 (satellite.js, AIAA 2006-6753)'],
-    ['Compute', 'Web Worker — off the main thread'],
-    ['Data', 'CelesTrak GP two-line element sets (free, no sign-up)'],
-    ['Interop', 'CCSDS 508.0-B-1 Conjunction Data Message · CSV'],
-    ['Deployment', 'Static files — one 1.7 MB self-contained HTML file'],
+  /* The stack drawn as the pipeline it actually is, rather than a table of
+     names. Each node carries the technology that does that stage, so the
+     template's pointer is answered and the reader also learns the order. */
+  const stack = [
+    ['DATA',    'CelesTrak GP element sets — free, no sign-up. Committed verbatim at one capture instant.', '5C7A99'],
+    ['PARSE',   'satellite.js turns each element set into an SGP4 satrec. TypeScript types from here on.', '3D73A8'],
+    ['SCREEN',  'Web Worker, off the main thread: perigee–apogee filter, 60 s sweep, bisection to exact TCA.',     BLUE],
+    ['RANK',    'Foster collision probability, severity band, 0–100 score, and the counterfactual behind it.',     WARN],
+    ['DELIVER', 'React 18 · Vite · Tailwind. Static files, or one 1.7 MB offline HTML. CDM and CSV out.',          OK],
   ];
-  tech.forEach(([k, v], i) => {
-    const x = 0.34 + (i % 3) * 3.78, y = 1.42 + Math.floor(i / 3) * 0.62;
-    panel(s, x, y, 3.6, 0.52, 'FFFFFF');
-    s.addText(k, { x: x + 0.14, y: y + 0.02, w: 1.16, h: 0.48, fontFace: FH, fontSize: 10, bold: true, color: NAVY, margin: 0, valign: 'middle' });
-    s.addText(v, { x: x + 1.32, y: y + 0.02, w: 2.16, h: 0.48, fontFace: F, fontSize: 9.5, color: BODY, margin: 0, valign: 'middle', lineSpacing: 11 });
+  stack.forEach(([t, d, c], i) => {
+    const x = 0.34 + i * 2.25;
+    node(s, x, 1.34, 2.00, 1.12, i + 1, t, d, c);
+    if (i < stack.length - 1) arrow(s, x + 2.00, 1.34, 1.12);
+  });
+  s.addText('Every stage runs in the browser tab. No server anywhere in this diagram — nothing to provision, secure or pay for, and it works with the network unplugged.', {
+    x: 0.34, y: 2.50, w: 11.0, h: 0.24, fontFace: F, fontSize: 9.5, color: MUTE, italic: true, margin: 0, valign: 'middle',
   });
 
   heading(s, 'Methodology and process for implementation', 2.78);
@@ -325,17 +375,17 @@ function figure(s, x, y, w, val, unit, cap, color) {
   heading(s, 'Analysis of the feasibility of the idea', 0.98);
 
   const feas = [
-    ['Already built', 'Not a concept. A working console with a real screening engine, running today.'],
-    ['Zero data cost', 'CelesTrak publishes TLEs free with no sign-up — the usual blocker for this theme.'],
-    ['Zero infrastructure', 'No backend, no database, no server. Static hosting, or one offline file.'],
-    ['Proven correct', '62 known-answer tests, including brute-force cross-check of the whole cascade.'],
+    ['Already built', 'Not a concept. A working console with a real screening engine, running today — every number in this deck came out of it, not out of a plan.'],
+    ['Zero data cost', 'CelesTrak publishes element sets free, no sign-up. A licensed catalogue is the usual blocker on this theme; there is nothing here to procure.'],
+    ['Zero infrastructure', 'No backend, no database, no server, no API key. Free static hosting, or one 1.7 MB file that runs offline from a USB stick.'],
+    ['Open and checkable', 'MIT licence; engine, snapshot and results all in the repository. 62 known-answer tests, including a brute-force cross-check of the cascade.'],
   ];
   feas.forEach(([h, d], i) => {
     const x = 0.34 + i * 2.85;
-    panel(s, x, 1.42, 2.68, 1.16, 'FFFFFF');
-    s.addText('✓', { x: x + 0.14, y: 1.54, w: 0.24, h: 0.24, fontFace: F, fontSize: 13, bold: true, color: OK, margin: 0, valign: 'middle' });
-    s.addText(h, { x: x + 0.42, y: 1.54, w: 2.1, h: 0.24, fontFace: FH, fontSize: 11, bold: true, color: INK, margin: 0, valign: 'middle' });
-    s.addText(d, { x: x + 0.14, y: 1.84, w: 2.42, h: 0.66, fontFace: F, fontSize: 9.5, color: BODY, margin: 0, lineSpacing: 11.5 });
+    panel(s, x, 1.40, 2.68, 1.28, 'FFFFFF');
+    s.addText('✓', { x: x + 0.14, y: 1.50, w: 0.24, h: 0.24, fontFace: F, fontSize: 13, bold: true, color: OK, margin: 0, valign: 'middle' });
+    s.addText(h, { x: x + 0.42, y: 1.50, w: 2.1, h: 0.24, fontFace: FH, fontSize: 11, bold: true, color: INK, margin: 0, valign: 'middle' });
+    s.addText(d, { x: x + 0.14, y: 1.78, w: 2.44, h: 0.84, fontFace: F, fontSize: 9, color: BODY, margin: 0, valign: 'top', lineSpacing: 11 });
   });
 
   heading(s, 'Potential challenges and risks  ·  Strategies for overcoming these challenges', 2.74);
@@ -418,7 +468,7 @@ function figure(s, x, y, w, val, unit, cap, color) {
     ['SOCIAL', 'Protects the satellites behind weather warning, disaster response, crop monitoring and navigation. A lost earth-observation satellite is a lost public service.', OK],
     ['ECONOMIC', 'Commercial conjunction services are priced for large operators. Free public data plus an open engine removes both the licence and the analyst from the cost.', NAVY],
     ['ENVIRONMENTAL', 'Debris outlives the collision: 813 fragments of the 2009 Iridium 33 / Cosmos 2251 crash are still in our snapshot 15 years on. Screening this one event models 19 new trackable fragments and an added collision rate on all 33 assets we assess.', BLUE],
-    ['STRATEGIC', 'Screening you can run yourself, on open data, is sovereign capability — supporting India’s Debris Free Space Missions target for 2030.', WARN],
+    ['STRATEGIC', 'Screening you can run yourself, on open data, under an MIT licence, is sovereign capability — no vendor, no export licence, no foreign dependency. It supports India’s Debris Free Space Missions target for 2030.', WARN],
   ];
   ben.forEach(([h, d, c], i) => {
     const x = 0.34 + i * 2.85;
@@ -480,10 +530,13 @@ function figure(s, x, y, w, val, unit, cap, color) {
   panel(s, 0.34, 4.76, 11.0, 1.22, WASH);
   s.addShape(p.ShapeType.rect, { x: 0.34, y: 4.76, w: 0.07, h: 1.22, fill: { color: NAVY } });
   label(s, 0.56, 4.86, 10.4, 'Prototype, engine and every figure in this deck', NAVY);
-  s.addText('github.com/agpriyanshu07/SIH-Internal-NITR-2', {
-    x: 0.56, y: 5.06, w: 5.2, h: 0.28, fontFace: FH, fontSize: 12.5, bold: true, color: BLUE, margin: 0, valign: 'middle',
+  s.addText('MIT licence \u2014 engine, snapshot and screening results all in the tree', {
+    x: 5.30, y: 5.06, w: 5.9, h: 0.28, fontFace: F, fontSize: 10, color: BODY, margin: 0, valign: 'middle',
   });
-  s.addText('npm run validate  reproduces all 62 engine checks  ·  npm run screen  reproduces all 3,032 events  ·  npm run scaling  re-measures the \u22481.73 scaling exponent', {
+  s.addText('github.com/agpriyanshu07/SIH-Internal-NITR-2', {
+    x: 0.56, y: 5.06, w: 4.7, h: 0.28, fontFace: FH, fontSize: 12.5, bold: true, color: BLUE, margin: 0, valign: 'middle',
+  });
+  s.addText('npm run validate  reproduces all 62 engine checks  ·  npm run screen  reproduces all 3,032 events  ·  npm run scaling  re-measures the \u22481.73 exponent', {
     x: 0.56, y: 5.36, w: 10.6, h: 0.26, fontFace: F, fontSize: 9.5, color: BODY, margin: 0, valign: 'middle',
   });
   s.addText('No figure in this presentation is estimated, projected or illustrative. Each one is either measured by the prototype or cited above.', {

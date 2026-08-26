@@ -45,8 +45,28 @@ either measured by this repository or cited on slide 6.
 | 19 trackable fragments; 33 assets assessed | `analyseConsequence()` and `assessCascade()` on that event |
 | 813 Iridium 33 / Cosmos 2251 fragments still tracked | line count of the committed snapshot files |
 | 1.7 MB single file | `npm run build:single` |
+| 813 fragments of the 2009 collision still tracked | line count of `src/data/snapshot/{cosmos-2251,iridium-33}-debris.txt` |
+| MIT licence | `LICENSE` at the repository root |
 | 53,000+ alerts, 10 CAMs (2024) | ISSAR 2024 |
 | 20 of 22 active Indian LEO satellites; 20 CAMs in 2025 | Lok Sabha reply, August 2026 |
+
+### Two flowcharts, and why they are drawn rather than listed
+
+Slide 2 carries the **decision loop**: screen, rank, then a diamond asking
+whether the severity band survives the sigma sweep, with two exits. The branch
+is the pitch — two events with the same collision probability leave through
+different exits — and a bulleted list cannot show a fork.
+
+Slide 3 carries the **architecture**: five nodes from CelesTrak data to CDM
+export, each labelled with the technology that does that stage, so the
+template's "Technologies to be used" pointer is answered and the reader also
+learns the order. The note under it is the claim the diagram makes: no server
+appears anywhere in it.
+
+Node badges are filled circles with a digit, not pictographs. Calibri and Arial
+are the only fonts this deck can assume and neither carries the gear/database
+glyphs a flow diagram usually reaches for; a judge opening this on their own
+laptop gets the shapes we drew.
 
 **The slide-3 funnel encodes its data.** Bar length is `log10(count)`, mapped so
 the last stage stays legible, and the slide says so. It used to narrow by a
