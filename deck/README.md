@@ -1,6 +1,14 @@
 # Decks
 
-## `KESSLER-SIH-PS04.pptx` — the SIH submission
+## `KESSLER-SIH-2026-Idea.pptx` — the design standard
+
+This is what a deck for this project should look like, and
+[`DESIGN-NOTES.md`](DESIGN-NOTES.md) records its palette, type scale and the ten
+devices that make it work. Build to it. It also lists two things to fix in it
+before submitting: a leftover **SIH 2022** logo on the title slide, and `1.738`
+quoted to three decimals when that figure moves run to run.
+
+## `KESSLER-SIH-PS04.pptx` — an earlier, plainer attempt
 
 Built on the **official SIH Idea Presentation template** and matched to it
 exactly: 842 x 474 pt canvas, heading blue `1F497D`, footer bar `0070C0`,

@@ -162,6 +162,20 @@ engine/run.ts, read by both the precompute script and `DEFAULT_THRESHOLDS`.
 They used to be separate and drifted to 24 h vs 72 h, which silently rebuilt
 the dashboard with a third of the events. Do not reintroduce a second literal.
 
+## Decks
+
+`deck/KESSLER-SIH-2026-Idea.pptx` is the design standard, and
+`deck/DESIGN-NOTES.md` records why: the dark hero band carrying the template's
+own pointer as an orange kicker, cards with coloured left accent bars,
+letterspaced uppercase micro-labels as the hierarchy device, real product
+screenshots, real charts, and body type at 8.4-9 pt to buy the density. **Read
+that file before building or editing any deck.** `KESSLER-SIH-PS04.pptx` is a
+plainer earlier attempt kept for reference only — do not use it as the model.
+
+The honesty rule above outranks the design. A better-looking slide does not get
+to make a looser claim, and every figure a deck prints must map to a command in
+`deck/README.md` that reproduces it.
+
 ## Style
 
 - Semantic CSS tokens only (`bg-panel`, `text-secondary`, `border-hairline`,
