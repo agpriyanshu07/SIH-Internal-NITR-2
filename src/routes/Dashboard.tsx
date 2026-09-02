@@ -514,7 +514,7 @@ export function Dashboard() {
                         if (e.key === ' ') { e.preventDefault(); setSelId(r.id); }
                       }}
                       aria-label={ackd ? `${r.id}, acknowledged` : r.id}
-                      className={`grid ${COLS} h-[46px] cursor-pointer items-center gap-x-2 border-b border-hairline-soft px-[14px] ${
+                      className={`event-row grid ${COLS} h-[46px] cursor-pointer items-center gap-x-2 border-b border-hairline-soft px-[14px] ${
                         sel
                           ? 'rise bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
                           : 'hover:-translate-y-px hover:bg-panel-raised'
