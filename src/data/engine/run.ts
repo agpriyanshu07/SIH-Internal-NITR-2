@@ -1,7 +1,7 @@
 import type { CatalogueEntry } from './parse';
 import { HBR, pcFoster, sigmaFor } from './pc';
 import { refine, separationCurve } from './refine';
-import { screen, type ScreenCascade } from './screen';
+import { screen, type ScreenCascade, type ScreenProgress } from './screen';
 import { riskScore, severityFor } from '../riskScore';
 import type { Conjunction } from '../types';
 
@@ -35,10 +35,31 @@ export const SEPARATION_POINTS = 121;
 /** Screening threshold drawn on the detail chart, km. */
 export const SCREENING_THRESHOLD_KM = 1.0;
 
+/**
+ * Progress payload for the whole pipeline — `screen()`'s `ScreenProgress`
+ * widened with the one phase `run.ts` adds itself. `refine` covers both the
+ * exact-TCA refinement *and* the Pc/severity/score computed inline for each
+ * surviving candidate: the pipeline has no separate risk-scoring pass to
+ * report on, since scoring happens per-candidate as it is refined, not as a
+ * batch afterwards.
+ */
+export type RunProgress =
+  | ScreenProgress
+  | {
+      phase: 'refine';
+      fraction: number;
+      /** Coarse candidates carried over from the sweep. */
+      candidates: number;
+      /** Candidates processed so far. */
+      index: number;
+      /** Refined passes that became reportable conjunctions so far. */
+      events: number;
+    };
+
 export interface RunOptions {
   start: Date;
   hours: number;
-  onProgress?: (fraction: number, stage: 'screen' | 'refine') => void;
+  onProgress?: (info: RunProgress) => void;
   /**
    * Precompute the detail chart's separation curve for every event.
    *
@@ -80,7 +101,7 @@ export function runScreening(
   const { candidates, cascade } = screen(recs, {
     start,
     hours,
-    onProgress: (f) => onProgress?.(f, 'screen'),
+    onProgress,
   });
 
   const conjunctions: Conjunction[] = [];
@@ -135,9 +156,23 @@ export function runScreening(
         : [],
     });
 
-    if ((k & 63) === 0) onProgress?.(k / candidates.length, 'refine');
+    if ((k & 63) === 0) {
+      onProgress?.({
+        phase: 'refine',
+        fraction: k / candidates.length,
+        candidates: candidates.length,
+        index: k,
+        events: conjunctions.length,
+      });
+    }
   }
-  onProgress?.(1, 'refine');
+  onProgress?.({
+    phase: 'refine',
+    fraction: 1,
+    candidates: candidates.length,
+    index: candidates.length,
+    events: conjunctions.length,
+  });
 
   conjunctions.sort((x, y) => x.tca - y.tca);
 

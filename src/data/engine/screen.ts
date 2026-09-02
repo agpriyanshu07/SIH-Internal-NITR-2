@@ -88,11 +88,33 @@ export function periApo(rec: satellite.SatRec): [number, number] {
   return [a * (1 - rec.ecco), a * (1 + rec.ecco)];
 }
 
+/**
+ * Progress payload for the worker's boot sequence. Every field is a real,
+ * currently-known count from the run in progress — nothing here is estimated
+ * or interpolated to look smooth. `phase` names the two coarse stages this
+ * module performs; `screen()` never reports 'refine', which belongs to
+ * `run.ts`.
+ */
+export interface ScreenProgress {
+  /** 'radial': stage 2 finished (pure geometry, reported once). 'sweep':
+   *  stage 3 in progress (propagate + distance gate, reported repeatedly). */
+  phase: 'radial' | 'sweep';
+  /** 0–1 within the current phase. */
+  fraction: number;
+  totalPairs: number;
+  afterRadialFilter: number;
+  steps: number;
+  /** Sweep steps completed so far; 0 during 'radial'. */
+  step: number;
+  /** SGP4 evaluations performed so far. */
+  propagations: number;
+}
+
 export interface ScreenOptions {
   start: Date;
   hours: number;
-  /** Called with 0–1 as the sweep proceeds, for the worker progress bar. */
-  onProgress?: (fraction: number) => void;
+  /** Called as the radial filter completes and as the sweep proceeds. */
+  onProgress?: (info: ScreenProgress) => void;
 }
 
 export function screen(
@@ -120,6 +142,16 @@ export function screen(
     }
   }
   const nPairs = pairI.length;
+
+  onProgress?.({
+    phase: 'radial',
+    fraction: 1,
+    totalPairs,
+    afterRadialFilter: nPairs,
+    steps,
+    step: 0,
+    propagations: 0,
+  });
 
   // ── Stage 3: distance gate over the propagated sweep ──────────────────────
   // dMin drives the candidate decision; dMax is what separates a real pass from
@@ -169,9 +201,27 @@ export function screen(
       if (d > dMax[p]) dMax[p] = d;
     }
 
-    if (onProgress && (k & 15) === 0) onProgress(k / steps);
+    if (onProgress && (k & 15) === 0) {
+      onProgress({
+        phase: 'sweep',
+        fraction: k / steps,
+        totalPairs,
+        afterRadialFilter: nPairs,
+        steps,
+        step: k,
+        propagations,
+      });
+    }
   }
-  onProgress?.(1);
+  onProgress?.({
+    phase: 'sweep',
+    fraction: 1,
+    totalPairs,
+    afterRadialFilter: nPairs,
+    steps,
+    step: steps,
+    propagations,
+  });
 
   const candidates: ScreenCandidate[] = [];
   let coOrbiting = 0;

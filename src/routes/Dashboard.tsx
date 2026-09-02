@@ -17,6 +17,7 @@ import { fmtDur, fmtInt, fmtNorad, fmtPc, fmtUTC } from '../data/format';
 import { useNow } from '../hooks/useNow';
 import { useAcknowledged } from '../hooks/useAcknowledged';
 import { useScreening } from '../hooks/useScreening';
+import { BootSequence } from '../components/BootSequence';
 import { CascadePanel } from '../components/CascadePanel';
 import { OriginBadge, ProvenanceFooter } from '../components/Provenance';
 import { Button, MetricTile, Panel, Segmented, SeverityChip, EmptyState } from '../components/primitives';
@@ -134,7 +135,7 @@ export function Dashboard() {
    * paints on first frame; "Run screening" replaces it with a live worker run
    * of the same engine over the horizon the operator picked.
    */
-  const { events, cascade, progress, stage, live, lastRun, dismissLastRun, running, error, run } =
+  const { events, cascade, phase, phaseLog, live, lastRun, dismissLastRun, running, error, run } =
     useScreening();
   const { toggle: toggleAck, isAcknowledged } = useAcknowledged();
 
@@ -257,12 +258,6 @@ export function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {running && (
-            <span className="num text-xs- text-tertiary" role="status" aria-live="polite">
-              {stage === 'refine' ? 'refining' : 'propagating'}{' '}
-              {Math.round((progress ?? 0) * 100)}%
-            </span>
-          )}
           <Button
             className="px-[13px] py-[7px] text-sm text-secondary"
             onClick={() =>
@@ -305,6 +300,8 @@ export function Dashboard() {
           </Button>
         </div>
       </div>
+
+      <BootSequence phase={phase} phaseLog={phaseLog} />
 
       {/* Metric row */}
       <div className="grid grid-cols-2 gap-px bg-hairline px-5 pt-5 sm:grid-cols-3 xl:grid-cols-5">
