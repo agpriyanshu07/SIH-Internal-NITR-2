@@ -5,7 +5,7 @@ import { MoonIcon, PersonIcon, SearchIcon, SunIcon } from './Icon';
 import { TextField } from './primitives';
 import { useTheme } from '../hooks/useTheme';
 import { initials, useOperator } from '../hooks/useOperator';
-import { FEATURES, STATUS_LABEL, STATUS_SEV, type Feature } from '../data/features';
+import { COUNTS, FEATURES, STATUS_LABEL, STATUS_SEV, type Feature } from '../data/features';
 import { OBJECTS, SNAPSHOT_EPOCH } from '../data/objects';
 import { ClockUTC } from './Countdown';
 
@@ -253,6 +253,23 @@ export function Shell() {
         </div>
 
         <nav className="flex min-h-0 flex-1 flex-col gap-[2px] overflow-auto px-[10px] py-[18px]">
+          {/*
+           * "What's real vs. assumed" as a first-class nav row, not just the
+           * small footer link below. It still points at the same
+           * /console/status screen, which still renders straight off
+           * `FEATURES` — this is a second door into the one credibility
+           * registry, not a second registry to keep in sync.
+           */}
+          <NavLink
+            to="/console/status"
+            className={({ isActive }) => `${navClass(isActive)} mb-2 flex items-center justify-between gap-2`}
+          >
+            <span className="truncate">What&apos;s real vs. assumed</span>
+            <span className="flex-none font-mono text-2xs uppercase tracking-data text-tertiary">
+              {COUNTS.live}/{FEATURES.length} live
+            </span>
+          </NavLink>
+
           {NAV_GROUPS.map((group) => (
             <div key={group.label} className="flex flex-col gap-[2px]">
               <div className="px-2 pb-2 pt-3 font-mono text-2xs uppercase tracking-eyebrow text-tertiary">

@@ -327,6 +327,12 @@
   [data-sev='CRITICAL'] .sev-swatch {
     animation: kpulse 2.1s ease-out infinite;
   }
+  /* HIGH gets the same breath, slower and only two-thirds the amplitude —
+     legible as "also live" without competing with CRITICAL for attention. */
+  [data-sev='HIGH'] .sev-swatch {
+    animation: kpulse 3.4s ease-out infinite;
+    animation-timing-function: ease-out;
+  }
 
   :focus-visible {
     outline: 1px solid var(--accent);
