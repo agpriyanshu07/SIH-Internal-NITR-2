@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { fmtAge, fmtUTC } from '../data/format';
-import { MoonIcon, PersonIcon, SearchIcon, SunIcon } from './Icon';
+import { MoonIcon, PersonIcon, PlayIcon, SearchIcon, SunIcon } from './Icon';
 import { TextField } from './primitives';
 import { useTheme } from '../hooks/useTheme';
 import { initials, useOperator } from '../hooks/useOperator';
+import { usePresenter } from '../state/presenter';
 import { COUNTS, FEATURES, STATUS_LABEL, STATUS_SEV, type Feature } from '../data/features';
 import { OBJECTS, SNAPSHOT_EPOCH } from '../data/objects';
 import { ClockUTC } from './Countdown';
@@ -208,18 +209,29 @@ export function Shell() {
   }, [pathname]);
   const { theme, toggle } = useTheme();
   const { operator } = useOperator();
+  const { start: startPresenter } = usePresenter();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== '/' || e.metaKey || e.ctrlKey) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = document.activeElement;
-      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return;
-      e.preventDefault();
-      searchRef.current?.focus();
+      const typing = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement;
+      if (e.key === '/' && !typing) {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
+      // Shift+D — the demo path. A letter, not a bare keystroke, so it does
+      // not fire while a table row has focus and the operator is typing
+      // anything else; Shift avoids colliding with the search shortcut above.
+      if (e.key === 'D' && e.shiftKey && !typing) {
+        e.preventDefault();
+        startPresenter();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [startPresenter]);
 
   const fetchAgeMs = MEDIAN_ELSET_MS;
   const stale = fetchAgeMs > STALE_AFTER_MS;
@@ -362,6 +374,23 @@ export function Shell() {
 
             <span className="hidden h-[18px] w-px bg-hairline lg:block" />
             <ClockUTC className="num hidden text-xs text-secondary lg:block" />
+
+            {/*
+             * Discoverable, not loud: same size and weight as the theme
+             * toggle beside it, distinguished only by the accent border a
+             * modified-thresholds link already uses elsewhere in this shell.
+             * Shift+D starts it from anywhere in the console; see the keydown
+             * handler above.
+             */}
+            <button
+              type="button"
+              onClick={startPresenter}
+              title="Presenter mode — walk the DEMO.md script (Shift+D)"
+              className="lift hidden items-center gap-[6px] rounded border border-accent-border bg-accent-wash px-2 py-1 font-mono text-2xs uppercase tracking-label text-accent transition-colors hover:bg-accent sm:flex"
+            >
+              <PlayIcon />
+              <span>Presenter</span>
+            </button>
 
             <button
               type="button"

@@ -313,7 +313,10 @@ export function Landing() {
             <NextApproach />
           </div>
 
-          <div className="glass lift relative h-[380px] overflow-hidden rounded-md border border-hairline-soft bg-deep lg:h-[520px]">
+          <div
+            data-presenter="hero-canvas"
+            className="glass lift relative h-[380px] overflow-hidden rounded-md border border-hairline-soft bg-deep lg:h-[520px]"
+          >
             <HeroOrbits />
             {/* "Propagated live" was false: this canvas never imported
                 satellite.js and never called propagate(). It draws circular

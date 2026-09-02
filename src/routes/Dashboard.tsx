@@ -300,6 +300,7 @@ export function Dashboard() {
             Export CDM
           </Button>
           <Button
+            data-presenter="run-screening-button"
             variant="primary"
             className="px-[13px] py-[7px] text-sm"
             onClick={() => run(thresholds.horizonHours)}
@@ -327,6 +328,7 @@ export function Dashboard() {
           value={<CountUp value={cascade.totalPairs} format={fmtInt} />}
           foot={`→ ${fmtInt(cascade.candidates)} candidates → ${fmtInt(cascade.events)} events`}
         />
+        <div data-presenter="high-risk-tile">
         <MetricTile
           label="High risk events"
           value={
@@ -359,6 +361,7 @@ export function Dashboard() {
             </span>
           }
         />
+        </div>
         <NextTcaTile events={byTca} />
         <MetricTile
           label="Screening latency"
@@ -451,6 +454,7 @@ export function Dashboard() {
                   if an object is renamed in a later capture. */}
               <button
                 type="button"
+                data-presenter="isro-filter-button"
                 aria-pressed={isroOnly}
                 onClick={() => setIsroOnly((v) => !v)}
                 title={`${isroEvents} of ${screened.length} screened events involve an ISRO-operated asset`}
@@ -594,7 +598,9 @@ export function Dashboard() {
             <RegimePlot events={rows} />
           </Panel>
 
-          <CascadePanel cascade={cascade} live={live} />
+          <div data-presenter="cascade-panel">
+            <CascadePanel cascade={cascade} live={live} />
+          </div>
 
           {error && (
             <div
