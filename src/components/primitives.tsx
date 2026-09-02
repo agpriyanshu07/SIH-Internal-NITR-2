@@ -33,7 +33,17 @@ export function Button({ variant = 'secondary', className = '', ...rest }: Butto
   return (
     <button
       {...rest}
-      className={`rounded border px-[15px] py-2 text-sm disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 ${styles} ${className}`}
+      /*
+       * A press state, which this never had: hover lifted every variant a
+       * pixel, and letting go of the mouse dropped it straight back with
+       * nothing in between. `active:` overrides the hover lift back to 0 and
+       * scales down a hair (99%) — a button now visibly depresses on the way
+       * down, not only recovers on the way up. Runs on the same global
+       * transform transition every other piece of chrome already uses (see
+       * index.css's `div, button, input, a, svg circle` block), so it is not
+       * a new motion language, just the existing one given a keydown state.
+       */
+      className={`rounded border px-[15px] py-2 text-sm active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 disabled:active:scale-100 ${styles} ${className}`}
     />
   );
 }
