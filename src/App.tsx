@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { ThresholdsProvider } from './state/thresholds';
+import { PresenterProvider } from './state/presenter';
+import { PresenterOverlay } from './components/PresenterOverlay';
 import { Landing } from './routes/Landing';
 import { SignIn } from './routes/SignIn';
 
@@ -70,29 +72,40 @@ const RouteFallback = () => (
 export function App() {
   return (
     <ThresholdsProvider>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/signin" element={<SignIn />} />
-        <Route
-          path="/console"
-          element={
-            <Suspense fallback={<RouteFallback />}>
-              <Shell />
-            </Suspense>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="conjunction/:id" element={<ConjunctionDetail />} />
-          <Route path="catalogue" element={<Catalogue />} />
-          <Route path="viewer" element={<Viewer />} />
-          <Route path="thresholds" element={<Thresholds />} />
-          <Route path="manoeuvres" element={<ManoeuvreLog />} />
-          <Route path="analysis" element={<Analysis />} />
-          <Route path="status" element={<Status />} />
-          <Route path="alerts" element={<Alerts />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      {/*
+       * PresenterProvider wraps Routes rather than sitting inside one of its
+       * elements, and PresenterOverlay is a sibling of Routes rather than a
+       * child of Shell — both for the same reason. A route change unmounts
+       * everything below Routes; Presenter Mode's whole job is to survive
+       * exactly that six-route walk through DEMO.md's script without losing
+       * the caption, the step count, or its keyboard listener.
+       */}
+      <PresenterProvider>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route
+            path="/console"
+            element={
+              <Suspense fallback={<RouteFallback />}>
+                <Shell />
+              </Suspense>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="conjunction/:id" element={<ConjunctionDetail />} />
+            <Route path="catalogue" element={<Catalogue />} />
+            <Route path="viewer" element={<Viewer />} />
+            <Route path="thresholds" element={<Thresholds />} />
+            <Route path="manoeuvres" element={<ManoeuvreLog />} />
+            <Route path="analysis" element={<Analysis />} />
+            <Route path="status" element={<Status />} />
+            <Route path="alerts" element={<Alerts />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <PresenterOverlay />
+      </PresenterProvider>
     </ThresholdsProvider>
   );
 }

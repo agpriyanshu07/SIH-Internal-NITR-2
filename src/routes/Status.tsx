@@ -54,7 +54,7 @@ function StatusRow({ feature }: { feature: Feature }) {
 export function Status() {
   useDocumentTitle('Prototype status');
   return (
-    <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-6 p-6">
+    <div data-presenter="status-page" className="mx-auto flex w-full max-w-[1000px] flex-col gap-6 p-6">
       <div className="flex flex-col gap-[5px]">
         <h1 className="text-2xl font-medium tracking-tight text-primary">Prototype status</h1>
         <p className="font-mono text-xs text-tertiary">

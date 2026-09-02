@@ -237,6 +237,7 @@ export function Analysis() {
               </Select>
             </div>
 
+            <div data-presenter="mass-slider">
             <Field
               label="Target mass"
               value={`${fmtInt(massTarget)} kg`}
@@ -247,6 +248,7 @@ export function Analysis() {
                      aria-label="Target mass in kilograms" style={sliderFill(massTarget, 1, 20000)}
               className="k-slider" />
             </Field>
+            </div>
 
             <Field label="Projectile mass" value={`${massProjectile.toFixed(1)} kg`}>
               <input type="range" min={0.1} max={2000} step={0.1}
@@ -395,6 +397,7 @@ export function Analysis() {
             </p>
           </Panel>
 
+          <div data-presenter="gabbard-diagram">
           <Panel
             title="Gabbard diagram"
             aside={<span className="num text-2xs text-tertiary">APOGEE + PERIGEE vs PERIOD</span>}
@@ -415,13 +418,16 @@ export function Analysis() {
               parentAltKm={(event.A.alt + event.B.alt) / 2}
             />
           </Panel>
+          </div>
 
-          <CascadeRisk
-            fragments={result.fragments}
-            predictedCount={result.breakup.predictedCount}
-            cloudInclDeg={event.A.incl}
-            shellFormationDays={result.shellFormationDays}
-          />
+          <div data-presenter="cascade-risk">
+            <CascadeRisk
+              fragments={result.fragments}
+              predictedCount={result.breakup.predictedCount}
+              cloudInclDeg={event.A.incl}
+              shellFormationDays={result.shellFormationDays}
+            />
+          </div>
 
           <Panel title="Where it comes down" bodyClassName="p-[16px]">
             <div className="mb-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
