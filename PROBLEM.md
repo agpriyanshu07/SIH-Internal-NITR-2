@@ -137,7 +137,7 @@ given, and because these are where the marks for Idea/Innovation sit.
 | Positional uncertainty measured by successive TLE differencing | `engine/tleUncertainty.ts` | implemented, awaiting a multi-epoch history |
 | Sensitivity of the whole board to the σ assumption | `/console/thresholds` | live |
 | Re-entry latitude bound from inclination; longitude deliberately not predicted | `/console/analysis` | live |
-| Measured scaling curve — fitted exponent 1.738 over six catalogue sizes | `npm run scaling` | live |
+| Measured scaling curve — fitted exponent ≈1.73 (1.70–1.74 across runs; it is fitted to elapsed times) over six catalogue sizes | `npm run scaling` | live |
 | Runs offline from a single file, no backend, no network at runtime | `npm run build:single` | live |
 
 ---

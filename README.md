@@ -600,3 +600,13 @@ src/
   lib/          shared orbit projection used by the hero and the viewer
   hooks/        clock and theme
 ```
+
+## Licence
+
+MIT — see [`LICENSE`](LICENSE). The engine, the snapshot and the screening
+results are all in the tree, so anything the console reports can be
+re-derived by anyone: `npm run validate` re-runs the engine's known-answer
+tests, `npm run screen` re-runs the screening, `npm run scaling` re-measures
+the scaling curve.
+
+The committed CelesTrak element sets are public data, redistributed verbatim.
