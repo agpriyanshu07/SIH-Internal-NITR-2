@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import gsap from 'gsap';
 import { OBJECTS } from '../data/objects';
 import { RESOLVED } from '../data/conjunctions';
 import { fmtNorad, fmtUTC } from '../data/format';
@@ -9,6 +10,7 @@ import { EPOCH_OFFSET } from '../hooks/useNow';
 import type { SpaceObject } from '../data/types';
 import { sliderFill } from '../lib/slider';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { DURATION, EASE, reducedMotion } from '../lib/motion';
 
 /**
  * 2D orbital viewer.
@@ -42,6 +44,17 @@ const LAYER_LABELS: { key: keyof Layers; label: string }[] = [
   { key: 'debris', label: 'Debris' },
   { key: 'flagged', label: 'Flagged conjunctions' },
 ];
+
+/** Which fade key a catalogue type animates on. Debris covers both the traced
+ *  64 and the unlabelled haze cloud — they are the same layer, drawn in two
+ *  densities for the reason explained where `haze` is built below. */
+function layerKeyFor(type: SpaceObject['type']): keyof Layers {
+  return type === 'PAYLOAD' ? 'payload' : type === 'ROCKET BODY' ? 'rocket' : 'debris';
+}
+
+/** How many recent positions a trailed object remembers. Small on purpose —
+ *  this is a comet's tail, not a ground track. */
+const TRAIL_LENGTH = 9;
 
 function LayerToggle({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
   return (
@@ -151,6 +164,95 @@ export function Viewer() {
   // Screen positions from the last frame, for click hit-testing.
   const hits = useRef<{ norad: number; x: number; y: number }[]>([]);
 
+  /*
+   * GSAP-driven polish. Every one of these is read by `draw()` as a plain
+   * number each frame — GSAP owns the tween, the canvas owns the paint, and
+   * neither has to know the other exists. None of it touches offsetRef or
+   * azimuthRef, which the rAF loop below and the drag handlers already own;
+   * keeping this state in its own refs is what lets it be pure decoration
+   * that can be deleted without touching the simulation clock or the camera.
+   */
+  /** A CRITICAL-severity ring's breathing phase, 0–1, matching the same
+   *  2.1s cadence the severity swatch pulses at everywhere else. */
+  const pulseRef = useRef(0);
+  /** Multiplies the projection scale — a brief "camera punch" on selection. */
+  const zoomRef = useRef(1);
+  /** Per-layer opacity, eased toward 0/1 instead of snapping when a layer
+   *  toggle flips, so `draw()` can fade objects out rather than delete them
+   *  mid-frame. Independent of `visible`, which still drives the object list
+   *  and stays instant — the list is a filter, the canvas is a scene. */
+  const layerAlphaRef = useRef<Record<keyof Layers, number>>({
+    payload: 1, rocket: 1, debris: 1, flagged: 1,
+  });
+  /** Recent screen positions of the selected object and any CRITICAL object,
+   *  oldest first — the fading trail behind them. Cleared whenever the
+   *  selection changes so a stale trail never bleeds onto a new target. */
+  const trailsRef = useRef(new Map<number, { x: number; y: number }[]>());
+  const trailFrameRef = useRef(0);
+
+  // Breathing ring: one continuous tween, started once, read every frame.
+  // Skipped entirely when there is nothing CRITICAL to pulse or the viewer
+  // opens under reduced motion — no tween means no redraw it would force.
+  useEffect(() => {
+    if (critical.size === 0 || reducedMotion()) return;
+    const state = { v: 0 };
+    const tween = gsap.to(state, {
+      v: 1,
+      duration: 1.05, // half of kpulse's 2.1s cycle — this is a yoyo, so the
+      // full out-and-back matches the swatch's own cadence exactly.
+      repeat: -1,
+      yoyo: true,
+      ease: EASE.ambient, // 'sine.inOut' — the one motion.ts ease that is
+      // already a native GSAP token rather than a CSS cubic-bezier string.
+      onUpdate: () => {
+        pulseRef.current = state.v;
+        needsDraw.current = true;
+      },
+    });
+    return () => { tween.kill(); };
+  }, [critical]);
+
+  // Camera punch on selection: a quick zoom-in that settles back to 1,
+  // acknowledging the new target the way a physical camera would rack focus.
+  useEffect(() => {
+    trailsRef.current.clear(); // the old target's trail belongs to it alone.
+    if (reducedMotion()) { zoomRef.current = 1; needsDraw.current = true; return; }
+    const state = { v: zoomRef.current };
+    const tween = gsap.fromTo(
+      state,
+      { v: 1.16 },
+      {
+        v: 1,
+        duration: DURATION.medium,
+        ease: 'power3.out',
+        onUpdate: () => { zoomRef.current = state.v; needsDraw.current = true; },
+      },
+    );
+    return () => { tween.kill(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
+
+  // Layer fades: each toggle eases its own alpha toward 0 or 1 rather than
+  // snapping, so an object leaves the scene the way it entered it.
+  useEffect(() => {
+    const tweens = (['payload', 'rocket', 'debris', 'flagged'] as const).map((key) => {
+      const target = layers[key] ? 1 : 0;
+      const state = { v: layerAlphaRef.current[key] };
+      if (reducedMotion()) {
+        layerAlphaRef.current[key] = target;
+        needsDraw.current = true;
+        return null;
+      }
+      return gsap.to(state, {
+        v: target,
+        duration: DURATION.medium,
+        ease: 'power2.out',
+        onUpdate: () => { layerAlphaRef.current[key] = state.v; needsDraw.current = true; },
+      });
+    });
+    return () => { for (const t of tweens) t?.kill(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layers.payload, layers.rocket, layers.debris, layers.flagged]);
 
   /*
    * Drag to rotate. Pointer events rather than mouse events so a touchscreen
@@ -239,10 +341,14 @@ export function Viewer() {
     const p = palette();
     const cx = w / 2;
     const cy = h / 2;
-    const scale = Math.min(w, h) * 0.21;
+    // zoomRef is 1 except for the brief instant after a selection changes —
+    // see the "camera punch" effect above. Multiplying it into scale is the
+    // whole implementation; nothing else in the projection knows it exists.
+    const scale = Math.min(w, h) * 0.21 * zoomRef.current;
     // Earth's actual rotation rate, plus wherever the camera has been dragged
     // or drifted to. The scene's own motion and the viewer's are the same term.
     const spin = offsetRef.current * 7.292e-5 + azimuthRef.current;
+    const layerAlpha = layerAlphaRef.current;
 
     ctx.clearRect(0, 0, w, h);
     ctx.lineWidth = 1;
@@ -256,13 +362,29 @@ export function Viewer() {
     type Path = { pts: { x: number; y: number; z: number }[]; stroke: string; alpha: number };
     const paths: Path[] = [];
     const nextHits: { norad: number; x: number; y: number }[] = [];
-    const marks: { x: number; y: number; z: number; size: number; fill: string; ring?: string }[] = [];
+    const marks: {
+      x: number; y: number; z: number; size: number; fill: string; ring?: string;
+      /** Layer-fade alpha, 0–1 — separate from the depth-pass dimming below. */
+      alpha: number;
+      /** Whether the ring (if any) breathes with pulseRef. */
+      pulse?: boolean;
+    }[] = [];
+    // Trail sampling is throttled to keep a comet's tail cheap: real motion at
+    // 4 samples/second is plenty to read as a curve, and this only ever runs
+    // for the handful of objects (selected + CRITICAL) that get one at all.
+    const sampleTrail = playingRef.current && trailFrameRef.current % 4 === 0 && !reducedMotion();
+    trailFrameRef.current++;
 
-    for (const o of visible) {
+    for (const o of tracked) {
+      const layerKey = layerKeyFor(o.type);
+      const alpha = layerAlpha[layerKey];
+      if (alpha < 0.01) continue; // fully faded out — not worth projecting
+
       const params = { alt: o.alt, incl: o.incl, raan: o.raan, phase: (o.ma * Math.PI) / 180 };
       const isSel = o.norad === selected;
       const isCritical = layers.flagged && critical.has(o.norad);
       const isFlagged = layers.flagged && flagged.has(o.norad);
+      const flaggedAlpha = layers.flagged ? layerAlpha.flagged : 1; // rings only
 
       if (isSel || isCritical || pathFor.has(o.norad)) {
         const pts = [];
@@ -272,18 +394,30 @@ export function Viewer() {
         paths.push({
           pts,
           stroke: isSel ? p.accent : isCritical ? p.critical : p.soft,
-          alpha: isSel ? 1 : isCritical ? 0.75 : 0.55,
+          alpha: (isSel ? 1 : isCritical ? 0.75 * flaggedAlpha : 0.55) * alpha,
         });
       }
 
       const pt = projectOrbitPoint(params, params.phase + angularRate(o.period) * offsetRef.current, cx, cy, scale, spin);
-      nextHits.push({ norad: o.norad, x: pt.x, y: pt.y });
+      if (layers[layerKey]) nextHits.push({ norad: o.norad, x: pt.x, y: pt.y });
       marks.push({
         ...pt,
         size: isSel ? 7 : isFlagged ? 5 : 3,
         fill: isSel ? p.accent : isFlagged ? p.critical : o.type === 'DEBRIS' ? p.t3 : p.t2,
         ring: isSel ? p.accent : isCritical ? p.critical : undefined,
+        alpha,
+        pulse: isCritical,
       });
+
+      // Fading trail — selected object and CRITICAL objects only. See TRAIL_LENGTH.
+      if (isSel || isCritical) {
+        let buf = trailsRef.current.get(o.norad);
+        if (!buf) { buf = []; trailsRef.current.set(o.norad, buf); }
+        if (sampleTrail) {
+          buf.push({ x: pt.x, y: pt.y });
+          if (buf.length > TRAIL_LENGTH) buf.shift();
+        }
+      }
     }
     hits.current = nextHits;
 
@@ -298,11 +432,11 @@ export function Viewer() {
      * at their own rates. It reads better too: a real catalogue clusters into
      * shells and planes where the generated one smeared evenly.
      */
-    if (layers.debris) {
+    if (layerAlpha.debris >= 0.01) {
       for (const o of haze) {
         const params = { alt: o.alt, incl: o.incl, raan: o.raan, phase: (o.ma * Math.PI) / 180 };
         const pt = projectOrbitPoint(params, params.phase + angularRate(o.period) * offsetRef.current, cx, cy, scale, spin);
-        marks.push({ ...pt, size: 1.6, fill: p.nominal });
+        marks.push({ ...pt, size: 1.6, fill: p.nominal, alpha: layerAlpha.debris });
       }
     }
 
@@ -324,27 +458,47 @@ export function Viewer() {
       ctx.globalAlpha = 1;
     };
 
-    const drawMark = (m: (typeof marks)[number]) => {
+    const drawMark = (m: (typeof marks)[number], depthAlpha = 1) => {
+      const a = m.alpha * depthAlpha;
+      ctx.globalAlpha = a;
       ctx.fillStyle = m.fill;
       ctx.fillRect(m.x - m.size / 2, m.y - m.size / 2, m.size, m.size);
       if (m.ring) {
+        // A CRITICAL ring breathes with pulseRef — radius and opacity both
+        // move, the same "still live" language the sev-swatch pulse already
+        // uses elsewhere, extended to the one screen with no DOM to attach a
+        // CSS animation to.
+        const breathe = m.pulse ? pulseRef.current : 0;
         ctx.beginPath();
         ctx.strokeStyle = m.ring;
-        ctx.globalAlpha = 0.8;
-        ctx.arc(m.x, m.y, m.size + 5, 0, Math.PI * 2);
+        ctx.globalAlpha = a * (0.6 + breathe * 0.25);
+        ctx.arc(m.x, m.y, m.size + 5 + breathe * 2, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.globalAlpha = 1;
       }
+      ctx.globalAlpha = 1;
+    };
+
+    /** The fading tail behind a trailed object — oldest point faintest. */
+    const drawTrail = (norad: number, color: string) => {
+      const buf = trailsRef.current.get(norad);
+      if (!buf || buf.length < 2) return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.4;
+      for (let i = 1; i < buf.length; i++) {
+        ctx.globalAlpha = (i / (buf.length - 1)) * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(buf[i - 1].x, buf[i - 1].y);
+        ctx.lineTo(buf[i].x, buf[i].y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 1;
     };
 
     // 1 — behind the Earth
     for (const path of paths) strokeSide(path, false);
     for (const m of marks) {
-      if (m.z < 0 && Math.hypot(m.x - cx, m.y - cy) > scale) {
-        ctx.globalAlpha = 0.45;
-        drawMark(m);
-        ctx.globalAlpha = 1;
-      }
+      if (m.z < 0 && Math.hypot(m.x - cx, m.y - cy) > scale) drawMark(m, 0.45);
     }
 
     // 2 — the Earth: an opaque disc with a front-facing graticule
@@ -384,12 +538,17 @@ export function Viewer() {
     ctx.arc(cx, cy, scale, 0, Math.PI * 2);
     ctx.stroke();
 
-    // 3 — in front of the Earth
+    // 3 — in front of the Earth. Trails first, so the mark itself always
+    // paints on top of its own tail rather than under it.
     for (const path of paths) strokeSide(path, true);
+    drawTrail(selected, p.accent);
+    if (layers.flagged) {
+      for (const norad of critical) if (norad !== selected) drawTrail(norad, p.critical);
+    }
     for (const m of marks) {
       if (m.z >= 0 || Math.hypot(m.x - cx, m.y - cy) > scale) drawMark(m);
     }
-  }, [visible, selected, layers, flagged, critical, pathFor, haze]);
+  }, [tracked, selected, layers, flagged, critical, pathFor, haze]);
 
   // Latest closure, and a repaint for whatever changed it.
   useEffect(() => {

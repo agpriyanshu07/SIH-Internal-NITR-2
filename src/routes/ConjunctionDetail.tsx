@@ -129,7 +129,10 @@ export function ConjunctionDetail() {
         <span className="font-mono text-xs text-primary">{event.id}</span>
       </div>
 
-      <div className="flex flex-wrap items-start justify-between gap-6 border-b border-hairline-soft px-6 pb-[22px] pt-[26px]">
+      <div
+        data-presenter="event-header"
+        className="flex flex-wrap items-start justify-between gap-6 border-b border-hairline-soft px-6 pb-[22px] pt-[26px]"
+      >
         <div className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-[10px]">
             <SeverityChip sev={event.sev} size={9} />
@@ -257,6 +260,7 @@ export function ConjunctionDetail() {
          * the threshold, and the threshold is the dashed line on the chart.
          */}
         <div className="flex min-w-0 flex-col gap-6 xl:sticky xl:top-0 xl:max-h-[calc(100vh-100px)] xl:overflow-y-auto xl:pr-1">
+          <div data-presenter="separation-chart">
           <Panel
             title={`Separation versus time — ±${40} min about TCA`}
             aside={
@@ -273,6 +277,7 @@ export function ConjunctionDetail() {
           >
             <SeparationChart event={event} />
           </Panel>
+          </div>
 
           <div className="grid grid-cols-1 gap-px overflow-hidden rounded-md border border-hairline bg-hairline md:grid-cols-2">
             <ObjectSpec object={event.A} role="Primary" />
@@ -303,7 +308,9 @@ export function ConjunctionDetail() {
             </div>
           </Panel>
 
-          <ScoreModel event={event} />
+          <div data-presenter="risk-model">
+            <ScoreModel event={event} />
+          </div>
 
           <Panel
             title="Sensitivity to the assumed covariance"

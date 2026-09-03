@@ -3,7 +3,21 @@ import { CASCADE, RESOLVED, resolve } from '../data/conjunctions';
 import type { RunCascade } from '../data/engine/run';
 import type { ResolvedConjunction } from '../data/types';
 import ScreeningWorker from '../workers/screening.worker?worker&inline';
-import type { ScreenRequest, ScreenResponse } from '../workers/screening.worker';
+import type { ScreenRequest, ScreenResponse, WorkerProgress } from '../workers/screening.worker';
+
+/**
+ * The four wire phases, in the order they actually fire — the boot sequence
+ * (`components/BootSequence.tsx`) walks this list rather than inventing its
+ * own. See `screening.worker.ts` for why there are four, not five: propagation
+ * and the coarse distance gate share a loop (`sweep`), and risk scoring is
+ * computed inline inside refinement rather than as its own pass.
+ */
+export const RUN_PHASES = ['parse', 'radial', 'sweep', 'refine'] as const;
+export type RunPhase = (typeof RUN_PHASES)[number];
+
+/** The latest message seen for each phase, so the UI can show every phase's
+ *  real last-known counts at once rather than only the current one. */
+export type PhaseLog = Partial<Record<RunPhase, WorkerProgress>>;
 
 /**
  * The current screening run.
@@ -19,7 +33,10 @@ export interface ScreeningState {
   cascade: RunCascade;
   /** null when idle; 0–1 while a live run is in flight. */
   progress: number | null;
-  stage: 'screen' | 'refine' | null;
+  /** Current phase, or null when idle. */
+  phase: RunPhase | null;
+  /** Every phase's latest known message, for the boot sequence display. */
+  phaseLog: PhaseLog;
   /** True once a live run has replaced the committed result. */
   live: boolean;
   /**
@@ -40,7 +57,8 @@ export function useScreening() {
     events: RESOLVED,
     cascade: CASCADE,
     progress: null,
-    stage: null,
+    phase: null,
+    phaseLog: {},
     live: false,
     lastRun: null,
     error: null,
@@ -80,7 +98,7 @@ export function useScreening() {
       setState((s) => ({
         ...s,
         progress: null,
-        stage: null,
+        phase: null,
         error:
           'A live re-run needs a Web Worker, which the browser blocks for a page ' +
           'opened directly from disk (file://). The events on screen are still a ' +
@@ -90,25 +108,38 @@ export function useScreening() {
       return;
     }
     workerRef.current = worker;
-    setState((s) => ({ ...s, progress: 0, stage: 'screen', error: null, lastRun: null }));
+    setState((s) => ({
+      ...s,
+      progress: 0,
+      phase: 'parse',
+      phaseLog: {},
+      error: null,
+      lastRun: null,
+    }));
 
     worker.onmessage = (e: MessageEvent<ScreenResponse>) => {
       const msg = e.data;
       if (msg.kind === 'progress') {
-        setState((s) => ({ ...s, progress: msg.fraction, stage: msg.stage }));
+        setState((s) => ({
+          ...s,
+          progress: msg.fraction,
+          phase: msg.phase,
+          phaseLog: { ...s.phaseLog, [msg.phase]: msg },
+        }));
         return;
       }
       worker.terminate();
       workerRef.current = null;
       if (msg.kind === 'error') {
-        setState((s) => ({ ...s, progress: null, stage: null, error: msg.message }));
+        setState((s) => ({ ...s, progress: null, phase: null, error: msg.message }));
         return;
       }
-      setState({
+      setState((s) => ({
         events: msg.conjunctions.map(resolve),
         cascade: msg.cascade,
         progress: null,
-        stage: null,
+        phase: null,
+        phaseLog: s.phaseLog,
         live: true,
         lastRun: {
           events: msg.conjunctions.length,
@@ -120,13 +151,13 @@ export function useScreening() {
             msg.conjunctions.length === CASCADE.events,
         },
         error: null,
-      });
+      }));
     };
 
     worker.onerror = (e) => {
       worker.terminate();
       workerRef.current = null;
-      setState((s) => ({ ...s, progress: null, stage: null, error: e.message }));
+      setState((s) => ({ ...s, progress: null, phase: null, error: e.message }));
     };
 
     worker.postMessage({ hours } satisfies ScreenRequest);

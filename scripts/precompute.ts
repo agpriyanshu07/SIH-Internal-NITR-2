@@ -32,11 +32,11 @@ const { conjunctions, cascade } = runScreening(catalogue, {
   hours: HOURS,
   // The detail view computes its own curve on demand; see RunOptions.
   includeSeparation: false,
-  onProgress: (f, stage) => {
-    const pct = Math.floor(f * 100);
+  onProgress: (info) => {
+    const pct = Math.floor(info.fraction * 100);
     if (pct !== lastPct && pct % 10 === 0) {
       lastPct = pct;
-      process.stdout.write(`  ${stage} ${pct}%\r`);
+      process.stdout.write(`  ${info.phase} ${pct}%\r`);
     }
   },
 });

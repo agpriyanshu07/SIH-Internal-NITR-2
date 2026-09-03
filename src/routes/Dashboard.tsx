@@ -17,7 +17,9 @@ import { fmtDur, fmtInt, fmtNorad, fmtPc, fmtUTC } from '../data/format';
 import { useNow } from '../hooks/useNow';
 import { useAcknowledged } from '../hooks/useAcknowledged';
 import { useScreening } from '../hooks/useScreening';
+import { BootSequence } from '../components/BootSequence';
 import { CascadePanel } from '../components/CascadePanel';
+import { CountUp } from '../components/CountUp';
 import { OriginBadge, ProvenanceFooter } from '../components/Provenance';
 import { Button, MetricTile, Panel, Segmented, SeverityChip, EmptyState } from '../components/primitives';
 import { RegimePlot } from '../components/RegimePlot';
@@ -134,7 +136,7 @@ export function Dashboard() {
    * paints on first frame; "Run screening" replaces it with a live worker run
    * of the same engine over the horizon the operator picked.
    */
-  const { events, cascade, progress, stage, live, lastRun, dismissLastRun, running, error, run } =
+  const { events, cascade, phase, phaseLog, live, lastRun, dismissLastRun, running, error, run } =
     useScreening();
   const { toggle: toggleAck, isAcknowledged } = useAcknowledged();
 
@@ -204,6 +206,14 @@ export function Dashboard() {
    */
   const byTca = useMemo(() => [...screened].sort((a, b) => a.tca - b.tca), [screened]);
 
+  /*
+   * Keyed on every panel filter, the same convention the catalogue's row-in
+   * stagger already uses. Keying only on `rows` content would replay the
+   * entrance on every clock tick that reorders nothing; keying on the filter
+   * inputs replays it exactly when the visible set actually changed shape.
+   */
+  const listKey = `${sortKey}-${sortDir}-${minRisk}-${win}-${cls}-${isroOnly}`;
+
   const highRisk = counts.CRITICAL + counts.HIGH;
 
   /*
@@ -257,12 +267,6 @@ export function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {running && (
-            <span className="num text-xs- text-tertiary" role="status" aria-live="polite">
-              {stage === 'refine' ? 'refining' : 'propagating'}{' '}
-              {Math.round((progress ?? 0) * 100)}%
-            </span>
-          )}
           <Button
             className="px-[13px] py-[7px] text-sm text-secondary"
             onClick={() =>
@@ -296,6 +300,7 @@ export function Dashboard() {
             Export CDM
           </Button>
           <Button
+            data-presenter="run-screening-button"
             variant="primary"
             className="px-[13px] py-[7px] text-sm"
             onClick={() => run(thresholds.horizonHours)}
@@ -306,6 +311,8 @@ export function Dashboard() {
         </div>
       </div>
 
+      <BootSequence phase={phase} phaseLog={phaseLog} />
+
       {/* Metric row */}
       <div className="grid grid-cols-2 gap-px bg-hairline px-5 pt-5 sm:grid-cols-3 xl:grid-cols-5">
         <MetricTile
@@ -315,14 +322,20 @@ export function Dashboard() {
         />
         <MetricTile
           label={`Pairs screened ${cascade.horizonHours} h`}
-          value={fmtInt(cascade.totalPairs)}
+          /* Counts up rather than snapping when a live re-run replaces the
+             committed cascade — the number changing for a real reason is
+             the one place on this screen a tile is worth animating at all. */
+          value={<CountUp value={cascade.totalPairs} format={fmtInt} />}
           foot={`→ ${fmtInt(cascade.candidates)} candidates → ${fmtInt(cascade.events)} events`}
         />
+        <div data-presenter="high-risk-tile">
         <MetricTile
           label="High risk events"
           value={
             <span className="flex items-baseline gap-[9px]">
-              <span data-sev="HIGH" className="text-sev">{highRisk}</span>
+              <span data-sev="HIGH" className="text-sev">
+                <CountUp value={highRisk} format={(n) => String(Math.round(n))} />
+              </span>
               <span className="text-xs text-tertiary">of {screened.length}</span>
             </span>
           }
@@ -348,10 +361,11 @@ export function Dashboard() {
             </span>
           }
         />
+        </div>
         <NextTcaTile events={byTca} />
         <MetricTile
           label="Screening latency"
-          value={(cascade.elapsedMs / 1000).toFixed(1)}
+          value={<CountUp value={cascade.elapsedMs / 1000} format={(n) => n.toFixed(1)} />}
           unit="s"
           foot={`${fmtInt(cascade.propagations)} SGP4 propagations`}
         />
@@ -440,6 +454,7 @@ export function Dashboard() {
                   if an object is renamed in a later capture. */}
               <button
                 type="button"
+                data-presenter="isro-filter-button"
                 aria-pressed={isroOnly}
                 onClick={() => setIsroOnly((v) => !v)}
                 title={`${isroEvents} of ${screened.length} screened events involve an ISRO-operated asset`}
@@ -501,12 +516,12 @@ export function Dashboard() {
                   }
                 />
               ) : (
-                rows.map((r) => {
+                rows.map((r, i) => {
                   const sel = r.id === selId;
                   const ackd = isAcknowledged(r.id);
                   return (
                     <div
-                      key={r.id}
+                      key={`${listKey}-${r.id}`}
                       role="button"
                       tabIndex={0}
                       data-sev={r.sev}
@@ -517,7 +532,12 @@ export function Dashboard() {
                         if (e.key === ' ') { e.preventDefault(); setSelId(r.id); }
                       }}
                       aria-label={ackd ? `${r.id}, acknowledged` : r.id}
-                      className={`grid ${COLS} h-[46px] cursor-pointer items-center gap-x-2 border-b border-hairline-soft px-[14px] ${
+                      /* Same stagger convention as the catalogue's row-in: a
+                         remount (new `listKey`) replays the entrance, capped
+                         at 14 rows so a 900-event filter change still settles
+                         in under 200ms rather than crawling to the bottom. */
+                      style={{ animationDelay: `${Math.min(i, 14) * 11}ms` }}
+                      className={`event-row row-in grid ${COLS} h-[46px] cursor-pointer items-center gap-x-2 border-b border-hairline-soft px-[14px] ${
                         sel
                           ? 'rise bg-panel-raised shadow-[inset_2px_0_0_0_var(--accent)]'
                           : 'hover:-translate-y-px hover:bg-panel-raised'
@@ -578,7 +598,9 @@ export function Dashboard() {
             <RegimePlot events={rows} />
           </Panel>
 
-          <CascadePanel cascade={cascade} live={live} />
+          <div data-presenter="cascade-panel">
+            <CascadePanel cascade={cascade} live={live} />
+          </div>
 
           {error && (
             <div

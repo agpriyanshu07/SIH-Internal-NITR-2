@@ -327,6 +327,43 @@
   [data-sev='CRITICAL'] .sev-swatch {
     animation: kpulse 2.1s ease-out infinite;
   }
+  /* HIGH gets the same breath, slower and only two-thirds the amplitude —
+     legible as "also live" without competing with CRITICAL for attention. */
+  [data-sev='HIGH'] .sev-swatch {
+    animation: kpulse 3.4s ease-out infinite;
+    animation-timing-function: ease-out;
+  }
+
+  /*
+   * The same breathing language, extended from the swatch to the row it
+   * sits in — a full-row wash so severity reads at a glance across the event
+   * list, not only from a 8px dot. `.event-row` opts a row into this rather
+   * than every `data-sev` element on the page (chips, tiles, the "Selected
+   * event" card) growing an animated background it never asked for. The
+   * overlay sits behind row content in paint order (inserted before
+   * `.event-row`'s children are drawn only if it were `::before`; as
+   * `::after` it paints last, so it stays low-opacity enough — 5–12% — not
+   * to fight the text sitting under it.
+   */
+  @keyframes krowbreathe {
+    0%, 100% { opacity: 0.05; }
+    50% { opacity: 0.12; }
+  }
+  .event-row { position: relative; }
+  .event-row[data-sev='CRITICAL']::after,
+  .event-row[data-sev='HIGH']::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: var(--sev);
+    opacity: 0.05;
+  }
+  .event-row[data-sev='CRITICAL']::after { animation: krowbreathe 2.1s ease-in-out infinite; }
+  .event-row[data-sev='HIGH']::after { animation: krowbreathe 3.4s ease-in-out infinite; }
+  /* Row content stays above the wash. */
+  .event-row > * { position: relative; z-index: 1; }
 
   :focus-visible {
     outline: 1px solid var(--accent);

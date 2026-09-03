@@ -90,7 +90,8 @@ Both are factual, both are small:
 
 ## The rule that outranks the design
 
-`src/data/features.ts` and the honesty rule in `CLAUDE.md` still apply to every
+`src/data/features.ts` and the honesty rule it enforces (see the capability
+section of the root [`README.md`](../README.md)) still apply to every
 figure a deck prints. A better-looking slide does not get to make a looser
 claim. Every number in the reference deck maps to a command in
 [`README.md`](README.md) in this directory — keep that table current.

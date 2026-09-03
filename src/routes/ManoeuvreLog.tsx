@@ -217,7 +217,9 @@ export function ManoeuvreLog() {
         </div>
         </Panel>
 
-        <BurnAdvisor events={advisorEvents} />
+        <div data-presenter="burn-advisor">
+          <BurnAdvisor events={advisorEvents} />
+        </div>
       </div>
 
       <p className="font-mono text-2xs uppercase tracking-[0.08em] text-tertiary">
